@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#102945"/>
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-touch-fullscreen" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Outreach" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png" /><title>Sign In • Outreach</title>
+<link rel="stylesheet" href="styles.css?v=20261005-dark-mode-v2"/>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  *{box-sizing:border-box}
+
+  html,body{
+    min-height:100%;
+    margin:0;
+    background:#102945;
+  }
+
+  body{
+    color:#102945;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  }
+
+  .login-page{
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:22px;
+    padding:calc(22px + env(safe-area-inset-top)) 18px calc(24px + env(safe-area-inset-bottom));
+    background:
+      radial-gradient(circle at -5% -5%,rgba(36,112,205,.22),transparent 34%),
+      radial-gradient(circle at 105% 100%,rgba(29,104,190,.16),transparent 34%),
+      #102945;
+  }
+
+  .login-brand{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:10px!important;
+    margin:0!important;
+    color:#fff!important;
+  }
+
+  .login-brand-icon{
+    width:72px!important;
+    height:72px!important;
+    border-radius:20px!important;
+    overflow:hidden;
+    background:#102945;
+    padding:0!important;
+    box-shadow:0 10px 30px rgba(0,0,0,.18);
+  }
+
+  .login-brand-icon img{
+    width:100%;
+    height:100%;
+    display:block;
+    object-fit:cover;
+    border-radius:inherit;
+  }
+
+  .login-brand>span{
+    color:#fff!important;
+    font-size:15px!important;
+    font-weight:900!important;
+    letter-spacing:.26em!important;
+    line-height:1!important;
+  }
+
+  .login-panel{
+    width:min(100%,430px)!important;
+    margin:0!important;
+    padding:28px 26px 22px!important;
+    border-radius:32px!important;
+    background:#fff!important;
+    box-shadow:0 24px 60px rgba(2,18,34,.24)!important;
+  }
+
+  .login-title{
+    margin:0 0 20px!important;
+  }
+
+  .login-title h1{
+    margin:0!important;
+    color:#102945!important;
+    font-size:clamp(36px,10vw,46px)!important;
+    line-height:1.02!important;
+    letter-spacing:-.035em!important;
+    font-weight:950!important;
+  }
+
+  .login-title p{
+    margin:10px 0 0!important;
+    color:#7a8ca3!important;
+    font-size:17px!important;
+    line-height:1.35!important;
+    font-weight:700!important;
+  }
+
+  .login-form{
+    display:flex!important;
+    flex-direction:column!important;
+    gap:6px!important;
+  }
+
+  #loginEmail{
+    margin-bottom:0!important;
+  }
+
+  .login-form>label:not(.save-email-option):not(.terms-option){
+    margin:2px 0 0!important;
+    color:#173653!important;
+    font-size:15px!important;
+    font-weight:900!important;
+  }
+
+  .login-field{
+    min-height:62px!important;
+    display:flex!important;
+    align-items:center!important;
+    gap:13px!important;
+    padding:0 16px!important;
+    border:1.8px solid #d7e2ed!important;
+    border-radius:22px!important;
+    background:#f8fbff!important;
+    box-shadow:none!important;
+  }
+
+  .login-field>svg,
+  .login-field>i{
+    width:23px!important;
+    height:23px!important;
+    color:#8ca1ba!important;
+    stroke-width:2!important;
+    flex:0 0 auto!important;
+  }
+
+  .login-field input{
+    min-width:0!important;
+    flex:1!important;
+    border:0!important;
+    outline:0!important;
+    background:transparent!important;
+    color:#183652!important;
+    font:inherit!important;
+    font-size:15px!important;
+    font-weight:750!important;
+    line-height:1.2!important;
+  }
+
+  .login-field input::placeholder{
+    color:#a7b3c0!important;
+    opacity:1!important;
+    font-size:15px!important;
+    letter-spacing:-.01em!important;
+  }
+
+  .login-field + label:not(.save-email-option):not(.terms-option){
+    margin-top:-10px!important;
+  }
+
+  .login-field button{
+    flex:0 0 auto!important;
+    display:grid!important;
+    place-items:center!important;
+    border:0!important;
+    background:transparent!important;
+    color:#8ca1ba!important;
+    padding:8px!important;
+    margin-right:-6px!important;
+  }
+
+  .login-field button svg{
+    width:24px!important;
+    height:24px!important;
+  }
+
+  .save-email-option,
+  .terms-option{
+    position:relative!important;
+    display:flex!important;
+    align-items:flex-start!important;
+    gap:11px!important;
+    width:100%!important;
+    max-width:100%!important;
+    margin:2px 0 0!important;
+    color:#173653!important;
+    font-size:14px!important;
+    line-height:1.35!important;
+    font-weight:800!important;
+    cursor:pointer!important;
+    -webkit-user-select:none;
+    user-select:none;
+  }
+
+  .save-email-option{
+    margin-top:4px!important;
+  }
+
+  .save-email-option input,
+  .terms-option input{
+    position:absolute!important;
+    opacity:0!important;
+    pointer-events:none!important;
+  }
+
+  .save-email-check{
+    width:27px!important;
+    height:27px!important;
+    flex:0 0 27px!important;
+    border:2px solid #c5d2df!important;
+    border-radius:8px!important;
+    background:#fff!important;
+    display:grid!important;
+    place-items:center!important;
+    color:transparent!important;
+    transition:.15s ease!important;
+    margin-top:-1px!important;
+  }
+
+  .save-email-check svg{
+    width:17px!important;
+    height:17px!important;
+    stroke-width:3!important;
+  }
+
+  .save-email-option input:checked + .save-email-check,
+  .terms-option input:checked + .save-email-check{
+    background:#1877e8!important;
+    border-color:#1877e8!important;
+    color:#fff!important;
+  }
+
+  .save-email-option input:focus-visible + .save-email-check,
+  .terms-option input:focus-visible + .save-email-check{
+    outline:3px solid rgba(24,119,232,.18)!important;
+    outline-offset:2px!important;
+  }
+
+  .terms-option a{
+    color:#1677e8!important;
+    font-weight:900!important;
+    text-decoration:underline!important;
+    text-underline-offset:2px!important;
+  }
+
+  .terms-option.is-invalid .save-email-check{
+    border-color:#d64545!important;
+    box-shadow:0 0 0 3px rgba(214,69,69,.12)!important;
+  }
+
+  .terms-validation{
+    display:none;
+    margin:-1px 0 1px 38px;
+    color:#c73838;
+    font-size:12px;
+    line-height:1.3;
+    font-weight:800;
+  }
+
+  .terms-validation.is-visible{
+    display:block;
+  }
+
+  .login-message{
+    min-height:8px!important;
+    margin:0!important;
+    color:#b33c3c!important;
+    font-size:12px!important;
+    line-height:1.35!important;
+    font-weight:750!important;
+  }
+
+  .login-submit{
+    width:100%!important;
+    min-height:62px!important;
+    margin:0!important;
+    border:0!important;
+    border-radius:21px!important;
+    background:#1f78e8!important;
+    color:#fff!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:12px!important;
+    font-size:20px!important;
+    font-weight:900!important;
+    box-shadow:0 12px 24px rgba(31,120,232,.24)!important;
+    cursor:pointer!important;
+  }
+
+  .login-submit:disabled{
+    opacity:.65!important;
+    box-shadow:none!important;
+  }
+
+  .login-submit svg{
+    width:22px!important;
+    height:22px!important;
+  }
+
+  .forgot-password{
+    appearance:none!important;
+    border:0!important;
+    background:transparent!important;
+    padding:0!important;
+    cursor:pointer!important;
+    text-decoration:underline!important;
+    text-underline-offset:3px!important;
+  }
+
+  .forgot-password-below{
+    margin:2px auto 0!important;
+    width:max-content!important;
+    max-width:100%!important;
+    color:#4e6075!important;
+    font-size:14px!important;
+    font-weight:800!important;
+    text-align:center!important;
+    opacity:1!important;
+  }
+
+  .forgot-password:disabled{opacity:.45!important;cursor:not-allowed!important}
+
+  .login-foot{
+    position:relative!important;
+    margin:16px 0 0!important;
+    color:#9cacbd!important;
+    font-size:12px!important;
+    font-weight:800!important;
+    text-align:center!important;
+  }
+
+  .login-foot::before,
+  .login-foot::after{
+    content:"";
+    position:absolute;
+    top:50%;
+    width:18%;
+    height:1px;
+    background:#dbe3eb;
+    transform:translateY(-50%);
+  }
+
+  .login-foot::before{left:0}
+  .login-foot::after{right:0}
+
+  @media (max-width:420px){
+    .login-page{
+      justify-content:flex-start;
+      gap:18px;
+      padding-top:calc(34px + env(safe-area-inset-top));
+    }
+
+    .login-brand-icon{
+      width:64px!important;
+      height:64px!important;
+      border-radius:18px!important;
+    }
+
+    .login-brand>span{
+      font-size:13px!important;
+    }
+
+    .login-panel{
+      padding:24px 22px 20px!important;
+      border-radius:29px!important;
+    }
+
+    .login-title{
+      margin-bottom:18px!important;
+    }
+
+    .login-title h1{
+      font-size:38px!important;
+    }
+
+    .login-title p{
+      font-size:16px!important;
+    }
+
+    .login-field{
+      min-height:58px!important;
+      border-radius:20px!important;
+      padding-left:14px!important;
+      padding-right:14px!important;
+      gap:10px!important;
+    }
+
+    .login-field input,
+    .login-field input::placeholder{
+      font-size:14px!important;
+    }
+
+    .login-submit{
+      min-height:58px!important;
+      border-radius:20px!important;
+      font-size:19px!important;
+    }
+  }
+
+  @media (min-width: 900px){
+    .login-page{
+      min-height:100vh;
+      height:100vh;
+      overflow:hidden;
+      justify-content:center;
+      gap:8px;
+      padding:10px 24px;
+    }
+
+    .login-brand{
+      gap:7px!important;
+    }
+
+    .login-brand-icon{
+      width:48px!important;
+      height:48px!important;
+      border-radius:15px!important;
+    }
+
+    .login-brand>span{
+      font-size:11px!important;
+      letter-spacing:.22em!important;
+    }
+
+    .login-panel{
+      width:min(100%,420px)!important;
+      max-height:none!important;
+      overflow:visible!important;
+      padding:24px 24px 20px!important;
+      border-radius:26px!important;
+    }
+
+    .login-title{
+      margin-bottom:14px!important;
+    }
+
+    .login-title h1{
+      font-size:32px!important;
+    }
+
+    .login-title p{
+      margin-top:7px!important;
+      font-size:14px!important;
+    }
+
+    .login-form{
+      gap:5px!important;
+    }
+
+    .login-form>label:not(.save-email-option):not(.terms-option){
+      font-size:13px!important;
+    }
+
+    .login-field{
+      min-height:50px!important;
+      border-radius:16px!important;
+      padding:0 14px!important;
+      gap:10px!important;
+    }
+
+    .login-field>svg,
+    .login-field>i{
+      width:20px!important;
+      height:20px!important;
+    }
+
+    .login-field input,
+    .login-field input::placeholder{
+      font-size:13px!important;
+    }
+
+    .login-field + label:not(.save-email-option):not(.terms-option){
+      margin-top:-8px!important;
+    }
+
+    .save-email-option,
+    .terms-option{
+      font-size:12px!important;
+      gap:8px!important;
+      line-height:1.25!important;
+    }
+
+    .save-email-option{
+      margin-top:2px!important;
+    }
+
+    .save-email-check{
+      width:22px!important;
+      height:22px!important;
+      flex-basis:22px!important;
+      border-radius:7px!important;
+    }
+
+    .save-email-check svg{
+      width:14px!important;
+      height:14px!important;
+    }
+
+    .login-message{
+      min-height:4px!important;
+      font-size:11px!important;
+    }
+
+    .login-submit{
+      min-height:50px!important;
+      border-radius:16px!important;
+      font-size:16px!important;
+      gap:9px!important;
+      box-shadow:0 8px 18px rgba(31,120,232,.2)!important;
+    }
+
+    .login-submit svg{
+      width:18px!important;
+      height:18px!important;
+    }
+
+    .forgot-password-below{
+      font-size:12px!important;
+      margin-top:0!important;
+    }
+
+    .login-foot{
+      margin-top:11px!important;
+      font-size:10px!important;
+    }
+  }
+
+
+  .terms-modal-overlay{
+    position:fixed;
+    inset:0;
+    z-index:10000;
+    display:flex;
+    flex-direction:column;
+    background:#f3f6f9;
+  }  .terms-modal-frame{
+    width:100%;
+    flex:1;
+    border:0;
+    background:#f3f6f9;
+  }
+</style>
+  <script src="app-update.js" defer></script>
+  <script src="theme.js?v=20261005-account-theme"></script>
+</head><body>
+<div class="login-page">
+<div class="login-brand"><div class="login-brand-icon"><img src="images/icon-192.png" alt="Steady Hands logo" /></div><span>STEADY HANDS</span></div>
+<div class="login-panel">
+<div class="login-title"><h1 id="loginHeading">Welcome back</h1><p id="loginSubheading">Sign in to continue to Outreach.</p></div>
+<form id="loginForm" class="login-form">
+<label for="loginEmail">Email address</label><div class="login-field"><i data-lucide="mail"></i><input id="loginEmail" type="email" name="email" placeholder="name@steadyhandsop.com" autocomplete="username" required/></div>
+<label for="loginPassword">Password</label><div class="login-field"><i data-lucide="lock-keyhole"></i><input id="loginPassword" type="password" name="password" placeholder="Enter your password" autocomplete="current-password" required/><button type="button" id="showPassword" aria-label="Show password"><i data-lucide="eye"></i></button></div>
+<label class="save-email-option" for="saveEmailToDevice">
+  <input id="saveEmailToDevice" type="checkbox" />
+  <span class="save-email-check" aria-hidden="true"><i data-lucide="check"></i></span>
+  <span>Save email to this device</span>
+</label>
+<label class="terms-option" for="agreeToTerms">
+  <input id="agreeToTerms" type="checkbox" />
+  <span class="save-email-check" aria-hidden="true"><i data-lucide="check"></i></span>
+  <span>I agree to the <a href="terms.html" id="termsLink">Terms &amp; Conditions</a>.</span>
+</label>
+<div id="termsValidation" class="terms-validation" role="alert">This box must be checked to continue.</div>
+<div id="loginMessage" class="login-message" role="status" aria-live="polite"></div>
+<button type="submit" id="signInButton" class="login-submit">Sign in <i data-lucide="arrow-right"></i></button>
+<button type="button" id="forgotPassword" class="forgot-password forgot-password-below">Forgot password?</button>
+</form><div class="login-foot">Authorized team access only</div>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="login.js?v=20261003-terms-validation"></script>
+</body></html>

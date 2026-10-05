@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#102945" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-touch-fullscreen" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Outreach" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png" />
+  <title>Terms & Conditions • Outreach</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;background:#f3f6f9;color:#10243d;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    .terms-top{position:sticky;top:0;z-index:5;background:#102945;color:#fff;padding:calc(16px + env(safe-area-inset-top)) 18px 16px}
+    .terms-top-inner{max-width:760px;margin:auto;display:flex;align-items:center;gap:14px}
+    .terms-back{width:42px;height:42px;border:0;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;font-size:24px;cursor:pointer}
+    .terms-top h1{font-size:20px;margin:0}
+    .terms-wrap{max-width:760px;margin:0 auto;padding:24px 18px calc(40px + env(safe-area-inset-bottom))}
+    .terms-card{background:#fff;border:1px solid #dce4ec;border-radius:20px;padding:24px;box-shadow:0 10px 28px rgba(16,41,69,.08)}
+    .terms-card h2{font-size:17px;margin:26px 0 8px}
+    .terms-card h2:first-of-type{margin-top:16px}
+    .terms-card p,.terms-card li{font-size:14px;line-height:1.65;color:#516174}
+    .terms-card ul{padding-left:20px}
+    .updated{font-size:12px;color:#758396;margin-top:2px}
+    .brand{font-size:12px;font-weight:900;letter-spacing:.12em;color:#1677e8}
+  </style>
+  <script src="theme.js?v=20261005-account-theme"></script>
+</head>
+<body>
+  <header class="terms-top">
+    <div class="terms-top-inner">
+      <button class="terms-back" type="button" aria-label="Back" onclick="if(window.parent!==window){window.parent.postMessage({type:'close-terms'},location.origin)}else{history.length>1?history.back():location.href='login.html'}">‹</button>
+      <h1>Terms &amp; Conditions</h1>
+    </div>
+  </header>
+
+  <main class="terms-wrap">
+    <article class="terms-card">
+      <div class="brand">STEADY HANDS OUTREACH</div>
+      <p class="updated">Effective October 3, 2026</p>
+
+      <p>These Terms &amp; Conditions apply to use of the Steady Hands Outreach application. By signing in and using the application, you agree to follow these terms.</p>
+
+      <h2>Authorized use</h2>
+      <p>The application is intended only for authorized Steady Hands users and approved team members. Do not share your login credentials or allow unauthorized people to access your account.</p>
+
+      <h2>Account security</h2>
+      <p>You are responsible for keeping your password and account access secure. Notify Steady Hands if you believe your account or login credentials have been compromised.</p>
+
+      <h2>Outreach and calling</h2>
+      <p>Users are responsible for using calling, messaging, lead, and outreach features lawfully and appropriately. Do not use the application for harassment, fraud, deceptive communications, or unlawful contact.</p>
+
+      <h2>Lead and customer information</h2>
+      <p>Information available through the application may contain business or customer contact details. Use this information only for authorized business purposes and do not improperly disclose or misuse it.</p>
+
+      <h2>Call notes and transcripts</h2>
+      <p>The application may allow users to create notes, activity records, or transcripts. Users are responsible for following applicable requirements before recording, transcribing, storing, or sharing communications.</p>
+
+      <h2>Availability and changes</h2>
+      <p>Features may be changed, updated, suspended, or removed as the application develops. Steady Hands does not guarantee uninterrupted availability of every feature or third-party service.</p>
+
+      <h2>Third-party services</h2>
+      <p>The application may rely on third-party providers for services such as authentication, communications, hosting, or data storage. Use of those services may also be subject to the provider's own terms and policies.</p>
+
+      <h2>Acceptable use</h2>
+      <ul>
+        <li>Do not attempt to bypass account permissions or security controls.</li>
+        <li>Do not intentionally damage, disrupt, overload, or misuse the application.</li>
+        <li>Do not use another person's account without authorization.</li>
+        <li>Do not upload or transmit unlawful, malicious, or deceptive content.</li>
+      </ul>
+
+      <h2>Termination of access</h2>
+      <p>Access may be suspended or removed when a user is no longer authorized to use the application or when these terms are violated.</p>
+
+      <h2>Updates to these terms</h2>
+      <p>These terms may be updated as the application or its services change. The current version will be made available from the sign-in screen.</p>
+
+      <h2>Contact</h2>
+      <p>Questions about these terms can be directed to Steady Hands LLC.</p>
+    </article>
+  </main>
+</body>
+</html>
