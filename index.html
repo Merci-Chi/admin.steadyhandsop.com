@@ -6,172 +6,69 @@
   <meta name="theme-color" content="#102945" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-touch-fullscreen" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Steady Hands Admin" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png" />
-  <title>Outreach</title>
-
-  <link rel="preconnect" href="https://unpkg.com">
-  <link rel="stylesheet" href="styles.css?v=20261005-admin-batch1" />
-
+  <title>Overview • Steady Hands Admin</title>
+  <link rel="stylesheet" href="styles.css?v=20261005-admin-batch2" />
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="app-update.js" defer></script>
   <script src="theme.js?v=20261005-account-theme"></script>
 </head>
-<body class="page-outreach">
+<body class="page-admin-overview">
 <div class="app">
   <header class="topbar">
     <div class="topbar-row">
-      <h1>Outreach</h1>
+      <div>
+        <span class="admin-kicker">STEADY HANDS ADMIN</span>
+        <h1>Overview</h1>
+      </div>
     </div>
   </header>
 
-  <main class="content outreach-loading">
-    <div class="desktop-outreach-heading desktop-queue-heading" aria-hidden="true">
+  <main class="content admin-overview-content" id="adminOverview">
+    <section class="admin-overview-hero">
       <div>
-        <span class="desktop-kicker">OUTREACH</span>
-        <h2>Lead Queue</h2>
-        <p>Search, filter, and choose who to contact next.</p>
+        <span>Operations snapshot</span>
+        <h2>Loading your admin dashboard…</h2>
+        <p>Team, calls, leads, payouts, and pending setup.</p>
       </div>
-    </div>
-
-    <div class="desktop-outreach-heading desktop-workspace-heading" aria-hidden="true">
-      <div>
-        <span class="desktop-kicker">CALL WORKSPACE</span>
-        <h2>Selected Lead</h2>
-        <p>Everything you need for the next call, in one view.</p>
-      </div>
-    </div>
-
-    <div id="selectedLeadTop" class="crm-leads selected-lead-top" aria-live="polite">
-      <div class="skeleton-lead skeleton-expanded selected-lead-skeleton" aria-hidden="true">
-        <div class="sk-row">
-          <div class="sk-shape sk-icon"></div>
-          <div class="sk-grow">
-            <div class="sk-shape sk-title"></div>
-            <div class="sk-shape sk-subtitle"></div>
-          </div>
-          <div class="sk-shape sk-star"></div>
-        </div>
-        <div class="sk-shape sk-phone"></div>
-        <div class="sk-shape sk-line"></div>
-        <div class="sk-chips"><span class="sk-shape"></span><span class="sk-shape"></span></div>
-        <div class="sk-shape sk-preview"></div>
-        <div class="sk-shape sk-note"></div>
-        <div class="sk-shape sk-call"></div>
-        <div class="sk-chips sk-bottom"><span class="sk-shape"></span><span class="sk-shape"></span><span class="sk-shape"></span></div>
-      </div>
-    </div>
-
-    <div class="outreach-controls">
-      <div class="outreach-controls-skeleton" aria-hidden="true">
-        <div class="sk-shape sk-search-bar"></div>
-        <div class="sk-shape sk-refresh-button"></div>
-        <div class="sk-filter-row">
-          <span class="sk-shape sk-filter-pill"></span>
-          <span class="sk-shape sk-filter-pill sk-filter-pill-wide"></span>
-        </div>
-      </div>
-
-      <div class="outreach-controls-live">
-        <div class="crm-toolbar">
-          <input
-            type="search"
-            id="crmSearch"
-            aria-label="Search all leads"
-            placeholder="Search name, company, phone, email, notes…"
-            autocomplete="off"
-          />
-          <button id="crmReload" type="button" title="Refresh">
-            <i data-lucide="refresh-cw"></i>
-          </button>
-        </div>
-
-        <div class="filter-row">
-          <button class="pill active outreach-filter-pill" id="crmMainFilter" type="button">
-            <i data-lucide="list-filter"></i>
-            <span id="crmMainFilterLabel">Filter: All</span>
-          </button>
-
-          <button class="pill tag-filter-pill" id="crmTagFilter" type="button">
-            <i data-lucide="tags"></i>
-            <span>Filter Tags</span>
-            <span class="tag-filter-count" id="crmTagFilterCount" hidden></span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <section class="crm-state card" id="crmStatus" aria-live="polite">
-      Connecting to CRM…
+      <i data-lucide="layout-dashboard"></i>
     </section>
 
-    <div id="crmLeadCards" class="crm-leads" aria-live="polite">
-      <div class="skeleton-lead skeleton-compact" aria-hidden="true">
-        <div class="sk-row">
-          <div class="sk-shape sk-icon"></div>
-          <div class="sk-grow">
-            <div class="sk-shape sk-title"></div>
-            <div class="sk-shape sk-subtitle"></div>
-          </div>
-          <div class="sk-shape sk-star"></div>
-        </div>
-        <div class="sk-shape sk-phone"></div>
-      </div>
+    <section class="admin-overview-grid" id="adminMetricGrid">
+      <div class="admin-metric-card admin-loading-card"><span></span><b></b><small></small></div><div class="admin-metric-card admin-loading-card"><span></span><b></b><small></small></div><div class="admin-metric-card admin-loading-card"><span></span><b></b><small></small></div><div class="admin-metric-card admin-loading-card"><span></span><b></b><small></small></div><div class="admin-metric-card admin-loading-card"><span></span><b></b><small></small></div><div class="admin-metric-card admin-loading-card"><span></span><b></b><small></small></div>
+    </section>
 
-      <div class="skeleton-lead skeleton-compact" aria-hidden="true">
-        <div class="sk-row">
-          <div class="sk-shape sk-icon"></div>
-          <div class="sk-grow">
-            <div class="sk-shape sk-title"></div>
-            <div class="sk-shape sk-subtitle"></div>
-          </div>
-          <div class="sk-shape sk-star"></div>
-        </div>
-        <div class="sk-shape sk-phone"></div>
+    <section class="admin-dashboard-section">
+      <div class="admin-dashboard-head">
+        <div><span class="admin-kicker">TEAM</span><h2>Recent users</h2></div>
+        <a href="admin.html">View all</a>
       </div>
+      <div class="admin-dashboard-list" id="adminRecentUsers"><div class="cc-empty">Loading users…</div></div>
+    </section>
 
-      <div class="skeleton-lead skeleton-compact" aria-hidden="true">
-        <div class="sk-row">
-          <div class="sk-shape sk-icon"></div>
-          <div class="sk-grow">
-            <div class="sk-shape sk-title"></div>
-            <div class="sk-shape sk-subtitle"></div>
-          </div>
-          <div class="sk-shape sk-star"></div>
-        </div>
-        <div class="sk-shape sk-phone"></div>
+    <section class="admin-dashboard-section">
+      <div class="admin-dashboard-head">
+        <div><span class="admin-kicker">CALLS</span><h2>Latest activity</h2></div>
+        <a href="activity.html">View all</a>
       </div>
+      <div class="admin-dashboard-list" id="adminRecentCalls"><div class="cc-empty">Loading calls…</div></div>
+    </section>
 
-      <div class="skeleton-lead skeleton-compact" aria-hidden="true">
-        <div class="sk-row">
-          <div class="sk-shape sk-icon"></div>
-          <div class="sk-grow">
-            <div class="sk-shape sk-title"></div>
-            <div class="sk-shape sk-subtitle"></div>
-          </div>
-          <div class="sk-shape sk-star"></div>
-        </div>
-        <div class="sk-shape sk-phone"></div>
+    <section class="admin-dashboard-section">
+      <div class="admin-dashboard-head">
+        <div><span class="admin-kicker">ATTENTION</span><h2>Needs attention</h2></div>
       </div>
-    </div>
+      <div class="admin-attention-grid" id="adminAttention"><div class="cc-empty">Loading…</div></div>
+    </section>
   </main>
 
-  <nav class="bottom-nav">
-    <a class="nav-item active" href="index.html"><i data-lucide="phone"></i><span>Outreach</span></a>
-    <a class="nav-item" href="skills.html"><i data-lucide="chart-no-axes-column-increasing"></i><span>Skills</span></a>
-    <a class="nav-item" href="earnings.html"><i data-lucide="circle-dollar-sign"></i><span>Earnings</span></a>
-    <a class="nav-item" href="activity.html"><i data-lucide="history"></i><span>Activity</span></a>
-    <a class="nav-item" href="account.html"><i data-lucide="user-round"></i><span>Account</span></a>
-  </nav>
+  <nav class="bottom-nav"></nav>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="auth-guard.js?v=20261005-admin-only"></script>
-<script src="admin-shell.js?v=20261005-batch1"></script>
-<script src="user-data.js?v=20261001-1930"></script>
-<script src="app.js?v=20261005-search-focus-top"></script>
+<script src="admin-shell.js?v=20261005-batch2"></script>
+<script src="admin-dashboard.js?v=20261005-batch2"></script>
 </body>
 </html>
