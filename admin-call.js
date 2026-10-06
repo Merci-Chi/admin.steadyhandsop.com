@@ -35,7 +35,7 @@
 
     try{
       const {data:call,error:callError}=await c.from('callcenter_call_activity')
-        .select('id,user_id,crm_id,duration_seconds,outcome,created_at')
+        .select('id,user_id,crm_id,duration_seconds,outcome,call_sid,caller_id_used,connected_at,ended_at,created_at')
         .eq('id',id).single();
       if(callError) throw callError;
 
@@ -71,8 +71,9 @@
           <div><span>Lead</span><strong>${esc(label)}</strong></div>
           <div><span>Phone</span><strong>${esc(lead.phone||transcript?.phone||'—')}</strong></div>
           <div><span>Duration</span><strong>${esc(fmtDuration(call.duration_seconds))}</strong></div>
-          <div><span>Started</span><strong>${esc(fmtDate(transcript?.started_at||call.created_at))}</strong></div>
-          <div><span>Ended</span><strong>${esc(fmtDate(transcript?.ended_at))}</strong></div>
+          <div><span>Caller ID used</span><strong>${esc(call.caller_id_used||'Not captured')}</strong></div>
+          <div><span>Connected</span><strong>${esc(fmtDate(call.connected_at||transcript?.started_at||call.created_at))}</strong></div>
+          <div><span>Ended</span><strong>${esc(fmtDate(call.ended_at||transcript?.ended_at))}</strong></div>
           <div><span>Stage</span><strong>${esc(lead.stage||'—')}</strong></div>
           <div><span>CRM ID</span><strong>${esc(call.crm_id||'—')}</strong></div>
         </section>
@@ -95,7 +96,7 @@
           <div class="admin-call-system">
             <div><span>Activity ID</span><code>${esc(call.id)}</code></div>
             <div><span>Transcript ID</span><code>${esc(transcript?.id||'Not available')}</code></div>
-            <div><span>Twilio CallSid</span><code>Not stored on this activity yet</code></div>
+            <div><span>Twilio CallSid</span><code>${esc(call.call_sid||'Not captured')}</code></div>
           </div>
         </section>`;
 
