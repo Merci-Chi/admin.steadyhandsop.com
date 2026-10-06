@@ -6,60 +6,73 @@
   <meta name="theme-color" content="#102945" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-touch-fullscreen" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Steady Hands Admin" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png" />
-  <title>Skills</title>
-  <link rel="stylesheet" href="styles.css?v=20261005-admin-batch1" />
+  <title>Skills • Steady Hands Admin</title>
+  <link rel="stylesheet" href="styles.css?v=20261005-admin-batch5" />
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="app-update.js" defer></script>
   <script src="theme.js?v=20261005-account-theme"></script>
 </head>
-<body class="page-skills">
+<body class="page-admin-skills">
 <div class="app">
   <header class="topbar">
     <div class="topbar-row">
-      <h1>Skills</h1>
+      <div>
+        <span class="admin-kicker">STEADY HANDS ADMIN</span>
+        <h1>Skills</h1>
+      </div>
     </div>
-    <div class="tabs skills-header-tabs"><a class="active" href="#">Insights</a><a href="#">Practice</a><a href="#">Library</a></div>
   </header>
-  <main class="content">
-    <section class="card light-card">
-      <div class="card-head">
-        <h3>Your Call Insights</h3>
-        <button class="mini-select" id="skillsRangeSelect" type="button" data-range="7">Last 7 days⌄</button>
+
+  <main class="content admin-skills-content">
+    <section class="admin-skills-toolbar">
+      <div class="admin-user-search">
+        <i data-lucide="search"></i>
+        <input id="adminSkillsSearch" type="search" placeholder="Search team member…" autocomplete="off" />
       </div>
-      <div class="insight-grid" id="skillsInsightGrid">
-        <div class="insight"><strong>—</strong><span>Calls Reviewed</span><em>Loading</em></div>
-        <div class="insight"><strong>—</strong><span>Avg. Call Length</span><em>Loading</em></div>
-        <div class="insight"><strong>—</strong><span>Positive Outcomes</span><em>Loading</em></div>
-      </div>
+      <select id="adminSkillsRange">
+        <option value="7">Last 7 days</option>
+        <option value="30">Last 30 days</option>
+        <option value="all">All time</option>
+      </select>
+      <button type="button" id="adminAssignSkill"><i data-lucide="target"></i><span>Direct Skill</span></button>
     </section>
 
-    <div class="section-title">Recent Calls</div>
-    <section class="card light-card feedback-list" id="skillsRecentCalls">
-      <div class="skill-library-loading">
-        <span class="skill-library-skeleton"></span>
-        <span class="skill-library-skeleton"></span>
-        <span class="skill-library-skeleton"></span>
+    <section class="admin-skills-summary" id="adminSkillsSummary">
+      <div><strong>—</strong><span>Calls reviewed</span></div>
+      <div><strong>—</strong><span>Team average</span></div>
+      <div><strong>—</strong><span>Assignments</span></div>
+      <div><strong>—</strong><span>Completed</span></div>
+    </section>
+
+    <section class="admin-dashboard-section">
+      <div class="admin-dashboard-head">
+        <div><span class="admin-kicker">TEAM</span><h2>Skill Scores</h2></div>
       </div>
+      <div class="admin-skill-team-list" id="adminSkillTeamList"><div class="cc-empty">Loading team skills…</div></div>
+    </section>
+
+    <section class="admin-dashboard-section">
+      <div class="admin-dashboard-head">
+        <div><span class="admin-kicker">DIRECT SKILLS</span><h2>Assigned Coaching</h2></div>
+        <span class="admin-list-count" id="adminDirectSkillCount">0</span>
+      </div>
+      <div class="admin-direct-skills-list" id="adminDirectSkillsList"><div class="cc-empty">Loading assignments…</div></div>
     </section>
   </main>
 
-  <nav class="bottom-nav">
-    <a class="nav-item" href="index.html"><i data-lucide="phone"></i><span>Outreach</span></a>
-    <a class="nav-item active" href="skills.html"><i data-lucide="chart-no-axes-column-increasing"></i><span>Skills</span></a>
-    <a class="nav-item" href="earnings.html"><i data-lucide="circle-dollar-sign"></i><span>Earnings</span></a>
-    <a class="nav-item" href="activity.html"><i data-lucide="history"></i><span>Activity</span></a>
-    <a class="nav-item" href="account.html"><i data-lucide="user-round"></i><span>Account</span></a>
-  </nav>
+  <nav class="bottom-nav"></nav>
 </div>
+
+<div class="admin-skill-drawer-overlay" id="adminSkillDrawerOverlay" hidden>
+  <aside class="admin-skill-drawer" id="adminSkillDrawer"></aside>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="auth-guard.js?v=20261005-admin-only"></script>
-<script src="admin-shell.js?v=20261005-batch1"></script>
-<script src="user-data.js?v=20261001-1918"></script>
-<script src="app.js?v=20261002-skills-coaching"></script>
+<script src="admin-shell.js?v=20261005-batch5"></script>
+<script src="admin-skills.js?v=20261005-batch5"></script>
 </body>
 </html>
