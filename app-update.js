@@ -1,5 +1,5 @@
 (() => {
-  const BUILD_VERSION = '20261002-update-popup-1';
+  const BUILD_VERSION = '20261005-admin-batch9';
   const VERSION_KEY = 'steadyhands-app-build';
 
   async function registerFreshWorker() {
