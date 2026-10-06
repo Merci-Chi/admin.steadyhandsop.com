@@ -4868,3 +4868,75 @@ html[data-theme="dark"] .admin-user-state.disabled{background:#3e2225;color:#ff8
   .admin-attention-grid{grid-template-columns:repeat(3,1fr)}
   .admin-user-drawer{width:520px}
 }
+
+
+/* Batch 3: Lead management */
+.admin-leads-content{padding-bottom:130px}
+.admin-leads-toolbar{display:grid;grid-template-columns:1fr auto;gap:9px}
+#adminAddLead{
+  min-height:44px;border:0;border-radius:14px;background:var(--blue);color:#fff;
+  display:flex;align-items:center;justify-content:center;gap:7px;padding:0 14px;font-weight:900;font-size:11px
+}
+#adminAddLead svg{width:17px}
+.admin-lead-filters{display:flex;gap:7px;overflow:auto;padding:10px 0 12px;align-items:center}
+.admin-lead-filters button,.admin-lead-filters select{
+  border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--muted);
+  padding:8px 11px;font-size:10px;font-weight:900;white-space:nowrap
+}
+.admin-lead-filters button.active{background:#173f72;border-color:#173f72;color:#fff}
+.admin-lead-filters select{margin-left:auto;max-width:160px}
+.admin-lead-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:12px}
+.admin-lead-summary div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 5px;text-align:center}
+.admin-lead-summary strong,.admin-lead-summary span{display:block}
+.admin-lead-summary strong{font-size:18px;color:var(--text)}
+.admin-lead-summary span{margin-top:3px;font-size:8px;color:var(--muted);font-weight:850}
+.admin-lead-list{display:flex;flex-direction:column;gap:9px}
+.admin-lead-card{
+  width:100%;border:1px solid rgba(20,43,69,.08);border-radius:17px;background:var(--card);
+  box-shadow:var(--shadow);padding:12px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;
+  gap:10px;align-items:center;text-align:left;color:var(--text)
+}
+.admin-lead-card-icon{width:42px;height:42px;border-radius:14px;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center}
+.admin-lead-card-icon svg{width:19px}
+.admin-lead-card-main{min-width:0}
+.admin-lead-card-head{display:flex;align-items:center;gap:7px}
+.admin-lead-card-head strong{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.admin-lead-card-main>small{display:block;margin-top:3px;color:var(--muted);font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.admin-lead-meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}
+.admin-lead-meta b{font-size:8px;color:var(--muted);font-weight:850}
+.admin-lead-archived{border-radius:999px;background:#fff0ee;color:#c84d42;padding:4px 6px;font-size:7.5px;font-weight:950}
+.admin-lead-card>svg{width:15px;color:var(--muted)}
+.admin-lead-drawer-overlay{position:fixed;inset:0;z-index:10050;background:rgba(5,16,28,.62);display:flex;justify-content:flex-end;backdrop-filter:blur(4px)}
+.admin-lead-drawer-overlay[hidden]{display:none}
+.admin-lead-drawer{width:min(520px,100%);height:100%;overflow:auto;background:var(--page);padding:calc(18px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));box-shadow:-20px 0 50px rgba(0,0,0,.2)}
+.admin-lead-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}
+.admin-lead-form-grid label{display:block;color:var(--muted);font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+.admin-lead-form-grid label.full{grid-column:1/-1}
+.admin-lead-form-grid input,.admin-lead-form-grid textarea,.admin-lead-form-grid select{
+  width:100%;margin-top:6px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);
+  padding:11px 12px;font:inherit;font-size:11px;outline:none
+}
+.admin-lead-form-grid textarea{min-height:110px;resize:vertical}
+.admin-lead-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.admin-lead-actions button{
+  min-height:45px;border:0;border-radius:13px;background:#edf2f7;color:#31465e;font-weight:900;font-size:10px;
+  display:flex;align-items:center;justify-content:center;gap:6px
+}
+.admin-lead-actions button.primary{background:#1677e8;color:#fff}
+.admin-lead-actions button.danger{grid-column:1/-1;background:#e04d4d;color:#fff}
+.admin-lead-actions svg{width:15px}
+html[data-theme="dark"] .admin-lead-filters button,
+html[data-theme="dark"] .admin-lead-filters select,
+html[data-theme="dark"] .admin-lead-summary div,
+html[data-theme="dark"] .admin-lead-card,
+html[data-theme="dark"] .admin-lead-form-grid input,
+html[data-theme="dark"] .admin-lead-form-grid textarea,
+html[data-theme="dark"] .admin-lead-form-grid select{background:#101f2f;border-color:#24384d}
+html[data-theme="dark"] .admin-lead-drawer{background:#07111c}
+html[data-theme="dark"] .admin-lead-actions button{background:#172a3c;color:#d8e6f3}
+html[data-theme="dark"] .admin-lead-actions button.primary{background:#1677e8;color:#fff}
+html[data-theme="dark"] .admin-lead-actions button.danger{background:#d94b4b;color:#fff}
+@media(min-width:800px){
+  .admin-leads-content{max-width:1180px;margin:0 auto;padding:28px 34px 120px}
+  .admin-lead-drawer{width:560px}
+}
