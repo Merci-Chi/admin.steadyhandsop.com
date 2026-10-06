@@ -5244,3 +5244,52 @@ html[data-theme="dark"] .admin-audit-drawer{background:#07111c}
   .admin-audit-content{max-width:1180px;margin:0 auto;padding:28px 34px 120px}
   .admin-audit-drawer{width:640px}
 }
+
+
+/* Batch 9: System diagnostics + Admin hubs */
+.admin-system-content,.admin-more-content{padding-bottom:130px}
+.admin-system-hero{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:16px;border-radius:18px;background:linear-gradient(135deg,#173f67,#0f2944);color:#fff;box-shadow:var(--shadow)
+}
+.admin-system-hero h2{margin:4px 0 4px;font-size:20px}.admin-system-hero p{margin:0;color:#c5d5e3;font-size:9.5px}
+.admin-system-hero button{min-height:40px;border:1px solid rgba(255,255,255,.18);border-radius:12px;background:rgba(255,255,255,.08);color:#fff;padding:0 12px;display:flex;align-items:center;gap:6px;font-weight:900;font-size:9px}
+.admin-system-hero button svg{width:15px}
+.admin-system-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:12px}
+.admin-system-summary div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 5px;text-align:center}
+.admin-system-summary strong,.admin-system-summary span{display:block}
+.admin-system-summary strong{font-size:18px}.admin-system-summary span{margin-top:3px;font-size:8px;color:var(--muted);font-weight:850}
+.admin-system-list{overflow:hidden;border:1px solid var(--line);border-radius:18px;background:var(--card);box-shadow:var(--shadow)}
+.admin-system-row{min-height:68px;border-top:1px solid var(--line);padding:10px 11px;display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:9px;align-items:center}
+.admin-system-row:first-child{border-top:0}
+.admin-system-icon{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:var(--blue-soft);color:var(--blue)}
+.admin-system-row.warn .admin-system-icon{background:#fff4df;color:#a56800}
+.admin-system-row.bad .admin-system-icon{background:#fff0ee;color:#c84d42}
+.admin-system-icon svg{width:17px}
+.admin-system-main{min-width:0}.admin-system-main strong,.admin-system-main small{display:block}
+.admin-system-main strong{font-size:10.5px}.admin-system-main small{margin-top:3px;color:var(--muted);font-size:8.5px;line-height:1.35}
+.admin-system-row>b{font-size:8.5px;color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.admin-system-dot{width:9px;height:9px;border-radius:50%;background:#25b96f}
+.admin-system-row.warn .admin-system-dot{background:#e8a229}.admin-system-row.bad .admin-system-dot{background:#dc5b52}
+
+.admin-more-grid{display:grid;grid-template-columns:1fr;gap:9px}
+.admin-more-grid a{
+  min-height:64px;border-radius:16px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px;color:var(--text)
+}
+.admin-more-grid>a>svg:first-child{width:21px;color:var(--blue)}
+.admin-more-grid>a>svg:last-child{width:15px;color:var(--muted)}
+.admin-more-grid strong,.admin-more-grid small{display:block}.admin-more-grid strong{font-size:11px}.admin-more-grid small{margin-top:4px;color:var(--muted);font-size:8.5px;line-height:1.35}
+.admin-more-note{margin-top:14px;padding:14px;border-radius:16px;border:1px solid var(--line);background:var(--card);display:flex;gap:10px;align-items:flex-start}
+.admin-more-note>svg{width:20px;color:var(--blue)}.admin-more-note strong{font-size:10.5px}.admin-more-note p{margin:4px 0 0;color:var(--muted);font-size:9px;line-height:1.4}
+
+html[data-theme="dark"] .admin-system-summary div,
+html[data-theme="dark"] .admin-system-list,
+html[data-theme="dark"] .admin-more-grid a,
+html[data-theme="dark"] .admin-more-note{background:#101f2f;border-color:#24384d}
+html[data-theme="dark"] .admin-system-hero{background:linear-gradient(135deg,#102f4c,#081b2c)}
+@media(max-width:620px){.admin-system-summary{grid-template-columns:repeat(2,1fr)}.admin-system-hero{align-items:flex-start;flex-direction:column}}
+@media(min-width:800px){
+  .admin-system-content,.admin-more-content{max-width:1180px;margin:0 auto;padding:28px 34px 120px}
+  .admin-more-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
