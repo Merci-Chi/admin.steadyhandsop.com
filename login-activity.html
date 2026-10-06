@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#102945" />
+  <meta name="apple-mobile-web-app-title" content="Steady Hands Admin" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png" />
+  <title>Login Activity • Steady Hands Admin</title>
+  <link rel="stylesheet" href="styles.css?v=20261005-admin-batch8" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="theme.js?v=20261005-account-theme"></script>
+</head>
+<body class="page-admin-login-activity">
+<div class="app">
+  <header class="topbar"><div class="topbar-row"><div><span class="admin-kicker">STEADY HANDS ADMIN</span><h1>Login Activity</h1></div></div></header>
+  <main class="content admin-audit-content">
+    <section class="admin-audit-toolbar">
+      <div class="admin-user-search"><i data-lucide="search"></i><input id="adminLoginSearch" type="search" placeholder="Search user or email…" autocomplete="off" /></div>
+      <select id="adminLoginRange"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="all">All time</option></select>
+      <button type="button" id="adminLoginRefresh"><i data-lucide="refresh-cw"></i></button>
+    </section>
+    <section class="admin-audit-summary" id="adminLoginSummary"></section>
+    <section class="admin-dashboard-section">
+      <div class="admin-dashboard-head"><div><span class="admin-kicker">AUTHENTICATION</span><h2>Successful Sign-ins</h2></div><span class="admin-list-count" id="adminLoginCount">0</span></div>
+      <div class="admin-audit-list" id="adminLoginList"><div class="cc-empty">Loading login activity…</div></div>
+    </section>
+  </main>
+  <nav class="bottom-nav"></nav>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="auth-guard.js?v=20261005-admin-only"></script>
+<script src="admin-shell.js?v=20261005-batch8"></script>
+<script src="admin-login-activity.js?v=20261005-batch8"></script>
+</body>
+</html>
