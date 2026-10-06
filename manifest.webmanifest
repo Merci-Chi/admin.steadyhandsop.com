@@ -1,14 +1,12 @@
 {
   "id": "/",
-  "name": "Steady Hands Outreach",
-  "short_name": "Outreach",
-  "description": "Steady Hands outreach and call center",
+  "name": "Steady Hands Admin",
+  "short_name": "Admin",
+  "description": "Steady Hands administration and operations",
   "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
-  "display_override": [
-    "standalone"
-  ],
+  "display_override": ["standalone"],
   "orientation": "portrait",
   "background_color": "#102945",
   "theme_color": "#102945",
