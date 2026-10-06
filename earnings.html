@@ -4,135 +4,27 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#102945" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-touch-fullscreen" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Steady Hands Admin" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png" />
-  <title>Earnings</title>
-  <link rel="stylesheet" href="styles.css?v=20261005-admin-batch1" />
+  <title>Finance • Steady Hands Admin</title>
+  <link rel="stylesheet" href="styles.css?v=20261005-admin-batch9" />
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="app-update.js" defer></script>
   <script src="theme.js?v=20261005-account-theme"></script>
 </head>
-<body class="page-earnings">
+<body class="page-admin-finance-hub">
 <div class="app">
-  <header class="topbar">
-    <div class="topbar-row">
-      <h1>Earnings</h1>
-    </div>
-  </header>
-
-  <main class="content">
-    <div id="earningsState" class="card light-card" style="display:none;text-align:center"></div>
-
-    <section class="earn-hero">
-      <div class="label">Total Earnings</div>
-      <div class="earn-row">
-        <div>
-          <span class="earn-total" id="earnTotal">—</span>
-          <span class="growth" id="earnGrowth" style="display:none"></span>
-        </div>
-        <div class="spark" id="earnSpark" aria-hidden="true">
-          <span style="height:10px"></span>
-          <span style="height:10px"></span>
-          <span style="height:10px"></span>
-          <span style="height:10px"></span>
-          <span style="height:10px"></span>
-          <span style="height:10px"></span>
-        </div>
-      </div>
-    </section>
-
-    <div class="two-grid">
-      <section class="card metric-card">
-        <div class="metric-label"><i class="green-icon" data-lucide="circle-dollar-sign"></i> Commission</div>
-        <strong id="commissionTotal">—</strong>
-      </section>
-      <section class="card metric-card">
-        <div class="metric-label"><i class="orange-icon" data-lucide="clock-3"></i> Pending Payouts</div>
-        <strong id="pendingPayoutTotal">—</strong>
-      </section>
-    </div>
-
-    <section class="card chart-card">
-      <div class="chart-top">
-        <h3>Monthly Sales</h3>
-        <button class="mini-select">This Month⌄</button>
-      </div>
-
-      <div class="sales-grid">
-        <div class="sales-stat">
-          <div class="iconbox"><i data-lucide="badge-check"></i></div>
-          <div><strong id="closedDeals">—</strong><span>Closed Deals</span></div>
-        </div>
-        <div class="sales-stat">
-          <div class="iconbox blue"><i data-lucide="chart-no-axes-column-increasing"></i></div>
-          <div><strong id="pipelineValue">—</strong><span>Pipeline Value</span></div>
-        </div>
-      </div>
-
-      <div class="section-title" style="margin-top:16px">Weekly Earnings</div>
-      <div class="bar-chart" id="weeklyEarningsChart">
-        <div class="bar-wrap"><div class="bar" style="height:10px"><b>—</b></div>Mon</div>
-        <div class="bar-wrap"><div class="bar" style="height:10px"><b>—</b></div>Tue</div>
-        <div class="bar-wrap"><div class="bar" style="height:10px"><b>—</b></div>Wed</div>
-        <div class="bar-wrap"><div class="bar" style="height:10px"><b>—</b></div>Thu</div>
-        <div class="bar-wrap"><div class="bar" style="height:10px"><b>—</b></div>Fri</div>
-        <div class="bar-wrap"><div class="bar" style="height:10px"><b>—</b></div>Sat</div>
-        <div class="bar-wrap"><div class="bar" style="height:10px"><b>—</b></div>Sun</div>
-      </div>
-    </section>
-
-    <div class="section-title">Recent Payouts</div>
-    <section class="card light-card" id="recentPayouts">
-      <div class="cc-empty">Loading payouts…</div>
-    </section>
-
-    <div class="section-title">Referrals</div>
-    <section class="card ref-card">
-      <div class="invite-head">
-        <div class="giftbox"><i data-lucide="gift"></i></div>
-        <div>
-          <strong>Invite &amp; Earn</strong>
-          <p>After referring someone, you get $50 from their first commission, and $10 per commission they receive after.</p>
-        </div>
-      </div>
-
-      <div class="code-row">
-        <div class="code" id="referralCode">—</div>
-        <button class="icon-btn" id="copyReferralCode" type="button" aria-label="Copy referral code"><i data-lucide="copy"></i></button>
-      </div>
-      <button class="share-btn" id="shareReferral"><i data-lucide="share-2"></i> Share Invite Link</button>
-    </section>
-
-    <div class="ref-stats">
-      <div class="ref-stat"><i style="color:#2f7dea" data-lucide="users"></i><strong id="activeReferralCount">—</strong><span>Active Referrals</span></div>
-      <div class="ref-stat"><i style="color:#f08b22" data-lucide="clock-3"></i><strong id="pendingReferralTotal">—</strong><span>Pending Bonuses</span></div>
-      <div class="ref-stat"><i style="color:#20ad66" data-lucide="circle-dollar-sign"></i><strong id="referralEarnedTotal">—</strong><span>Total Earned</span></div>
-    </div>
-
-    <div class="section-title">Referred Users</div>
-    <section class="card light-card" id="referredUsers">
-      <div class="cc-empty">Loading referrals…</div>
+  <header class="topbar"><div class="topbar-row"><div><span class="admin-kicker">STEADY HANDS ADMIN</span><h1>Finance</h1></div></div></header>
+  <main class="content admin-more-content">
+    <section class="admin-more-grid">
+      <a href="deals.html"><i data-lucide="handshake"></i><span><strong>Deals</strong><small>Review and edit sales records</small></span><i data-lucide="chevron-right"></i></a>
+      <a href="payouts.html"><i data-lucide="circle-dollar-sign"></i><span><strong>Payouts</strong><small>Manage commissions and referral bonuses</small></span><i data-lucide="chevron-right"></i></a>
     </section>
   </main>
-
-  <nav class="bottom-nav">
-    <a class="nav-item" href="index.html"><i data-lucide="phone"></i><span>Outreach</span></a>
-    <a class="nav-item" href="skills.html"><i data-lucide="chart-no-axes-column-increasing"></i><span>Skills</span></a>
-    <a class="nav-item active" href="earnings.html"><i data-lucide="circle-dollar-sign"></i><span>Earnings</span></a>
-    <a class="nav-item" href="activity.html"><i data-lucide="history"></i><span>Activity</span></a>
-    <a class="nav-item" href="account.html"><i data-lucide="user-round"></i><span>Account</span></a>
-  </nav>
+  <nav class="bottom-nav"></nav>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="auth-guard.js?v=20261005-admin-only"></script>
-<script src="admin-shell.js?v=20261005-batch1"></script>
-<script src="user-data.js?v=20261001-1918"></script>
-<script src="app.js?v=20261001-1918"></script>
+<script src="admin-shell.js?v=20261005-batch9"></script>
 </body>
 </html>
