@@ -4940,3 +4940,15 @@ html[data-theme="dark"] .admin-lead-actions button.danger{background:#d94b4b;col
   .admin-leads-content{max-width:1180px;margin:0 auto;padding:28px 34px 120px}
   .admin-lead-drawer{width:560px}
 }
+
+
+.admin-overview-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+.admin-overview-actions a{
+  min-height:58px;border-radius:15px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);
+  display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:11px;color:var(--text)
+}
+.admin-overview-actions>a>svg:first-child{width:20px;color:var(--blue)}
+.admin-overview-actions>a>svg:last-child{width:15px;color:var(--muted)}
+.admin-overview-actions span strong,.admin-overview-actions span small{display:block}
+.admin-overview-actions span strong{font-size:10.5px}.admin-overview-actions span small{margin-top:3px;color:var(--muted);font-size:8.5px;line-height:1.3}
+html[data-theme="dark"] .admin-overview-actions a{background:#101f2f;border-color:#24384d}
