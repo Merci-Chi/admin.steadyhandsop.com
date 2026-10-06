@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#102945" />
+  <meta name="apple-mobile-web-app-title" content="Steady Hands Admin" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png" />
+  <title>System • Steady Hands Admin</title>
+  <link rel="stylesheet" href="styles.css?v=20261005-admin-batch9" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="theme.js?v=20261005-account-theme"></script>
+</head>
+<body class="page-admin-system">
+<div class="app">
+  <header class="topbar">
+    <div class="topbar-row">
+      <div><span class="admin-kicker">STEADY HANDS ADMIN</span><h1>System</h1></div>
+    </div>
+  </header>
+
+  <main class="content admin-system-content">
+    <section class="admin-system-hero">
+      <div>
+        <span class="admin-kicker">DIAGNOSTICS</span>
+        <h2 id="adminSystemHeadline">Checking system health…</h2>
+        <p id="adminSystemUpdated">Running read-only checks.</p>
+      </div>
+      <button type="button" id="adminSystemRefresh"><i data-lucide="refresh-cw"></i>Run Checks</button>
+    </section>
+
+    <section class="admin-system-summary" id="adminSystemSummary"></section>
+
+    <section class="admin-dashboard-section">
+      <div class="admin-dashboard-head"><div><span class="admin-kicker">CORE</span><h2>Database & Access</h2></div></div>
+      <div class="admin-system-list" id="adminSystemCore"><div class="cc-empty">Checking…</div></div>
+    </section>
+
+    <section class="admin-dashboard-section">
+      <div class="admin-dashboard-head"><div><span class="admin-kicker">OPERATIONS</span><h2>Needs Attention</h2></div></div>
+      <div class="admin-system-list" id="adminSystemAttention"><div class="cc-empty">Checking…</div></div>
+    </section>
+
+    <section class="admin-dashboard-section">
+      <div class="admin-dashboard-head"><div><span class="admin-kicker">FUNCTIONS</span><h2>Edge Function Reachability</h2></div></div>
+      <div class="admin-system-list" id="adminSystemFunctions"><div class="cc-empty">Checking…</div></div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav"></nav>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="auth-guard.js?v=20261005-admin-only"></script>
+<script src="admin-shell.js?v=20261005-batch9"></script>
+<script src="admin-system.js?v=20261005-batch9"></script>
+</body>
+</html>
