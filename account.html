@@ -4,74 +4,37 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#102945" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-touch-fullscreen" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Steady Hands Admin" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png" />
-  <title>Settings</title>
-  <link rel="stylesheet" href="styles.css?v=20261005-admin-batch1" />
+  <title>More • Steady Hands Admin</title>
+  <link rel="stylesheet" href="styles.css?v=20261005-admin-batch9" />
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="app-update.js" defer></script>
   <script src="theme.js?v=20261005-account-theme"></script>
 </head>
-<body class="page-account">
+<body class="page-admin-more">
 <div class="app">
-  <header class="topbar"><div class="topbar-row"><h1>Settings</h1></div></header>
-  <main class="content" id="accountContent">
-    <section class="settings-skeleton" id="accountLoading" aria-hidden="true">
-      <div class="settings-skeleton-profile">
-        <span class="settings-skeleton-circle"></span>
-        <div class="settings-skeleton-lines">
-          <span class="settings-skeleton-line settings-skeleton-line-lg"></span>
-          <span class="settings-skeleton-line settings-skeleton-line-md"></span>
-        </div>
-        <span class="settings-skeleton-pill"></span>
-      </div>
-
-      <div class="settings-skeleton-grid">
-        <div class="settings-skeleton-card">
-          <span class="settings-skeleton-heading"></span>
-          <div class="settings-skeleton-row"></div>
-          <div class="settings-skeleton-row"></div>
-          <div class="settings-skeleton-row"></div>
-        </div>
-        <div class="settings-skeleton-card">
-          <span class="settings-skeleton-heading"></span>
-          <div class="settings-skeleton-row"></div>
-          <div class="settings-skeleton-row"></div>
-          <div class="settings-skeleton-row"></div>
-        </div>
-        <div class="settings-skeleton-card">
-          <span class="settings-skeleton-heading"></span>
-          <div class="settings-skeleton-row"></div>
-          <div class="settings-skeleton-row"></div>
-          <div class="settings-skeleton-row"></div>
-        </div>
-        <div class="settings-skeleton-card">
-          <span class="settings-skeleton-heading"></span>
-          <div class="settings-skeleton-row"></div>
-          <div class="settings-skeleton-row"></div>
-          <div class="settings-skeleton-row"></div>
-        </div>
-      </div>
+  <header class="topbar"><div class="topbar-row"><div><span class="admin-kicker">STEADY HANDS ADMIN</span><h1>More</h1></div></div></header>
+  <main class="content admin-more-content">
+    <section class="admin-more-grid">
+      <a href="leads.html"><i data-lucide="contact-round"></i><span><strong>Leads</strong><small>Manage ownership and lead records</small></span><i data-lucide="chevron-right"></i></a>
+      <a href="deals.html"><i data-lucide="handshake"></i><span><strong>Deals</strong><small>Sales value and commission records</small></span><i data-lucide="chevron-right"></i></a>
+      <a href="payouts.html"><i data-lucide="circle-dollar-sign"></i><span><strong>Payouts</strong><small>Commissions and referral bonuses</small></span><i data-lucide="chevron-right"></i></a>
+      <a href="phones.html"><i data-lucide="phone-forwarded"></i><span><strong>Phone Numbers</strong><small>Caller IDs, requests, and assignments</small></span><i data-lucide="chevron-right"></i></a>
+      <a href="login-activity.html"><i data-lucide="log-in"></i><span><strong>Login Activity</strong><small>Successful team sign-ins</small></span><i data-lucide="chevron-right"></i></a>
+      <a href="audit.html"><i data-lucide="scroll-text"></i><span><strong>Audit Log</strong><small>Administrative data changes</small></span><i data-lucide="chevron-right"></i></a>
+      <a href="system.html"><i data-lucide="activity"></i><span><strong>System</strong><small>Diagnostics and operational health</small></span><i data-lucide="chevron-right"></i></a>
+      <a href="terms.html"><i data-lucide="file-text"></i><span><strong>Terms & Conditions</strong><small>Administrative application terms</small></span><i data-lucide="chevron-right"></i></a>
+    </section>
+    <section class="admin-more-note">
+      <i data-lucide="shield-check"></i>
+      <div><strong>Admin-only workspace</strong><p>All pages in this app require an active ADMIN permission record.</p></div>
     </section>
   </main>
-
-  <nav class="bottom-nav">
-    <a class="nav-item" href="index.html"><i data-lucide="phone"></i><span>Outreach</span></a>
-    <a class="nav-item" href="skills.html"><i data-lucide="chart-no-axes-column-increasing"></i><span>Skills</span></a>
-    <a class="nav-item" href="earnings.html"><i data-lucide="circle-dollar-sign"></i><span>Earnings</span></a>
-    <a class="nav-item" href="activity.html"><i data-lucide="history"></i><span>Activity</span></a>
-    <a class="nav-item active" href="account.html"><i data-lucide="settings"></i><span>Settings</span></a>
-  </nav>
+  <nav class="bottom-nav"></nav>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="auth-guard.js?v=20261005-admin-only"></script>
-<script src="admin-shell.js?v=20261005-batch1"></script>
-<script src="user-data.js?v=20261005-no-recording"></script>
-<script src="app.js?v=20261001-1918"></script>
+<script src="admin-shell.js?v=20261005-batch9"></script>
 </body>
 </html>
