@@ -272,9 +272,17 @@
         const { error } = await client.auth.updateUser({ password: newPassword.value });
         if (error) throw error;
 
-        currentMessage.textContent = 'Password updated. Signing you in...';
+        currentMessage.textContent = 'Password updated. Verifying administrator access...';
         history.replaceState({}, '', 'login.html');
-        setTimeout(() => location.replace('index.html'), 500);
+
+        const allowed = await verifyAdminAccess();
+        if (!allowed) {
+          currentMessage.textContent = 'Administrator access is required for this app.';
+          currentButton.disabled = false;
+          return;
+        }
+
+        setTimeout(() => location.replace('index.html'), 300);
       } catch (error) {
         console.error('Password update failed:', error);
         currentMessage.textContent = error?.message || 'Unable to update password. Please request a new reset link.';
