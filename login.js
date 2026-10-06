@@ -107,6 +107,32 @@
   let client;
   let recoveryMode = new URLSearchParams(location.search).get('reset') === '1';
 
+  async function verifyAdminAccess() {
+    const { data:sessionData, error:sessionError } = await client.auth.getSession();
+    if (sessionError) throw sessionError;
+
+    const userId = sessionData?.session?.user?.id;
+    if (!userId) return false;
+
+    const { data:permission, error:permissionError } = await client
+      .from('team_permissions')
+      .select('role,active')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (permissionError) throw permissionError;
+
+    const allowed = permission?.active === true &&
+      String(permission?.role || '').toUpperCase() === 'ADMIN';
+
+    if (!allowed) {
+      await client.auth.signOut();
+      return false;
+    }
+
+    return true;
+  }
+
   function showRecoveryForm() {
     if (form.dataset.mode === 'recovery') return;
 
@@ -167,7 +193,15 @@
         showRecoveryForm();
         return;
       }
-      if (data.session) location.replace('index.html');
+      if (data.session) {
+        verifyAdminAccess().then(allowed => {
+          if (allowed) location.replace('index.html');
+          else message.textContent = 'Administrator access is required for this app.';
+        }).catch(error => {
+          console.error('Admin access check:', error);
+          message.textContent = error?.message || 'Unable to verify administrator access.';
+        });
+      }
     }).catch(e => {
       console.error('Session check:', e);
     });
@@ -276,10 +310,17 @@
         }
       } catch {}
 
+      const allowed = await verifyAdminAccess();
+      if (!allowed) {
+        message.textContent = 'Administrator access is required for this app.';
+        button.disabled = false;
+        return;
+      }
+
       location.replace('index.html');
     } catch (error) {
       console.error('Sign-in failed:', error);
-      message.textContent = 'Unable to sign in. Check your email and password.';
+      message.textContent = error?.message || 'Unable to sign in. Check your email and password.';
       button.disabled = false;
     }
   });
