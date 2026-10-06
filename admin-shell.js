@@ -10,6 +10,7 @@
     'earnings.html': { title:'Finance', active:'more' },
     'deals.html': { title:'Deals', active:'more' },
     'payouts.html': { title:'Payouts', active:'more' },
+    'phones.html': { title:'Phone Numbers', active:'more' },
     'account.html': { title:'Admin Settings', active:'more' },
     'call.html': { title:'Call Details', active:'activity' },
     'terms.html': { title:'Terms', active:'more' }
