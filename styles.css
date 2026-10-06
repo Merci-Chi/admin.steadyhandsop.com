@@ -5136,3 +5136,56 @@ html[data-theme="dark"] .admin-skill-drawer{background:#07111c}
   .admin-skills-content{max-width:1180px;margin:0 auto;padding:28px 34px 120px}
   .admin-skill-drawer{width:560px}
 }
+
+
+/* Batch 6: Deals + Payouts */
+.admin-finance-content{padding-bottom:130px}
+.admin-finance-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center}
+.admin-finance-toolbar select{
+  min-height:44px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--text);
+  padding:0 11px;font-size:10px;font-weight:850
+}
+.admin-finance-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:12px}
+.admin-finance-summary div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 5px;text-align:center}
+.admin-finance-summary strong,.admin-finance-summary span{display:block}
+.admin-finance-summary strong{font-size:17px;color:var(--text)}
+.admin-finance-summary span{margin-top:3px;font-size:8px;color:var(--muted);font-weight:850}
+.admin-finance-list{overflow:hidden;border:1px solid var(--line);border-radius:18px;background:var(--card);box-shadow:var(--shadow)}
+.admin-finance-row{
+  width:100%;min-height:76px;border:0;border-top:1px solid var(--line);background:transparent;color:var(--text);
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:9px;align-items:center;padding:11px 12px;text-align:left
+}
+.admin-finance-row:first-child{border-top:0}
+.admin-finance-icon{width:39px;height:39px;border-radius:13px;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center}
+.admin-finance-icon svg{width:18px}
+.admin-finance-main{min-width:0}
+.admin-finance-main>strong,.admin-finance-main>small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.admin-finance-main>strong{font-size:11px}.admin-finance-main>small{margin-top:3px;color:var(--muted);font-size:8.5px}
+.admin-finance-main>span{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px}
+.admin-finance-main>span b{font-size:8px;color:var(--muted);font-weight:850}
+.admin-finance-status{
+  max-width:120px;border-radius:999px;padding:5px 7px;font-size:7.5px;font-weight:950;text-transform:capitalize;text-align:center
+}
+.admin-finance-status.waiting_client_payment{background:#fff4df;color:#a56800}
+.admin-finance-status.pending{background:#e7f2ff;color:#2679d6}
+.admin-finance-status.complete{background:#e6f8ee;color:#19935a}
+.admin-finance-row>svg{width:14px;color:var(--muted)}
+.admin-finance-drawer-overlay{position:fixed;inset:0;z-index:10050;background:rgba(5,16,28,.62);display:flex;justify-content:flex-end;backdrop-filter:blur(4px)}
+.admin-finance-drawer-overlay[hidden]{display:none}
+.admin-finance-drawer{width:min(520px,100%);height:100%;overflow:auto;background:var(--page);padding:calc(18px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));box-shadow:-20px 0 50px rgba(0,0,0,.2)}
+html[data-theme="dark"] .admin-finance-toolbar select,
+html[data-theme="dark"] .admin-finance-summary div,
+html[data-theme="dark"] .admin-finance-list{background:#101f2f;border-color:#24384d}
+html[data-theme="dark"] .admin-finance-status.waiting_client_payment{background:#3a311f;color:#ffd06c}
+html[data-theme="dark"] .admin-finance-status.pending{background:#12314e;color:#70bbff}
+html[data-theme="dark"] .admin-finance-status.complete{background:#123629;color:#4ee097}
+html[data-theme="dark"] .admin-finance-drawer{background:#07111c}
+@media(max-width:620px){
+  .admin-finance-toolbar{grid-template-columns:1fr 1fr}
+  .admin-finance-toolbar .admin-user-search{grid-column:1/-1}
+  .admin-finance-summary{grid-template-columns:repeat(2,1fr)}
+}
+@media(min-width:800px){
+  .admin-finance-content{max-width:1180px;margin:0 auto;padding:28px 34px 120px}
+  .admin-finance-drawer{width:560px}
+}
