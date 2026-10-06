@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#102945" />
+  <meta name="apple-mobile-web-app-title" content="Steady Hands Admin" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png" />
+  <title>Payouts • Steady Hands Admin</title>
+  <link rel="stylesheet" href="styles.css?v=20261005-admin-batch6" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="theme.js?v=20261005-account-theme"></script>
+</head>
+<body class="page-admin-payouts">
+<div class="app">
+  <header class="topbar"><div class="topbar-row"><div><span class="admin-kicker">STEADY HANDS ADMIN</span><h1>Payouts</h1></div></div></header>
+  <main class="content admin-finance-content">
+    <section class="admin-finance-toolbar">
+      <div class="admin-user-search"><i data-lucide="search"></i><input id="adminPayoutSearch" type="search" placeholder="Search user or client…" autocomplete="off" /></div>
+      <select id="adminPayoutUserFilter"><option value="">All users</option></select>
+      <select id="adminPayoutStatusFilter"><option value="">All statuses</option><option value="waiting_client_payment">Waiting on client payment</option><option value="pending">Pending</option><option value="complete">Paid / Complete</option></select>
+    </section>
+    <section class="admin-finance-summary" id="adminPayoutSummary"></section>
+    <section class="admin-dashboard-section">
+      <div class="admin-dashboard-head"><div><span class="admin-kicker">COMMISSIONS</span><h2>All Payouts</h2></div><span class="admin-list-count" id="adminPayoutCount">0</span></div>
+      <div class="admin-finance-list" id="adminPayoutList"><div class="cc-empty">Loading payouts…</div></div>
+    </section>
+    <section class="admin-dashboard-section">
+      <div class="admin-dashboard-head"><div><span class="admin-kicker">REFERRALS</span><h2>Referral Bonuses</h2></div><span class="admin-list-count" id="adminReferralPayoutCount">0</span></div>
+      <div class="admin-finance-list" id="adminReferralPayoutList"><div class="cc-empty">Loading referral payouts…</div></div>
+    </section>
+  </main>
+  <nav class="bottom-nav"></nav>
+</div>
+<div class="admin-finance-drawer-overlay" id="adminFinanceDrawerOverlay" hidden><aside class="admin-finance-drawer" id="adminFinanceDrawer"></aside></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="auth-guard.js?v=20261005-admin-only"></script>
+<script src="admin-shell.js?v=20261005-batch6"></script>
+<script src="admin-payouts.js?v=20261005-batch6"></script>
+</body>
+</html>
