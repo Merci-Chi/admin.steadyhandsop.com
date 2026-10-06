@@ -6,58 +6,56 @@
   <meta name="theme-color" content="#102945" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-touch-fullscreen" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Steady Hands Admin" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png" />
-  <title>Admin Settings</title>
-  <link rel="stylesheet" href="styles.css?v=20261005-admin-batch1" />
+  <title>Users • Steady Hands Admin</title>
+  <link rel="stylesheet" href="styles.css?v=20261005-admin-batch2" />
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="app-update.js" defer></script>
   <script src="theme.js?v=20261005-account-theme"></script>
 </head>
-<body class="page-account page-admin-settings">
+<body class="page-admin-users">
 <div class="app">
   <header class="topbar">
-    <div class="topbar-row admin-topbar-row">
-      <a class="admin-back-btn" href="account.html" aria-label="Back to Settings"><i data-lucide="chevron-left"></i></a>
-      <h1>Admin Settings</h1>
+    <div class="topbar-row">
+      <div>
+        <span class="admin-kicker">STEADY HANDS ADMIN</span>
+        <h1>Users</h1>
+      </div>
     </div>
   </header>
 
-  <main class="content admin-settings-content" id="adminSettingsContent">
-    <section class="settings-skeleton" aria-hidden="true">
-      <div class="settings-skeleton-profile">
-        <span class="settings-skeleton-circle"></span>
-        <div class="settings-skeleton-lines">
-          <span class="settings-skeleton-line settings-skeleton-line-lg"></span>
-          <span class="settings-skeleton-line settings-skeleton-line-md"></span>
-        </div>
+  <main class="content admin-users-content">
+    <section class="admin-user-toolbar">
+      <div class="admin-user-search">
+        <i data-lucide="search"></i>
+        <input id="adminUserSearch" type="search" placeholder="Search name, email, phone…" autocomplete="off" />
       </div>
-      <div class="settings-skeleton-grid">
-        <div class="settings-skeleton-card">
-          <span class="settings-skeleton-heading"></span>
-          <div class="settings-skeleton-row"></div>
-          <div class="settings-skeleton-row"></div>
-          <div class="settings-skeleton-row"></div>
-        </div>
-      </div>
+      <button type="button" id="adminUserRefresh" aria-label="Refresh users"><i data-lucide="refresh-cw"></i></button>
     </section>
+
+    <section class="admin-user-filters" id="adminUserFilters">
+      <button class="active" data-user-filter="all">All</button>
+      <button data-user-filter="active">Active</button>
+      <button data-user-filter="disabled">Disabled</button>
+      <button data-user-filter="admin">Admins</button>
+    </section>
+
+    <section class="admin-user-summary" id="adminUserSummary"></section>
+    <section class="admin-user-list" id="adminUserList"><div class="cc-empty">Loading users…</div></section>
   </main>
 
-  <nav class="bottom-nav">
-    <a class="nav-item" href="index.html"><i data-lucide="phone"></i><span>Outreach</span></a>
-    <a class="nav-item" href="skills.html"><i data-lucide="chart-no-axes-column-increasing"></i><span>Skills</span></a>
-    <a class="nav-item" href="earnings.html"><i data-lucide="circle-dollar-sign"></i><span>Earnings</span></a>
-    <a class="nav-item" href="activity.html"><i data-lucide="history"></i><span>Activity</span></a>
-    <a class="nav-item active" href="account.html"><i data-lucide="settings"></i><span>Settings</span></a>
-  </nav>
+  <nav class="bottom-nav"></nav>
+</div>
+
+<div class="admin-user-drawer-overlay" id="adminUserDrawerOverlay" hidden>
+  <aside class="admin-user-drawer" id="adminUserDrawer"></aside>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="auth-guard.js?v=20261005-admin-only"></script>
-<script src="admin-shell.js?v=20261005-batch1"></script>
-<script src="admin-settings.js?v=20261005-user-number-requests"></script>
+<script src="admin-shell.js?v=20261005-batch2"></script>
+<script src="admin-users.js?v=20261005-batch2"></script>
 </body>
 </html>
