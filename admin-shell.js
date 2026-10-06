@@ -13,7 +13,8 @@
     'phones.html': { title:'Phone Numbers', active:'more' },
     'login-activity.html': { title:'Login Activity', active:'more' },
     'audit.html': { title:'Audit Log', active:'more' },
-    'account.html': { title:'Admin Settings', active:'more' },
+    'system.html': { title:'System', active:'more' },
+    'account.html': { title:'More', active:'more' },
     'call.html': { title:'Call Details', active:'activity' },
     'terms.html': { title:'Terms', active:'more' }
   };
