@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#102945" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Steady Hands Admin" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png" />
+  <title>Leads • Steady Hands Admin</title>
+  <link rel="stylesheet" href="styles.css?v=20261005-admin-batch3" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="theme.js?v=20261005-account-theme"></script>
+</head>
+<body class="page-admin-leads">
+<div class="app">
+  <header class="topbar">
+    <div class="topbar-row">
+      <div>
+        <span class="admin-kicker">STEADY HANDS ADMIN</span>
+        <h1>Leads</h1>
+      </div>
+    </div>
+  </header>
+
+  <main class="content admin-leads-content">
+    <section class="admin-leads-toolbar">
+      <div class="admin-user-search">
+        <i data-lucide="search"></i>
+        <input id="adminLeadSearch" type="search" placeholder="Search company, name, phone, email…" autocomplete="off" />
+      </div>
+      <button type="button" id="adminAddLead"><i data-lucide="plus"></i><span>Add Lead</span></button>
+    </section>
+
+    <section class="admin-lead-filters">
+      <button class="active" data-lead-filter="active">Active</button>
+      <button data-lead-filter="archived">Archived</button>
+      <button data-lead-filter="all">All</button>
+      <select id="adminLeadAssigneeFilter" aria-label="Filter by assignee">
+        <option value="">All users</option>
+      </select>
+    </section>
+
+    <section class="admin-lead-summary" id="adminLeadSummary"></section>
+    <section class="admin-lead-list" id="adminLeadList"><div class="cc-empty">Loading leads…</div></section>
+  </main>
+
+  <nav class="bottom-nav"></nav>
+</div>
+
+<div class="admin-lead-drawer-overlay" id="adminLeadDrawerOverlay" hidden>
+  <aside class="admin-lead-drawer" id="adminLeadDrawer"></aside>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="auth-guard.js?v=20261005-admin-only"></script>
+<script src="admin-shell.js?v=20261005-batch3"></script>
+<script src="admin-leads.js?v=20261005-batch3"></script>
+</body>
+</html>
