@@ -4644,3 +4644,68 @@ html[data-theme="dark"] .save-email-check{
   border-color:#3a5066 !important;
 }
 html[data-theme="dark"] .login-foot{color:#768ba0 !important}
+
+
+/* Admin app foundation */
+.admin-app-shell .bottom-nav .nav-item{
+  min-width:0;
+}
+.admin-app-shell .bottom-nav .nav-item span{
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.admin-access-screen{
+  min-height:100vh;
+  min-height:100dvh;
+  display:grid;
+  place-items:center;
+  padding:24px;
+  background:var(--page);
+  color:var(--text);
+}
+.admin-access-card{
+  width:min(430px,100%);
+  padding:28px;
+  border-radius:24px;
+  background:var(--card);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+  text-align:center;
+}
+.admin-access-icon{
+  width:64px;
+  height:64px;
+  margin:0 auto 16px;
+  border-radius:20px;
+  display:grid;
+  place-items:center;
+  background:var(--blue-soft);
+  color:var(--blue);
+}
+.admin-access-icon svg{width:30px;height:30px}
+.admin-access-card h1{
+  margin:0 0 10px;
+  font-size:24px;
+  color:var(--text);
+}
+.admin-access-card p{
+  margin:0;
+  color:var(--muted);
+  font-size:14px;
+  line-height:1.55;
+}
+.admin-access-card button{
+  width:100%;
+  margin-top:22px;
+  min-height:48px;
+  border:0;
+  border-radius:14px;
+  background:var(--blue);
+  color:#fff;
+  font-weight:900;
+}
+.admin-app-shell.page-call .call-controls{
+  display:none !important;
+}
