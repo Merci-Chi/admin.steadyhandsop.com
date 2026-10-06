@@ -53,7 +53,7 @@
         <div class="admin-access-icon"><i data-lucide="shield-x"></i></div>
         <h2>Admin access required</h2>
         <p>This page is only available to users with an active ADMIN role in Supabase.</p>
-        <a href="account.html">Back to Settings</a>
+        <a href="index.html">Back to Overview</a>
       </section>`;
     window.lucide?.createIcons();
   }
@@ -492,7 +492,7 @@
         const card = button.closest('.admin-phone-card');
         const phoneNumberId = card?.dataset.phoneId;
         if (!phoneNumberId) return;
-        if (!confirm('Remove this outbound phone number from Outreach?')) return;
+        if (!confirm('Remove this outbound phone number from the system?')) return;
 
         button.disabled = true;
         const { error } = await c
