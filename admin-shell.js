@@ -7,7 +7,7 @@
     'leads.html': { title:'Leads', active:'more' },
     'activity.html': { title:'Activity', active:'activity' },
     'skills.html': { title:'Skills', active:'skills' },
-    'earnings.html': { title:'Payouts', active:'more' },
+    'earnings.html': { title:'Finance', active:'more' },
     'deals.html': { title:'Deals', active:'more' },
     'payouts.html': { title:'Payouts', active:'more' },
     'account.html': { title:'Admin Settings', active:'more' },
