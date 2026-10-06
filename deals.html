@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#102945" />
+  <meta name="apple-mobile-web-app-title" content="Steady Hands Admin" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png" />
+  <title>Deals • Steady Hands Admin</title>
+  <link rel="stylesheet" href="styles.css?v=20261005-admin-batch6" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="theme.js?v=20261005-account-theme"></script>
+</head>
+<body class="page-admin-deals">
+<div class="app">
+  <header class="topbar"><div class="topbar-row"><div><span class="admin-kicker">STEADY HANDS ADMIN</span><h1>Deals</h1></div></div></header>
+  <main class="content admin-finance-content">
+    <section class="admin-finance-toolbar">
+      <div class="admin-user-search"><i data-lucide="search"></i><input id="adminDealSearch" type="search" placeholder="Search client or team member…" autocomplete="off" /></div>
+      <select id="adminDealUserFilter"><option value="">All users</option></select>
+      <select id="adminDealStatusFilter"><option value="">All statuses</option><option value="waiting_client_payment">Waiting on client payment</option><option value="pending">Pending</option><option value="complete">Complete</option></select>
+    </section>
+    <section class="admin-finance-summary" id="adminDealSummary"></section>
+    <section class="admin-dashboard-section">
+      <div class="admin-dashboard-head"><div><span class="admin-kicker">SALES</span><h2>All Deals</h2></div><span class="admin-list-count" id="adminDealCount">0</span></div>
+      <div class="admin-finance-list" id="adminDealList"><div class="cc-empty">Loading deals…</div></div>
+    </section>
+  </main>
+  <nav class="bottom-nav"></nav>
+</div>
+<div class="admin-finance-drawer-overlay" id="adminFinanceDrawerOverlay" hidden><aside class="admin-finance-drawer" id="adminFinanceDrawer"></aside></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="auth-guard.js?v=20261005-admin-only"></script>
+<script src="admin-shell.js?v=20261005-batch6"></script>
+<script src="admin-deals.js?v=20261005-batch6"></script>
+</body>
+</html>
