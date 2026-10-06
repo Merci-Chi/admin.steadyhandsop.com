@@ -5032,3 +5032,107 @@ html[data-theme="dark"] .admin-call-transcript-line.customer{background:#102b43}
 @media(min-width:800px){
   .admin-activity-content,.admin-call-detail-content{max-width:1180px;margin:0 auto;padding:28px 34px 120px}
 }
+
+
+/* Batch 5: Team Skills + Direct Skills */
+.admin-skills-content{padding-bottom:130px}
+.admin-skills-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center}
+.admin-skills-toolbar select{
+  min-height:44px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--text);
+  padding:0 11px;font-size:10px;font-weight:850
+}
+#adminAssignSkill{
+  min-height:44px;border:0;border-radius:14px;background:var(--blue);color:#fff;padding:0 14px;
+  display:flex;align-items:center;justify-content:center;gap:7px;font-size:10px;font-weight:900
+}
+#adminAssignSkill svg{width:16px}
+.admin-skills-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:12px}
+.admin-skills-summary div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 5px;text-align:center}
+.admin-skills-summary strong,.admin-skills-summary span{display:block}
+.admin-skills-summary strong{font-size:18px;color:var(--text)}
+.admin-skills-summary span{margin-top:3px;font-size:8px;color:var(--muted);font-weight:850}
+.admin-skill-team-list,.admin-direct-skills-list{
+  overflow:hidden;border:1px solid var(--line);border-radius:18px;background:var(--card);box-shadow:var(--shadow)
+}
+.admin-skill-user-card{
+  width:100%;min-height:78px;border:0;border-top:1px solid var(--line);background:transparent;color:var(--text);
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:9px;align-items:center;padding:11px 12px;text-align:left
+}
+.admin-skill-user-card:first-child{border-top:0}
+.admin-skill-user-main{min-width:0}
+.admin-skill-user-main>strong,.admin-skill-user-main>small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.admin-skill-user-main>strong{font-size:11.5px}.admin-skill-user-main>small{margin-top:3px;font-size:8.5px;color:var(--muted)}
+.admin-skill-mini{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px}
+.admin-skill-mini b{font-size:8px;color:var(--muted);font-weight:850}
+.admin-skill-score-badge{
+  min-width:42px;height:42px;border-radius:50%;display:grid;place-items:center;
+  background:var(--blue-soft);color:var(--blue);font-size:12px;font-weight:950
+}
+.admin-skill-user-card>svg{width:14px;color:var(--muted)}
+.admin-direct-skill-row{
+  min-height:72px;border-top:1px solid var(--line);padding:10px 11px;
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:9px;align-items:center
+}
+.admin-direct-skill-row:first-child{border-top:0}
+.admin-direct-skill-icon{width:37px;height:37px;border-radius:12px;background:var(--purple-soft);color:var(--purple);display:grid;place-items:center}
+.admin-direct-skill-icon svg{width:17px}
+.admin-direct-skill-main{min-width:0}
+.admin-direct-skill-main strong,.admin-direct-skill-main small,.admin-direct-skill-main p{display:block}
+.admin-direct-skill-main strong{font-size:10.5px;color:var(--text)}
+.admin-direct-skill-main small{margin-top:3px;color:var(--muted);font-size:8.5px}
+.admin-direct-skill-main p{margin:5px 0 0;font-size:9px;color:var(--text);line-height:1.35}
+.admin-direct-status{
+  border-radius:999px;padding:5px 7px;font-size:7.5px;font-weight:950;text-transform:capitalize;
+  background:#edf2f7;color:#677789
+}
+.admin-direct-status.complete{background:#e6f8ee;color:#19935a}
+.admin-direct-status.in_progress{background:#e7f2ff;color:#2679d6}
+.admin-direct-menu{width:30px;height:30px;border:0;border-radius:10px;background:transparent;color:var(--muted);display:grid;place-items:center}
+.admin-direct-menu svg{width:15px}
+.admin-skill-drawer-overlay{position:fixed;inset:0;z-index:10050;background:rgba(5,16,28,.62);display:flex;justify-content:flex-end;backdrop-filter:blur(4px)}
+.admin-skill-drawer-overlay[hidden]{display:none}
+.admin-skill-drawer{width:min(520px,100%);height:100%;overflow:auto;background:var(--page);padding:calc(18px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));box-shadow:-20px 0 50px rgba(0,0,0,.2)}
+.admin-skill-profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:15px 0}
+.admin-skill-profile-grid div{padding:12px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
+.admin-skill-profile-grid span,.admin-skill-profile-grid strong{display:block}
+.admin-skill-profile-grid span{font-size:8px;color:var(--muted);font-weight:900;text-transform:uppercase}
+.admin-skill-profile-grid strong{margin-top:5px;font-size:19px;color:var(--text)}
+.admin-skill-score-panel{padding:13px;border-radius:16px;background:var(--card);border:1px solid var(--line)}
+.admin-skill-score-row{margin-bottom:12px}.admin-skill-score-row:last-child{margin-bottom:0}
+.admin-skill-score-row>div:first-child{display:flex;justify-content:space-between;gap:10px;font-size:9px}
+.admin-skill-score-row span{color:var(--muted)}.admin-skill-score-row strong{color:var(--text)}
+.admin-skill-track{height:7px;margin-top:5px;border-radius:999px;background:rgba(16,41,69,.09);overflow:hidden}
+.admin-skill-track span{display:block;height:100%;border-radius:inherit;background:var(--blue)}
+.admin-assign-user-skill{
+  width:100%;min-height:46px;border:0;border-radius:13px;background:var(--blue);color:#fff;
+  display:flex;align-items:center;justify-content:center;gap:7px;margin:11px 0 20px;font-weight:900;font-size:10px
+}
+.admin-assign-user-skill svg{width:16px}
+.admin-user-feedback-list{overflow:hidden;border-radius:15px;background:var(--card);border:1px solid var(--line)}
+.admin-user-feedback-list>div{padding:11px;border-top:1px solid var(--line)}
+.admin-user-feedback-list>div:first-child{border-top:0}
+.admin-user-feedback-list strong,.admin-user-feedback-list small{display:block}
+.admin-user-feedback-list strong{font-size:10px;line-height:1.4;color:var(--text)}
+.admin-user-feedback-list small{margin-top:4px;color:var(--muted);font-size:8px}
+
+html[data-theme="dark"] .admin-skills-toolbar select,
+html[data-theme="dark"] .admin-skills-summary div,
+html[data-theme="dark"] .admin-skill-team-list,
+html[data-theme="dark"] .admin-direct-skills-list,
+html[data-theme="dark"] .admin-skill-profile-grid div,
+html[data-theme="dark"] .admin-skill-score-panel,
+html[data-theme="dark"] .admin-user-feedback-list{background:#101f2f;border-color:#24384d}
+html[data-theme="dark"] .admin-direct-status{background:#172a3c;color:#9fb1c4}
+html[data-theme="dark"] .admin-direct-status.complete{background:#123629;color:#4ee097}
+html[data-theme="dark"] .admin-direct-status.in_progress{background:#12314e;color:#70bbff}
+html[data-theme="dark"] .admin-skill-drawer{background:#07111c}
+
+@media(max-width:620px){
+  .admin-skills-toolbar{grid-template-columns:1fr auto}
+  .admin-skills-toolbar .admin-user-search{grid-column:1/-1}
+  #adminAssignSkill span{display:none}
+}
+@media(min-width:800px){
+  .admin-skills-content{max-width:1180px;margin:0 auto;padding:28px 34px 120px}
+  .admin-skill-drawer{width:560px}
+}
