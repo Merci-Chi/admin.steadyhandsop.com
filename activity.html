@@ -6,45 +6,71 @@
   <meta name="theme-color" content="#102945" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-touch-fullscreen" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Steady Hands Admin" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png" />
-  <title>Activity</title>
-  <link rel="stylesheet" href="styles.css?v=20261005-admin-batch1" />
+  <title>Activity • Steady Hands Admin</title>
+  <link rel="stylesheet" href="styles.css?v=20261005-admin-batch4" />
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="app-update.js" defer></script>
   <script src="theme.js?v=20261005-account-theme"></script>
 </head>
-<body class="page-activity">
+<body class="page-admin-activity">
 <div class="app">
   <header class="topbar">
     <div class="topbar-row">
-      <h1>Activity</h1>
+      <div>
+        <span class="admin-kicker">STEADY HANDS ADMIN</span>
+        <h1>Activity</h1>
+      </div>
     </div>
   </header>
 
-  <main class="content" id="activityContent">
-    <section class="card light-card" style="text-align:center;padding:28px 18px">
-      <div style="font-weight:900;margin-bottom:6px">Loading activity…</div>
-      <div style="font-size:12px;color:#738196">Call history and user activity will appear here.</div>
+  <main class="content admin-activity-content">
+    <section class="admin-user-toolbar">
+      <div class="admin-user-search">
+        <i data-lucide="search"></i>
+        <input id="adminActivitySearch" type="search" placeholder="Search user, lead, phone, outcome…" autocomplete="off" />
+      </div>
+      <button type="button" id="adminActivityRefresh" aria-label="Refresh activity"><i data-lucide="refresh-cw"></i></button>
+    </section>
+
+    <section class="admin-activity-filterbar">
+      <select id="adminActivityUserFilter"><option value="">All users</option></select>
+      <select id="adminActivityOutcomeFilter">
+        <option value="">All outcomes</option>
+        <option value="connected">Connected</option>
+        <option value="callback">Callbacks</option>
+        <option value="sale">Sales</option>
+        <option value="notinterested">Not Interested</option>
+        <option value="noanswer">No Answer / Voicemail</option>
+        <option value="didntcall">Didn't Call</option>
+      </select>
+      <select id="adminActivityDateFilter">
+        <option value="all">All time</option>
+        <option value="today">Today</option>
+        <option value="7">Last 7 days</option>
+        <option value="30">Last 30 days</option>
+      </select>
+    </section>
+
+    <section class="admin-activity-summary" id="adminActivitySummary"></section>
+
+    <section class="admin-dashboard-section">
+      <div class="admin-dashboard-head">
+        <div><span class="admin-kicker">TEAM ACTIVITY</span><h2>All Calls</h2></div>
+        <span id="adminActivityCount" class="admin-list-count">0</span>
+      </div>
+      <div class="admin-activity-list" id="adminActivityList"><div class="cc-empty">Loading calls…</div></div>
     </section>
   </main>
 
-  <nav class="bottom-nav">
-    <a class="nav-item" href="index.html"><i data-lucide="phone"></i><span>Outreach</span></a>
-    <a class="nav-item" href="skills.html"><i data-lucide="chart-no-axes-column-increasing"></i><span>Skills</span></a>
-    <a class="nav-item" href="earnings.html"><i data-lucide="circle-dollar-sign"></i><span>Earnings</span></a>
-    <a class="nav-item active" href="activity.html"><i data-lucide="history"></i><span>Activity</span></a>
-    <a class="nav-item" href="account.html"><i data-lucide="user-round"></i><span>Account</span></a>
-  </nav>
+  <nav class="bottom-nav"></nav>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="auth-guard.js?v=20261005-admin-only"></script>
-<script src="admin-shell.js?v=20261005-batch1"></script>
-<script src="user-data.js?v=20261005-recent-calls"></script>
-<script src="app.js?v=20261001-activity2"></script>
+<script src="admin-shell.js?v=20261005-batch4"></script>
+<script src="admin-activity.js?v=20261005-batch4"></script>
 </body>
 </html>
