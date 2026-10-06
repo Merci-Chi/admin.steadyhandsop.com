@@ -5189,3 +5189,58 @@ html[data-theme="dark"] .admin-finance-drawer{background:#07111c}
   .admin-finance-content{max-width:1180px;margin:0 auto;padding:28px 34px 120px}
   .admin-finance-drawer{width:560px}
 }
+
+
+/* Batch 8: Login Activity + Audit Log */
+.admin-audit-content{padding-bottom:130px}
+.admin-audit-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center}
+.admin-audit-toolbar select,
+.admin-audit-toolbar button{
+  min-height:44px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--text);
+  padding:0 11px;font-size:10px;font-weight:850
+}
+.admin-audit-toolbar button{width:44px;display:grid;place-items:center}
+.admin-audit-toolbar button svg{width:17px}
+.admin-audit-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:12px}
+.admin-audit-summary div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 5px;text-align:center}
+.admin-audit-summary strong,.admin-audit-summary span{display:block}
+.admin-audit-summary strong{font-size:18px;color:var(--text)}
+.admin-audit-summary span{margin-top:3px;font-size:8px;color:var(--muted);font-weight:850}
+.admin-audit-list{overflow:hidden;border:1px solid var(--line);border-radius:18px;background:var(--card);box-shadow:var(--shadow)}
+.admin-audit-row{
+  min-height:72px;border-top:1px solid var(--line);padding:10px 11px;
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:9px;align-items:center;color:var(--text)
+}
+.admin-audit-row:first-child{border-top:0}
+.admin-audit-button{width:100%;border-right:0;border-bottom:0;border-left:0;background:transparent;text-align:left;grid-template-columns:auto minmax(0,1fr) auto auto}
+.admin-audit-icon{width:38px;height:38px;border-radius:12px;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center}
+.admin-audit-icon svg{width:17px}
+.admin-audit-main{min-width:0}
+.admin-audit-main strong,.admin-audit-main small,.admin-audit-main b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.admin-audit-main strong{font-size:10.5px}
+.admin-audit-main small{margin-top:3px;color:var(--muted);font-size:8.5px}
+.admin-audit-main b{margin-top:5px;color:var(--muted);font-size:8px;font-weight:850}
+.admin-audit-tag{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:999px;padding:5px 7px;background:#eef2f6;color:#607086;font-size:7.5px;font-weight:900}
+.admin-audit-button>svg{width:14px;color:var(--muted)}
+.admin-audit-drawer-overlay{position:fixed;inset:0;z-index:10050;background:rgba(5,16,28,.62);display:flex;justify-content:flex-end;backdrop-filter:blur(4px)}
+.admin-audit-drawer-overlay[hidden]{display:none}
+.admin-audit-drawer{width:min(600px,100%);height:100%;overflow:auto;background:var(--page);padding:calc(18px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));box-shadow:-20px 0 50px rgba(0,0,0,.2)}
+.admin-audit-json{margin-top:16px}
+.admin-audit-json h3{margin:14px 0 7px;font-size:11px;color:var(--text)}
+.admin-audit-json pre{margin:0;padding:12px;border-radius:14px;background:var(--card);border:1px solid var(--line);overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:9px;line-height:1.45;color:var(--text)}
+html[data-theme="dark"] .admin-audit-toolbar select,
+html[data-theme="dark"] .admin-audit-toolbar button,
+html[data-theme="dark"] .admin-audit-summary div,
+html[data-theme="dark"] .admin-audit-list,
+html[data-theme="dark"] .admin-audit-json pre{background:#101f2f;border-color:#24384d}
+html[data-theme="dark"] .admin-audit-tag{background:#172a3c;color:#9fb1c4}
+html[data-theme="dark"] .admin-audit-drawer{background:#07111c}
+@media(max-width:620px){
+  .admin-audit-toolbar{grid-template-columns:1fr 1fr}
+  .admin-audit-toolbar .admin-user-search{grid-column:1/-1}
+  .admin-audit-summary{grid-template-columns:repeat(2,1fr)}
+}
+@media(min-width:800px){
+  .admin-audit-content{max-width:1180px;margin:0 auto;padding:28px 34px 120px}
+  .admin-audit-drawer{width:640px}
+}
