@@ -5340,3 +5340,54 @@ html[data-theme="dark"] .admin-system-hero{background:linear-gradient(135deg,#10
 .request-status-actions>div{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
 .request-status-actions button{border:1px solid var(--line);background:#f7f9fc;border-radius:10px;padding:9px 6px;font-size:10px;font-weight:850;color:#52677e}
 .request-status-actions button.active{background:#163f72;color:#fff;border-color:#163f72}
+
+
+/* Mobile side navigation */
+.admin-mobile-menu-button{display:none}
+.admin-side-overlay[hidden]{display:none}
+@media (max-width:699px){
+  .admin-app-shell .bottom-nav{display:none!important}
+  .admin-app-shell .app{padding-bottom:24px}
+
+  .admin-mobile-menu-button{
+    width:42px;height:42px;flex:0 0 42px;border:0;border-radius:12px;
+    background:rgba(255,255,255,.10);color:#fff;display:grid;place-items:center;cursor:pointer
+  }
+  .admin-mobile-menu-button svg{width:23px;height:23px}
+  .admin-app-shell .topbar-row{justify-content:flex-start}
+  .admin-app-shell .topbar-row>div{min-width:0}
+
+  .admin-side-overlay{
+    position:fixed;inset:0;z-index:4000;background:rgba(3,13,24,.58);
+    backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)
+  }
+  .admin-mobile-menu{
+    width:min(330px,86vw);height:100%;background:#102945;color:#fff;
+    box-shadow:18px 0 50px rgba(2,14,28,.32);display:flex;flex-direction:column;
+    padding:max(18px,env(safe-area-inset-top)) 14px max(18px,env(safe-area-inset-bottom));
+    animation:adminSideIn .18s ease-out
+  }
+  @keyframes adminSideIn{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+  .admin-side-head{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:5px 4px 16px;border-bottom:1px solid rgba(255,255,255,.10)
+  }
+  .admin-side-head span{display:block;font-size:9px;font-weight:850;letter-spacing:.16em;color:#91b6d8}
+  .admin-side-head strong{display:block;margin-top:3px;font-size:22px;letter-spacing:-.4px}
+  .admin-side-close{
+    width:40px;height:40px;border:0;border-radius:50%;background:rgba(255,255,255,.10);
+    color:#fff;display:grid;place-items:center
+  }
+  .admin-side-close svg{width:20px;height:20px}
+  .admin-side-nav{
+    overflow-y:auto;overscroll-behavior:contain;padding:12px 0;display:grid;gap:4px
+  }
+  .admin-side-link{
+    min-height:48px;border-radius:12px;padding:11px 12px;display:flex;align-items:center;
+    gap:12px;color:#c7d6e5;font-size:13px;font-weight:800
+  }
+  .admin-side-link svg{width:20px;height:20px;flex:0 0 auto}
+  .admin-side-link.active{background:#fff;color:#12345a}
+  .admin-side-link:not(.active):active{background:rgba(255,255,255,.08)}
+  body.admin-side-menu-open{overflow:hidden}
+}
