@@ -36,6 +36,81 @@
     `).join('');
   }
 
+  const sideItems = [
+    ['index.html','layout-dashboard','Overview'],
+    ['requests.html','inbox','Requests'],
+    ['admin.html','users','Users'],
+    ['activity.html','history','Activity'],
+    ['skills.html','chart-no-axes-column-increasing','Skills'],
+    ['leads.html','contact-round','Leads'],
+    ['deals.html','handshake','Deals'],
+    ['payouts.html','circle-dollar-sign','Payouts'],
+    ['phones.html','phone-forwarded','Phone Numbers'],
+    ['login-activity.html','log-in','Login Activity'],
+    ['audit.html','scroll-text','Audit Log'],
+    ['system.html','activity','System'],
+    ['terms.html','file-text','Terms & Conditions']
+  ];
+
+  function sideNav() {
+    return sideItems.map(([href,icon,label]) => `
+      <a class="admin-side-link ${page === href ? 'active' : ''}" href="${href}">
+        <i data-lucide="${icon}"></i><span>${label}</span>
+      </a>
+    `).join('');
+  }
+
+  function installMobileSideMenu() {
+    if (document.querySelector('.admin-mobile-menu')) return;
+
+    const topbarRow = document.querySelector('.topbar .topbar-row');
+    if (!topbarRow) return;
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'admin-mobile-menu-button';
+    button.setAttribute('aria-label','Open menu');
+    button.setAttribute('aria-expanded','false');
+    button.innerHTML = '<i data-lucide="menu"></i>';
+    topbarRow.prepend(button);
+
+    const overlay = document.createElement('div');
+    overlay.className = 'admin-side-overlay';
+    overlay.hidden = true;
+    overlay.innerHTML = `
+      <aside class="admin-mobile-menu" aria-label="Admin navigation">
+        <div class="admin-side-head">
+          <div><span>STEADY HANDS</span><strong>Admin Menu</strong></div>
+          <button type="button" class="admin-side-close" aria-label="Close menu"><i data-lucide="x"></i></button>
+        </div>
+        <nav class="admin-side-nav">${sideNav()}</nav>
+      </aside>
+    `;
+    document.body.appendChild(overlay);
+
+    const closeButton = overlay.querySelector('.admin-side-close');
+    const setOpen = open => {
+      overlay.hidden = !open;
+      document.body.classList.toggle('admin-side-menu-open', open);
+      button.setAttribute('aria-expanded', String(open));
+      button.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+      if (open) requestAnimationFrame(() => closeButton?.focus());
+      else button.focus({preventScroll:true});
+    };
+
+    button.addEventListener('click', () => setOpen(true));
+    closeButton?.addEventListener('click', () => setOpen(false));
+    overlay.addEventListener('click', event => {
+      if (event.target === overlay) setOpen(false);
+    });
+    overlay.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
+      document.body.classList.remove('admin-side-menu-open');
+    }));
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && !overlay.hidden) setOpen(false);
+    });
+  }
+
   function applyAdminShell() {
     const meta = pageMeta[page] || { title:'Admin', active:'more' };
 
@@ -53,6 +128,7 @@
     });
 
     document.body.classList.add('admin-app-shell');
+    installMobileSideMenu();
 
     // The separate admin app never originates outbound calls.
     document.querySelectorAll('.call-controls, .call-btn').forEach(el => {
