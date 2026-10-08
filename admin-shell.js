@@ -5,6 +5,7 @@
     'index.html': { title:'Overview', active:'overview' },
     'admin.html': { title:'Users', active:'users' },
     'leads.html': { title:'Leads', active:'more' },
+    'requests.html': { title:'Requests', active:'more' },
     'activity.html': { title:'Activity', active:'activity' },
     'skills.html': { title:'Skills', active:'skills' },
     'earnings.html': { title:'Finance', active:'more' },
