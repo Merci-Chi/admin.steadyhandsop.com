@@ -5,7 +5,7 @@
     'index.html': { title:'Overview', active:'overview' },
     'admin.html': { title:'Users', active:'users' },
     'leads.html': { title:'Leads', active:'more' },
-    'requests.html': { title:'Requests', active:'more' },
+    'requests.html': { title:'Requests', active:'requests' },
     'activity.html': { title:'Activity', active:'activity' },
     'skills.html': { title:'Skills', active:'skills' },
     'earnings.html': { title:'Finance', active:'more' },
@@ -23,6 +23,7 @@
   function nav(active) {
     const items = [
       ['overview','index.html','layout-dashboard','Overview'],
+      ['requests','requests.html','inbox','Requests'],
       ['users','admin.html','users','Users'],
       ['activity','activity.html','history','Activity'],
       ['skills','skills.html','chart-no-axes-column-increasing','Skills'],
