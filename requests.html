@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#102945" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Steady Hands Admin" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png" />
+  <title>Requests • Steady Hands Admin</title>
+  <link rel="stylesheet" href="styles.css?v=20261007-requests1" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="theme.js?v=20261005-account-theme"></script>
+</head>
+<body class="page-admin-requests">
+<div class="app">
+  <header class="topbar">
+    <div class="topbar-row">
+      <div>
+        <span class="admin-kicker">STEADY HANDS ADMIN</span>
+        <h1>Requests</h1>
+      </div>
+    </div>
+  </header>
+
+  <main class="content admin-requests-content">
+    <section class="admin-request-toolbar">
+      <div class="admin-user-search">
+        <i data-lucide="search"></i>
+        <input id="requestSearch" type="search" placeholder="Search company, contact, email, phone…" autocomplete="off" />
+      </div>
+    </section>
+
+    <section class="admin-request-filters" aria-label="Request status filters">
+      <button class="active" type="button" data-request-filter="new">New</button>
+      <button type="button" data-request-filter="in_progress">In Progress</button>
+      <button type="button" data-request-filter="completed">Completed</button>
+      <button type="button" data-request-filter="all">All</button>
+    </section>
+
+    <section class="admin-request-summary" id="requestSummary"></section>
+    <section class="admin-request-list" id="requestList"><div class="cc-empty">Loading requests…</div></section>
+  </main>
+
+  <nav class="bottom-nav"></nav>
+</div>
+
+<div class="admin-request-overlay" id="requestOverlay" hidden>
+  <aside class="admin-request-drawer" id="requestDrawer" aria-label="Website request details"></aside>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="auth-guard.js?v=20261005-admin-only"></script>
+<script src="admin-shell.js?v=20261007-requests1"></script>
+<script src="admin-requests.js?v=20261007-requests1"></script>
+</body>
+</html>
