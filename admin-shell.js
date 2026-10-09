@@ -12,6 +12,7 @@
     'activity.html': { title:'Activity', active:'activity' },
     'skills.html': { title:'Skills', active:'skills' },
     'earnings.html': { title:'Finance', active:'more' },
+    'company-analytics.html': { title:'Company Analytics', active:'analytics' },
     'deals.html': { title:'Deals', active:'more' },
     'payouts.html': { title:'Payouts', active:'more' },
     'phones.html': { title:'Phone Numbers', active:'more' },
@@ -26,6 +27,7 @@
   function nav(active) {
     const items = [
       ['overview','index.html','layout-dashboard','Overview'],
+      ['analytics','company-analytics.html','chart-no-axes-combined','Analytics'],
       ['requests','requests.html','inbox','Requests'],
       ['leads','leads.html','contact-round','All Leads'],
       ['users','users.html','users','Users'],
@@ -46,6 +48,7 @@
 
   const sideItems = [
     ['index.html','layout-dashboard','Overview'],
+    ['company-analytics.html','chart-no-axes-combined','Analytics'],
     ['requests.html','inbox','Requests'],
     ['leads.html','contact-round','All Leads'],
     ['users.html','users','Users'],
