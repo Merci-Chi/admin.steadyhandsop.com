@@ -5456,3 +5456,10 @@ html[data-theme="dark"] .admin-system-hero{background:linear-gradient(135deg,#10
 .request-status-actions button[data-set-status="in_progress"].active{background:#FFF0DA;color:#A76512;border-color:#f5d49b}
 .request-status-actions button[data-set-status="completed"].active{background:#D8F3E3;color:#176D3C;border-color:#a5dcbc}
 .request-status-actions button[data-set-status="declined"].active{background:#EEF0F3;color:#697586;border-color:#cdd5df}
+
+/* Request edit drawer */
+.edit-request-label{display:block;font-size:13px;font-weight:800;color:#29415b;margin:0 0 15px}
+.edit-request-label input,.edit-request-label textarea{display:block;width:100%;margin-top:7px;padding:12px;border:1px solid #dae4ed;border-radius:12px;background:#fff;color:#142b44;font:inherit;box-sizing:border-box}
+.edit-request-label textarea{resize:vertical;line-height:1.5}
+.edit-request-label[hidden]{display:none}
+.request-list-card .request-status:has(+ time){white-space:nowrap}
