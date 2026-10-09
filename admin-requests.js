@@ -58,6 +58,38 @@ function colorRow(label,value){
  if(!value)return '';
  return '<div class="request-detail-row"><span>'+esc(label)+'</span><strong class="request-color-value"><i style="background:'+esc(value)+'"></i>'+esc(value)+'</strong></div>';
 }
+
+function previewDelivery(r,drawer){
+ const preferred=String(r.preferred_contact_method||r.preferred_contact||r.delivery_method||r.contact_method||r.reply_method||'').toLowerCase();
+ const method=preferred.includes('text')||preferred.includes('sms')?'text':preferred.includes('mail')?'email':'';
+ const first=String(r.contact_name||'there').trim().split(/\s+/)[0];
+ const key=String(r.site_key||'').trim();
+ const body=key=>`Hi ${first}! Your website preview from Steady Hands is ready! Visit https://viewyoursite.today and enter your site key: ${key||'[SITE KEY]'}. We'd love your feedback! — Steady Hands`;
+ const section=document.createElement('section');
+ section.className='request-detail-card';
+ section.innerHTML=`<h3>Send website preview</h3><p style="color:#64748b;font-size:13px">Paste a site key to prepare a draft for your client.</p>
+ <div class="request-detail-row"><span>Preferred contact</span><strong>${method==='text'?'Text':method==='email'?'Email':'Not recorded'}</strong></div>
+ <label style="display:block;font-weight:700;margin:12px 0 6px" for="previewSiteKey">Site key</label>
+ <input id="previewSiteKey" placeholder="Paste site key" value="${esc(key)}" style="width:100%;padding:12px;border:1px solid #d9e2ed;border-radius:12px;font:inherit" />
+ <label style="display:block;font-weight:700;margin:12px 0 6px" for="previewMessage">Message draft</label>
+ <textarea id="previewMessage" rows="6" style="width:100%;padding:12px;border:1px solid #d9e2ed;border-radius:12px;font:inherit;resize:vertical">${esc(body(key))}</textarea>
+ <div style="display:flex;gap:9px;margin-top:10px"><button id="previewCopy" type="button" style="flex:1;padding:12px;background:#eff5fb;border:0;border-radius:12px;font-weight:800">Copy draft</button>
+ <button id="previewOpen" type="button" style="flex:1;padding:12px;background:#102945;color:#fff;border:0;border-radius:12px;font-weight:800">${method==='email'?'Open Email':method==='text'?'Open Messages':'Choose & Open'}</button></div>
+ <p id="previewFeedback" style="font-size:12px;color:#64748b;margin-top:8px" role="status">Your email or messaging app will open a draft. Nothing is sent automatically.</p>`;
+ const status=drawer.querySelector('.request-status-actions');
+ (status||drawer.querySelector('.request-drawer-body')).before(section);
+ const field=section.querySelector('#previewSiteKey'),draft=section.querySelector('#previewMessage'),feedback=section.querySelector('#previewFeedback');
+ field.addEventListener('input',()=>{draft.value=body(field.value.trim())});
+ section.querySelector('#previewCopy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(draft.value);feedback.textContent='Copied to clipboard!'}catch{draft.focus();draft.select();feedback.textContent='Copy the selected text.'}});
+ section.querySelector('#previewOpen').addEventListener('click',()=>{
+  if(!field.value.trim()){feedback.textContent='Enter a site key first.';field.focus();return}
+  const selected=method||(window.confirm('Preferred contact was not recorded. OK for email, Cancel for text.')?'email':'text');
+  const target=selected==='email'?String(r.email||'').trim():String(r.phone||'').replace(/[^+\d]/g,'');
+  if(!target){feedback.textContent='No '+(selected==='email'?'email address':'phone number')+' on this request. Copy the draft instead.';return}
+  const link=selected==='email'?'mailto:'+encodeURIComponent(target)+'?subject='+encodeURIComponent('Your Steady Hands website preview')+'&body='+encodeURIComponent(draft.value):'sms:'+target+'?'+(/iPad|iPhone|iPod/i.test(navigator.userAgent)?'&':'')+'body='+encodeURIComponent(draft.value);
+  window.location.href=link;
+ });
+}
 function openRequest(id){
  const r=rows.find(x=>String(x.id)===String(id));if(!r)return;
  markRead(r.id);
@@ -112,6 +144,7 @@ function openRequest(id){
     </section>
   </div>`;
  overlay.hidden=false;document.body.style.overflow='hidden';window.lucide?.createIcons();
+ previewDelivery(r,drawer);
  drawer.querySelector('.request-close')?.addEventListener('click',closeDrawer);
  drawer.querySelectorAll('[data-set-status]').forEach(btn=>btn.addEventListener('click',()=>setStatus(r.id,btn.dataset.setStatus)));
 }
