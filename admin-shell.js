@@ -6,6 +6,7 @@
     'admin.html': { title:'Salespeople', active:'salespeople' },
     'users.html': { title:'Users', active:'users' },
     'clients.html': { title:'Clients', active:'clients' },
+    'preview-access.html': { title:'Preview Access', active:'preview-access' },
     'leads.html': { title:'All Leads', active:'leads' },
     'requests.html': { title:'Requests', active:'requests' },
     'activity.html': { title:'Activity', active:'activity' },
@@ -30,6 +31,7 @@
       ['users','users.html','users','Users'],
       ['salespeople','admin.html','headset','Salespeople'],
       ['clients','clients.html','briefcase-business','Clients'],
+      ['preview-access','preview-access.html','link-2','Preview Access'],
       ['activity','activity.html','history','Activity'],
       ['skills','skills.html','chart-no-axes-column-increasing','Skills'],
       ['more','account.html','menu','More']
@@ -49,6 +51,7 @@
     ['users.html','users','Users'],
     ['admin.html','headset','Salespeople'],
     ['clients.html','briefcase-business','Clients'],
+    ['preview-access.html','link-2','Preview Access'],
     ['activity.html','history','Activity'],
     ['skills.html','chart-no-axes-column-increasing','Skills'],
     ['deals.html','handshake','Deals'],
