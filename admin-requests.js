@@ -87,7 +87,7 @@ function previewDelivery(r,drawer){
   const target=selected==='email'?String(r.email||'').trim():String(r.phone||'').replace(/[^+\d]/g,'');
   if(!target){feedback.textContent='No '+(selected==='email'?'email address':'phone number')+' on this request. Copy the draft instead.';return}
   const link=selected==='email'?'mailto:'+encodeURIComponent(target)+'?subject='+encodeURIComponent('Your Steady Hands website preview')+'&body='+encodeURIComponent(draft.value):'sms:'+target+'?'+(/iPad|iPhone|iPod/i.test(navigator.userAgent)?'&':'')+'body='+encodeURIComponent(draft.value);
-  window.location.href=link;
+  const anchor=document.createElement('a');anchor.href=link;anchor.textContent='Open '+(selected==='email'?'Email':'Messages')+' manually';anchor.style.display='inline-block';anchor.style.marginTop='8px';feedback.textContent='Opening '+(selected==='email'?'email':'messages')+'…';feedback.append(document.createElement('br'),anchor);anchor.click();
  });
 }
 
