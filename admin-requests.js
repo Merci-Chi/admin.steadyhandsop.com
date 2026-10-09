@@ -61,6 +61,7 @@ function colorRow(label,value){
 function openRequest(id){
  const r=rows.find(x=>String(x.id)===String(id));if(!r)return;
  markRead(r.id);
+ render();
  const services=normalizeServices(r.services);
  const colors=r.color_preferences||{};
  const socials=[
