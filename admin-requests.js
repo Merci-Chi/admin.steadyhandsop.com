@@ -20,7 +20,7 @@ function normalizeServices(value){
  return [];
 }
 function matches(r){
- if(filter==='deleted')return Boolean(r._source==='portal'&&r.deleted_at)&&(!query.trim()||[r.company_name,r.title,r.details].some(v=>String(v||'').toLowerCase().includes(query.trim().toLowerCase())));if(r._source==='portal'&&r.deleted_at)return false;
+ if(filter==='deleted')return Boolean(r.deleted_at)&&(!query.trim()||[r.company_name,r.title,r.details].some(v=>String(v||'').toLowerCase().includes(query.trim().toLowerCase())));if(r.deleted_at)return false;
  if(filter!=='all'&&String(r.status||'new')!==filter&&!(filter==='new'&&r.status==='submitted')&&!(filter==='in_progress'&&r.status==='under_review'))return false;
  const q=query.trim().toLowerCase();if(!q)return true;
  return [r.company_name,r.contact_name,r.email,r.phone,r.business_category,r.website_url,r.title,r.details,r.request_type].some(v=>String(v||'').toLowerCase().includes(q));
@@ -30,11 +30,11 @@ function render(){
  const list=document.getElementById('requestList');
  const visible=rows.filter(matches);
  const counts={new:0,in_progress:0,completed:0};
- rows.filter(r=>!(r._source==='portal'&&r.deleted_at)).forEach(r=>{const status=r.status==='submitted'?'new':r.status==='under_review'?'in_progress':r.status;if(counts[status]!=null)counts[status]++});
+ rows.filter(r=>!(r.deleted_at)).forEach(r=>{const status=r.status==='submitted'?'new':r.status==='under_review'?'in_progress':r.status;if(counts[status]!=null)counts[status]++});
  document.getElementById('requestSummary').innerHTML=
   '<span><strong>'+counts.new+'</strong> New</span><span><strong>'+counts.in_progress+'</strong> In Progress</span><span><strong>'+counts.completed+'</strong> Completed</span>';
  list.innerHTML=visible.length?visible.map(r=>{
-  const unread=['new','submitted'].includes(String(r.status||'new'))&&!readIds.has(String(r.id));
+  const unread=!r.deleted_at&&['new','submitted'].includes(String(r.status||'new'))&&!readIds.has(String(r.id));
   const cardClass=unread?'is-unread':'is-read';
   return `
   <article class="request-list-card ${cardClass}" data-row-id="${esc(r.id)}">
@@ -45,10 +45,10 @@ function render(){
         <small>${esc(r._source==='portal'?(r.deleted_at?'Deleted · ':'Client Portal · ')+(r.request_type||'Request'):((r.contact_name||'No contact')+' · '+(r.business_category||'No category')))}</small>
         <small>${esc(r._source==='portal'?(r.title||''):r.phone||r.email||'')}</small>
       </span>
-      <span class="request-card-side"><span class="request-status ${esc(r.status||'new')} ${unread?'status-unread':'status-read'}">${esc(statusLabel(r.status||'new'))}</span><time>${esc(fmtDate(r.created_at))}</time></span>
+      <span class="request-card-side"><span class="request-status ${esc(r.status||'new')} ${unread?'status-unread':'status-read'}">${esc(r.deleted_at?'Deleted':r.edited_at?'Edited':statusLabel(r.status||'new'))}</span><time>${esc(fmtDate(r.created_at))}</time></span>
     </button>
     <span class="request-row-actions">
-      <button class="request-row-delete" type="button" data-delete-request="${esc(r.id)}" ${r._source==='portal'?'hidden':''} aria-label="Delete ${esc(r.company_name||'website request')}" title="Delete request"><i data-lucide="trash-2"></i></button>
+      <button class="request-row-delete" type="button" data-delete-request="${esc(r.id)}" ${r.deleted_at?'hidden':''} aria-label="Delete ${esc(r.company_name||'website request')}" title="Delete request"><i data-lucide="trash-2"></i></button>
       <button class="request-row-open" type="button" data-request-actions="${esc(r.id)}" aria-label="Request actions" title="Request actions"><i data-lucide="plus"></i></button>
     </span>
   </article>`;
@@ -219,13 +219,12 @@ async function deleteRequest(id, triggerButton){
  const request=rows.find(x=>String(x.id)===String(id));
  if(!request)return;
  const business=String(request.company_name||'this website request');
- if(!window.confirm('Delete the request for "'+business+'" permanently? This cannot be undone.'))return;
- if(request._source==='portal'){alert('Portal requests are retained for customer history and cannot be deleted here.');return}
+ if(!window.confirm('Move the request for "'+business+'" to Deleted? It will stay available in Admin.'))return;
  const c=window.steadyHandsCRMClient;
  if(!c){alert('Admin database connection is unavailable.');return}
  const button=triggerButton||document.querySelector('.request-row-delete[data-delete-request="'+String(id).replace(/"/g,'\\"')+'"]');
  if(button){button.disabled=true;button.setAttribute('aria-busy','true')}
- const {data,error}=await c.from('website_requests').delete().eq('id',id).select('id');
+ const {data,error}=await c.from(request._source==='portal'?'portal_service_requests':'website_requests').update({deleted_at:new Date().toISOString()}).eq('id',id).select('id');
  if(error){
   if(button){button.disabled=false;button.removeAttribute('aria-busy')}
   alert(error.message||'Could not delete the request. Make sure you are signed in as an administrator.');
@@ -236,7 +235,7 @@ async function deleteRequest(id, triggerButton){
   alert('This request was not deleted. Your account may not have administrator delete permission, or the request has already been removed.');
   return;
  }
- rows=rows.filter(x=>String(x.id)!==String(id));
+ request.deleted_at=new Date().toISOString();
  closeDrawer();
  render();
 }
@@ -250,7 +249,7 @@ async function setStatus(id,status){
 }
 async function load(){
  const c=window.steadyHandsCRMClient;if(!c)return;
- const [web,portal]=await Promise.all([c.from('website_requests').select('*').order('created_at',{ascending:false}),c.from('portal_service_requests').select('id,user_id,company_name,request_type,title,details,preferred_contact_method,preferred_contact_value,status,created_at,deleted_at').order('created_at',{ascending:false})]);
+ const [web,portal]=await Promise.all([c.from('website_requests').select('*').order('created_at',{ascending:false}),c.from('portal_service_requests').select('*').order('created_at',{ascending:false})]);
  if(web.error||portal.error){document.getElementById('requestList').innerHTML='<div class="cc-empty">Unable to load requests.<br>'+esc(web.error?.message||portal.error?.message||'')+'</div>';return}
  rows=[...(web.data||[]).map(r=>({...r,_source:'website'})),...(portal.data||[]).map(r=>({...r,_source:'portal'}))].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));render();
 }
