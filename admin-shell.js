@@ -4,6 +4,7 @@
   const pageMeta = {
     'index.html': { title:'Overview', active:'overview' },
     'admin.html': { title:'Users', active:'users' },
+    'clients.html': { title:'Clients', active:'clients' },
     'leads.html': { title:'Leads', active:'more' },
     'requests.html': { title:'Requests', active:'requests' },
     'activity.html': { title:'Activity', active:'activity' },
@@ -25,6 +26,7 @@
       ['overview','index.html','layout-dashboard','Overview'],
       ['requests','requests.html','inbox','Requests'],
       ['users','admin.html','users','Users'],
+      ['clients','clients.html','briefcase-business','Clients'],
       ['activity','activity.html','history','Activity'],
       ['skills','skills.html','chart-no-axes-column-increasing','Skills'],
       ['more','account.html','menu','More']
@@ -41,6 +43,7 @@
     ['index.html','layout-dashboard','Overview'],
     ['requests.html','inbox','Requests'],
     ['admin.html','users','Users'],
+    ['clients.html','briefcase-business','Clients'],
     ['activity.html','history','Activity'],
     ['skills.html','chart-no-axes-column-increasing','Skills'],
     ['leads.html','contact-round','Leads'],
