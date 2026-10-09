@@ -39,7 +39,7 @@ async function load(){
   const [calls,commissions,subs,profiles]=await Promise.all([
    allRows(c,'callcenter_call_activity','id,user_id,crm_id,created_at'),
    allRows(c,'callcenter_commissions','id,user_id,crm_id,source_payment_id,status,created_at,pending_at,completed_at'),
-   allRows(c,'square','id,crmid,userid,subscriptionid,status,cadence,amount,plan,startdate,canceled'),
+   allRows(c,'square','id,crmid,userid,subscriptionid,customerid,name,company,email,status,cadence,amount,plan,startdate,canceled'),
    allRows(c,'callcenter_profiles','user_id,display_name,email')
   ]);
   const active=subs.filter(s=>String(s.status).toUpperCase()==='ACTIVE'&&String(s.cadence).toUpperCase()==='MONTHLY'&&!s.canceled&&s.subscriptionid);
@@ -48,17 +48,23 @@ async function load(){
   const hosting=subscriptions.filter(s=>/web|host|backend|standard/i.test(s.plan||'')).reduce((n,s)=>n+(Number(s.amount)||0),0);
   const paidCommissions=commissions.filter(paid);
   const uniquePaid=new Map(paidCommissions.map(s=>[saleKey(s),s]));
-  const uniqueActiveClients=distinct(subscriptions,s=>s.crmid||s.userid||s.subscriptionid);
+  const customerKey=s=>String(s.crmid||s.userid||s.name?.trim().toLowerCase()||s.email?.trim().toLowerCase()||s.customerid||s.subscriptionid);
+  const uniqueActiveClients=distinct(subscriptions,customerKey);
+  const customerFirst=new Map();
+  for(const s of subscriptions){const key=customerKey(s),date=new Date(s.startdate||'1970-01-01');if(!customerFirst.has(key)||date<customerFirst.get(key))customerFirst.set(key,date)}
   const weekSubs=subscriptions.filter(s=>sameWeek(s.startdate));
   const paidThisWeek=[...uniquePaid.values()].filter(s=>sameWeek(s.pending_at||s.completed_at||s.created_at));
-  const weeklyKeys=new Set(weekSubs.map(s=>s.crmid||s.userid||s.subscriptionid));
+  const weeklyKeys=new Set([...customerFirst].filter(([key,date])=>sameWeek(date)).map(([key])=>key));
   paidThisWeek.forEach(s=>weeklyKeys.add(s.crm_id||s.source_payment_id||s.id));
   set('aCalls',calls.length.toLocaleString());
   const conversion=calls.length?uniquePaid.size/calls.length*100:0;
   set('aRate',calls.length?conversion.toFixed(2)+'%':'—');
   set('aRateLabel',calls.length?uniquePaid.size+' verified paid customers / '+calls.length+' recorded calls':'No recorded calls yet');
   set('aWeek',weeklyKeys.size.toLocaleString());
-  set('aSubscribers',uniqueActiveClients.toLocaleString());
+  set('aSubscribers',subscriptions.length.toLocaleString());
+  set('aCustomers',uniqueActiveClients.toLocaleString());
+  const clientLines=subscriptions.slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''))).map(s=>'<tr><td>'+esc(s.name||'Customer not recorded')+'<div class="analytics-muted">'+esc(s.company||s.email||'')+'</div></td><td>'+esc(s.plan||'Unspecified plan')+'</td><td>'+esc(s.status)+'</td><td>'+money(Number(s.amount)||0)+'</td></tr>');
+  $('aSubscriptionRows').innerHTML=clientLines.join('')+'<tr><th colspan="3">Total monthly subscriptions ('+subscriptions.length+')</th><th>'+money(mrr)+'</th></tr>';
   set('aHosting',money(hosting));set('aMrr',money(mrr));
   set('aSales',uniquePaid.size.toLocaleString());
   costs=Number(localStorage.getItem('cc_analytics_costs')||0);
