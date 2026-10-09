@@ -94,13 +94,13 @@ function previewDelivery(r,drawer){
 function requestActions(id){
  const r=rows.find(x=>String(x.id)===String(id));if(!r)return;
  const overlay=document.getElementById('requestOverlay'),drawer=document.getElementById('requestDrawer');
- const first=String(r.contact_name||'there').trim().split(/\\s+/)[0];
+ const first=String(r.contact_name||'there').trim().split(/\s+/)[0];
  const preferred=String(r.preferred_contact_method||r.preferred_contact||r.delivery_method||r.contact_method||'').toLowerCase();
  const pref=preferred.includes('text')||preferred.includes('sms')?'text':preferred.includes('mail')?'email':'';
  const key=String(r.site_key||'').trim();
  const templates={
   preview:{name:'Website preview',subject:'Your Steady Hands website preview',message:`Hi ${first}! Your website preview is ready. Visit https://viewyoursite.today and use site key: ${key||'[SITE KEY]'}. We'd love your feedback! — Steady Hands`},
-  estimate:{name:'Estimate',subject:'Website estimate from Steady Hands',message:`Hi ${first}! Here is your estimated website pricing from Steady Hands:\\n\\nWebsite development: $100 one-time\\nStandard hosting: $20/month OR backend hosting: $30/month\\n\\nThis is an estimate, not an invoice or payment request. Let us know which plan works best for you! — Steady Hands`},
+  estimate:{name:'Estimate',subject:'Website estimate from Steady Hands',message:`Hi ${first}! Here is your estimated website pricing from Steady Hands:\n\nWebsite development: $100 one-time\nStandard hosting: $20/month OR backend hosting: $30/month\n\nThis is an estimate, not an invoice or payment request. Let us know which plan works best for you! — Steady Hands`},
   invoice:{name:'Invoice message',subject:'Website payment details from Steady Hands',message:`Hi ${first}! We're preparing your website payment details. Website development is $100 one-time, with standard hosting at $20/month or backend hosting at $30/month. We will provide an official invoice and secure payment link separately. — Steady Hands`},
   followup:{name:'Follow-up',subject:'Following up — Steady Hands',message:`Hi ${first}! Just checking in about your website request with Steady Hands. Do you have any questions, or is there anything we can help with? — Steady Hands`},
   update:{name:'Progress update',subject:'Update on your website request',message:`Hi ${first}! Here's a quick update about your Steady Hands website request: [ENTER UPDATE]. Let us know if you have any questions! — Steady Hands`}
@@ -130,9 +130,14 @@ function requestActions(id){
  drawer.querySelector('#requestActionOpen').addEventListener('click',()=>{
   if(selected==='preview'&&!siteKey.value.trim()){feedback.textContent='Enter the site key first.';siteKey.focus();return}
   const method=pref||(window.confirm('No preference recorded. OK to open Email, Cancel to open Messages.')?'email':'text');
-  const target=method==='email'?String(r.email||'').trim():String(r.phone||'').replace(/[^+\\d]/g,'');
+  const target=method==='email'?String(r.email||'').trim():String(r.phone||'').replace(/[^+\d]/g,'');
   if(!target){feedback.textContent='No customer '+(method==='email'?'email':'phone number')+' is saved. Copy the draft instead.';return}
-  window.location.href=method==='email'?'mailto:'+encodeURIComponent(target)+'?subject='+encodeURIComponent(subject.value)+'&body='+encodeURIComponent(body.value):'sms:'+target+'?'+(/iPad|iPhone|iPod/i.test(navigator.userAgent)?'&':'')+'body='+encodeURIComponent(body.value);
+  const href=method==='email'
+   ?'mailto:'+target+'?subject='+encodeURIComponent(subject.value)+'&body='+encodeURIComponent(body.value)
+   :'sms:'+target+(/iPad|iPhone|iPod/i.test(navigator.userAgent)?'&body=':'?body=')+encodeURIComponent(body.value);
+  feedback.textContent='Opening '+(method==='email'?'email':'messages')+'… If nothing opens, make sure your device has a default '+(method==='email'?'mail':'messaging')+' app.';
+  const link=document.createElement('a');link.href=href;link.textContent='Open '+(method==='email'?'Email':'Messages')+' manually';link.style.display='inline-block';link.style.marginTop='8px';feedback.append(document.createElement('br'),link);
+  link.click();
  });
 }
 
