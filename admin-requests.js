@@ -48,7 +48,7 @@ function render(){
     </button>
     <span class="request-row-actions">
       <button class="request-row-delete" type="button" data-delete-request="${esc(r.id)}" ${r._source==='portal'?'hidden':''} aria-label="Delete ${esc(r.company_name||'website request')}" title="Delete request"><i data-lucide="trash-2"></i></button>
-      <button class="request-row-open" type="button" data-request-id="${esc(r.id)}" aria-label="Open request details" title="Open request"><i data-lucide="chevron-right"></i></button>
+      <button class="request-row-open" type="button" data-request-actions="${esc(r.id)}" aria-label="Request actions" title="Request actions"><i data-lucide="plus"></i></button>
     </span>
   </article>`;
  }).join(''):'<div class="cc-empty">No requests found.</div>';
@@ -90,6 +90,52 @@ function previewDelivery(r,drawer){
   window.location.href=link;
  });
 }
+
+function requestActions(id){
+ const r=rows.find(x=>String(x.id)===String(id));if(!r)return;
+ const overlay=document.getElementById('requestOverlay'),drawer=document.getElementById('requestDrawer');
+ const first=String(r.contact_name||'there').trim().split(/\\s+/)[0];
+ const preferred=String(r.preferred_contact_method||r.preferred_contact||r.delivery_method||r.contact_method||'').toLowerCase();
+ const pref=preferred.includes('text')||preferred.includes('sms')?'text':preferred.includes('mail')?'email':'';
+ const key=String(r.site_key||'').trim();
+ const templates={
+  preview:{name:'Website preview',subject:'Your Steady Hands website preview',message:`Hi ${first}! Your website preview is ready. Visit https://viewyoursite.today and use site key: ${key||'[SITE KEY]'}. We'd love your feedback! — Steady Hands`},
+  estimate:{name:'Estimate',subject:'Website estimate from Steady Hands',message:`Hi ${first}! Here is your estimated website pricing from Steady Hands:\\n\\nWebsite development: $100 one-time\\nStandard hosting: $20/month OR backend hosting: $30/month\\n\\nThis is an estimate, not an invoice or payment request. Let us know which plan works best for you! — Steady Hands`},
+  invoice:{name:'Invoice message',subject:'Website payment details from Steady Hands',message:`Hi ${first}! We're preparing your website payment details. Website development is $100 one-time, with standard hosting at $20/month or backend hosting at $30/month. We will provide an official invoice and secure payment link separately. — Steady Hands`},
+  followup:{name:'Follow-up',subject:'Following up — Steady Hands',message:`Hi ${first}! Just checking in about your website request with Steady Hands. Do you have any questions, or is there anything we can help with? — Steady Hands`},
+  update:{name:'Progress update',subject:'Update on your website request',message:`Hi ${first}! Here's a quick update about your Steady Hands website request: [ENTER UPDATE]. Let us know if you have any questions! — Steady Hands`}
+ };
+ drawer.innerHTML=`<div class="request-drawer-head"><div><span class="admin-kicker">REQUEST ACTIONS</span><h2>${esc(r.company_name||'Website request')}</h2><p>Choose what you would like to do</p></div><button class="request-close" type="button" aria-label="Close"><i data-lucide="x"></i></button></div>
+ <div class="request-drawer-body"><section class="request-detail-card">
+ <h3>Quick actions</h3><div class="request-quick-grid">
+ ${Object.entries(templates).map(([k,t])=>`<button type="button" class="request-quick-action" data-template="${k}"><i data-lucide="${({preview:'eye',estimate:'calculator',invoice:'receipt',followup:'message-circle',update:'bell'})[k]}"></i><span>${esc(t.name)}</span></button>`).join('')}
+ <button type="button" class="request-quick-action" data-request-details><i data-lucide="file-text"></i><span>View details</span></button>
+ </div></section><section class="request-detail-card" id="requestActionComposer" hidden>
+ <h3 id="requestActionTitle">Message draft</h3><p class="request-action-pref">Preferred contact: <strong>${pref==='text'?'Text':pref==='email'?'Email':'Not recorded'}</strong></p>
+ <div id="requestActionSiteKeyWrap" hidden><label for="requestActionSiteKey">Site key</label><input id="requestActionSiteKey" value="${esc(key)}" placeholder="Paste site key"></div>
+ <label for="requestActionSubject">Email subject</label><input id="requestActionSubject" type="text">
+ <label for="requestActionBody">Message</label><textarea id="requestActionBody" rows="8"></textarea>
+ <div class="request-action-buttons"><button type="button" id="requestActionCopy">Copy draft</button><button type="button" id="requestActionOpen">Open ${pref==='email'?'Email':pref==='text'?'Messages':'contact app'}</button></div>
+ <p id="requestActionFeedback" role="status">Review before sending. Opening an app does not send automatically.</p>
+ </section></div>`;
+ overlay.hidden=false;document.body.style.overflow='hidden';window.lucide?.createIcons();
+ drawer.querySelector('.request-close').addEventListener('click',closeDrawer);
+ drawer.querySelector('[data-request-details]').addEventListener('click',()=>openRequest(id));
+ let selected='preview';
+ const subject=drawer.querySelector('#requestActionSubject'),body=drawer.querySelector('#requestActionBody'),siteKey=drawer.querySelector('#requestActionSiteKey'),feedback=drawer.querySelector('#requestActionFeedback'),composer=drawer.querySelector('#requestActionComposer');
+ function pick(k){selected=k;const t=templates[k];composer.hidden=false;drawer.querySelector('#requestActionTitle').textContent=t.name+' draft';subject.value=t.subject;body.value=t.message;drawer.querySelector('#requestActionSiteKeyWrap').hidden=k!=='preview';feedback.textContent='Review before sending. Opening an app does not send automatically.';composer.scrollIntoView({behavior:'smooth',block:'nearest'})}
+ drawer.querySelectorAll('[data-template]').forEach(btn=>btn.addEventListener('click',()=>pick(btn.dataset.template)));
+ siteKey.addEventListener('input',()=>{if(selected==='preview')body.value=templates.preview.message.replace(key||'[SITE KEY]',siteKey.value.trim()||'[SITE KEY]')});
+ drawer.querySelector('#requestActionCopy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(body.value);feedback.textContent='Draft copied!'}catch{body.focus();body.select();feedback.textContent='Copy the selected message.'}});
+ drawer.querySelector('#requestActionOpen').addEventListener('click',()=>{
+  if(selected==='preview'&&!siteKey.value.trim()){feedback.textContent='Enter the site key first.';siteKey.focus();return}
+  const method=pref||(window.confirm('No preference recorded. OK to open Email, Cancel to open Messages.')?'email':'text');
+  const target=method==='email'?String(r.email||'').trim():String(r.phone||'').replace(/[^+\\d]/g,'');
+  if(!target){feedback.textContent='No customer '+(method==='email'?'email':'phone number')+' is saved. Copy the draft instead.';return}
+  window.location.href=method==='email'?'mailto:'+encodeURIComponent(target)+'?subject='+encodeURIComponent(subject.value)+'&body='+encodeURIComponent(body.value):'sms:'+target+'?'+(/iPad|iPhone|iPod/i.test(navigator.userAgent)?'&':'')+'body='+encodeURIComponent(body.value);
+ });
+}
+
 function openRequest(id){
  const r=rows.find(x=>String(x.id)===String(id));if(!r)return;
  markRead(r.id);
@@ -209,6 +255,7 @@ document.getElementById('requestSearch')?.addEventListener('input',e=>{query=e.t
 document.getElementById('requestList')?.addEventListener('click',e=>{
  const deleteButton=e.target.closest('[data-delete-request]');
  if(deleteButton){e.preventDefault();e.stopPropagation();deleteRequest(deleteButton.dataset.deleteRequest,deleteButton);return}
+ const action=e.target.closest('[data-request-actions]');if(action){e.preventDefault();requestActions(action.dataset.requestActions);return}
  const openButton=e.target.closest('[data-request-id]');
  if(openButton){e.preventDefault();openRequest(openButton.dataset.requestId)}
 });
