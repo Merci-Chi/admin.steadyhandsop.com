@@ -1,7 +1,7 @@
 (()=>{
 const esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const fmtDate=v=>v?new Date(v).toLocaleString([], {month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}):'';
-const statusLabel=v=>({new:'New',in_progress:'In Progress',completed:'Completed',cancelled:'Cancelled'})[v]||String(v||'New');
+const statusLabel=v=>({new:'New',in_progress:'In Progress',completed:'Completed',cancelled:'Cancelled',submitted:'New',under_review:'Under Review',declined:'Declined'})[v]||String(v||'New');
 const initials=v=>String(v||'?').trim().slice(0,1).toUpperCase();
 let rows=[],filter='all',query='';
 const READ_STORAGE_KEY='steadyhands.website_requests.read.v1';
@@ -20,20 +20,20 @@ function normalizeServices(value){
  return [];
 }
 function matches(r){
- if(filter!=='all'&&String(r.status||'new')!==filter)return false;
+ if(filter!=='all'&&String(r.status||'new')!==filter&&!(filter==='new'&&r.status==='submitted')&&!(filter==='in_progress'&&r.status==='under_review'))return false;
  const q=query.trim().toLowerCase();if(!q)return true;
- return [r.company_name,r.contact_name,r.email,r.phone,r.business_category,r.website_url].some(v=>String(v||'').toLowerCase().includes(q));
+ return [r.company_name,r.contact_name,r.email,r.phone,r.business_category,r.website_url,r.title,r.details,r.request_type].some(v=>String(v||'').toLowerCase().includes(q));
 }
 function badge(status){return '<span class="request-status '+esc(status||'new')+'">'+esc(statusLabel(status||'new'))+'</span>'}
 function render(){
  const list=document.getElementById('requestList');
  const visible=rows.filter(matches);
  const counts={new:0,in_progress:0,completed:0};
- rows.forEach(r=>{if(counts[r.status]!=null)counts[r.status]++});
+ rows.forEach(r=>{const status=r.status==='submitted'?'new':r.status==='under_review'?'in_progress':r.status;if(counts[status]!=null)counts[status]++});
  document.getElementById('requestSummary').innerHTML=
   '<span><strong>'+counts.new+'</strong> New</span><span><strong>'+counts.in_progress+'</strong> In Progress</span><span><strong>'+counts.completed+'</strong> Completed</span>';
  list.innerHTML=visible.length?visible.map(r=>{
-  const unread=String(r.status||'new')==='new'&&!readIds.has(String(r.id));
+  const unread=['new','submitted'].includes(String(r.status||'new'))&&!readIds.has(String(r.id));
   const cardClass=unread?'is-unread':'is-read';
   return `
   <article class="request-list-card ${cardClass}" data-row-id="${esc(r.id)}">
@@ -41,13 +41,13 @@ function render(){
       <span class="request-avatar">${esc(initials(r.company_name))}</span>
       <span class="request-card-main">
         <strong>${esc(r.company_name||'Unnamed business')}</strong>
-        <small>${esc(r.contact_name||'No contact')} · ${esc(r.business_category||'No category')}</small>
-        <small>${esc(r.phone||r.email||'')}</small>
+        <small>${esc(r._source==='portal'?'Client Portal · '+(r.request_type||'Request'):((r.contact_name||'No contact')+' · '+(r.business_category||'No category')))}</small>
+        <small>${esc(r._source==='portal'?(r.title||''):r.phone||r.email||'')}</small>
       </span>
       <span class="request-card-side"><span class="request-status ${esc(r.status||'new')} ${unread?'status-unread':'status-read'}">${esc(statusLabel(r.status||'new'))}</span><time>${esc(fmtDate(r.created_at))}</time></span>
     </button>
     <span class="request-row-actions">
-      <button class="request-row-delete" type="button" data-delete-request="${esc(r.id)}" aria-label="Delete ${esc(r.company_name||'website request')}" title="Delete request"><i data-lucide="trash-2"></i></button>
+      <button class="request-row-delete" type="button" data-delete-request="${esc(r.id)}" ${r._source==='portal'?'hidden':''} aria-label="Delete ${esc(r.company_name||'website request')}" title="Delete request"><i data-lucide="trash-2"></i></button>
       <button class="request-row-open" type="button" data-request-id="${esc(r.id)}" aria-label="Open request details" title="Open request"><i data-lucide="chevron-right"></i></button>
     </span>
   </article>`;
@@ -62,6 +62,7 @@ function openRequest(id){
  const r=rows.find(x=>String(x.id)===String(id));if(!r)return;
  markRead(r.id);
  render();
+ if(r._source==='portal'){openPortalRequest(r);return;}
  const services=normalizeServices(r.services);
  const colors=r.color_preferences||{};
  const socials=[
@@ -114,12 +115,27 @@ function openRequest(id){
  drawer.querySelector('.request-close')?.addEventListener('click',closeDrawer);
  drawer.querySelectorAll('[data-set-status]').forEach(btn=>btn.addEventListener('click',()=>setStatus(r.id,btn.dataset.setStatus)));
 }
+function openPortalRequest(r){
+ const overlay=document.getElementById('requestOverlay'),drawer=document.getElementById('requestDrawer');
+ drawer.innerHTML=`
+ <div class="request-drawer-head"><div><span class="admin-kicker">CLIENT PORTAL · ${esc(String(r.request_type||'request').replaceAll('_',' ').toUpperCase())}</span><h2>${esc(r.company_name||'Customer request')}</h2><p>${esc(fmtDate(r.created_at))}</p></div><button type="button" class="request-close" aria-label="Close"><i data-lucide="x"></i></button></div>
+ <div class="request-drawer-body">
+ <section class="request-detail-card"><h3>${esc(r.title||'Request')}</h3><p class="request-notes">${esc(r.details||'No details supplied.')}</p></section>
+ <section class="request-detail-card"><h3>Portal account</h3><div class="request-detail-row"><span>Account ID</span><strong>${esc(r.user_id)}</strong></div><p class="request-notes">Company name is self-reported until ownership is verified.</p></section>
+ <section class="request-status-actions"><h3>Status</h3><div>
+ ${['submitted','under_review','in_progress','completed','declined'].map(status=>`<button type="button" data-set-status="${status}" class="${r.status===status?'active':''}">${esc(statusLabel(status))}</button>`).join('')}
+ </div></section></div>`;
+ overlay.hidden=false;document.body.style.overflow='hidden';window.lucide?.createIcons();
+ drawer.querySelector('.request-close')?.addEventListener('click',closeDrawer);
+ drawer.querySelectorAll('[data-set-status]').forEach(btn=>btn.addEventListener('click',()=>setStatus(r.id,btn.dataset.setStatus)));
+}
 function closeDrawer(){document.getElementById('requestOverlay').hidden=true;document.body.style.overflow=''}
 async function deleteRequest(id, triggerButton){
  const request=rows.find(x=>String(x.id)===String(id));
  if(!request)return;
  const business=String(request.company_name||'this website request');
  if(!window.confirm('Delete the request for "'+business+'" permanently? This cannot be undone.'))return;
+ if(request._source==='portal'){alert('Portal requests are retained for customer history and cannot be deleted here.');return}
  const c=window.steadyHandsCRMClient;
  if(!c){alert('Admin database connection is unavailable.');return}
  const button=triggerButton||document.querySelector('.request-row-delete[data-delete-request="'+String(id).replace(/"/g,'\\"')+'"]');
@@ -141,16 +157,17 @@ async function deleteRequest(id, triggerButton){
 }
 async function setStatus(id,status){
  const c=window.steadyHandsCRMClient;if(!c)return;
- const {error}=await c.from('website_requests').update({status,updated_at:new Date().toISOString()}).eq('id',id);
+ const r=rows.find(x=>String(x.id)===String(id));
+ const {error}=r?._source==='portal' ? await c.from('portal_service_requests').update({status}).eq('id',id) : await c.from('website_requests').update({status,updated_at:new Date().toISOString()}).eq('id',id);
  if(error){alert(error.message||'Could not update request.');return}
- const r=rows.find(x=>String(x.id)===String(id));if(r)r.status=status;
+ if(r)r.status=status;
  closeDrawer();render();
 }
 async function load(){
  const c=window.steadyHandsCRMClient;if(!c)return;
- const {data,error}=await c.from('website_requests').select('*').order('created_at',{ascending:false});
- if(error){document.getElementById('requestList').innerHTML='<div class="cc-empty">Unable to load requests.<br>'+esc(error.message||'')+'</div>';return}
- rows=data||[];render();
+ const [web,portal]=await Promise.all([c.from('website_requests').select('*').order('created_at',{ascending:false}),c.from('portal_service_requests').select('id,user_id,company_name,request_type,title,details,status,created_at').order('created_at',{ascending:false})]);
+ if(web.error||portal.error){document.getElementById('requestList').innerHTML='<div class="cc-empty">Unable to load requests.<br>'+esc(web.error?.message||portal.error?.message||'')+'</div>';return}
+ rows=[...(web.data||[]).map(r=>({...r,_source:'website'})),...(portal.data||[]).map(r=>({...r,_source:'portal'}))].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));render();
 }
 document.querySelectorAll('[data-request-filter]').forEach(btn=>btn.addEventListener('click',()=>{
  filter=btn.dataset.requestFilter;document.querySelectorAll('[data-request-filter]').forEach(x=>x.classList.toggle('active',x===btn));render();
