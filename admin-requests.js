@@ -60,10 +60,16 @@ function colorRow(label,value){
  return '<div class="request-detail-row"><span>'+esc(label)+'</span><strong class="request-color-value"><i style="background:'+esc(value)+'"></i>'+esc(value)+'</strong></div>';
 }
 
+function requestContact(r,method){
+ const preferred=String(r.preferred_contact_method||r.preferred_contact||r.delivery_method||r.contact_method||'').toLowerCase();
+ const value=String(r.preferred_contact_value||'').trim();
+ if(method==='email')return (preferred.includes('mail')&&value.includes('@')?value:'')||String(r.email||'').trim()||(value.includes('@')?value:'');
+ return (preferred.includes('text')||preferred.includes('sms')?value:'')||String(r.phone||'').trim()||(!value.includes('@')?value:'');
+}
 function previewDelivery(r,drawer){
  const preferred=String(r.preferred_contact_method||r.preferred_contact||r.delivery_method||r.contact_method||r.reply_method||'').toLowerCase();
  const method=preferred.includes('text')||preferred.includes('sms')?'text':preferred.includes('mail')?'email':'';
- const first=String(r.contact_name||'there').trim().split(/\s+/)[0];
+ const first=String(r.contact_name||r.company_name||'there').trim().split(/\s+/)[0];
  const key=String(r.site_key||'').trim();
  const body=key=>`Hi ${first}! Your website preview from Steady Hands is ready! Visit https://viewyoursite.today and enter your site key: ${key||'[SITE KEY]'}. We'd love your feedback! — Steady Hands`;
  const section=document.createElement('section');
@@ -85,9 +91,9 @@ function previewDelivery(r,drawer){
  section.querySelector('#previewOpen').addEventListener('click',()=>{
   if(!field.value.trim()){feedback.textContent='Enter a site key first.';field.focus();return}
   const selected=method||(window.confirm('Preferred contact was not recorded. OK for email, Cancel for text.')?'email':'text');
-  const target=selected==='email'?String(r.email||'').trim():String(r.phone||'').replace(/[^+\d]/g,'');
+  const target=selected==='email'?requestContact(r,'email'):requestContact(r,'text').replace(/[^+\d]/g,'');
   if(!target){feedback.textContent='No '+(selected==='email'?'email address':'phone number')+' on this request. Copy the draft instead.';return}
-  const link=selected==='email'?'mailto:'+encodeURIComponent(target)+'?subject='+encodeURIComponent('Your Steady Hands website preview')+'&body='+encodeURIComponent(draft.value):'sms:'+target+'?'+(/iPad|iPhone|iPod/i.test(navigator.userAgent)?'&':'')+'body='+encodeURIComponent(draft.value);
+  const link=selected==='email'?'mailto:'+target+'?subject='+encodeURIComponent('Your Steady Hands website preview')+'&body='+encodeURIComponent(draft.value):'sms:'+target+'?'+(/iPad|iPhone|iPod/i.test(navigator.userAgent)?'&':'')+'body='+encodeURIComponent(draft.value);
   const anchor=document.createElement('a');anchor.href=link;anchor.textContent='Open '+(selected==='email'?'Email':'Messages')+' manually';anchor.style.display='inline-block';anchor.style.marginTop='8px';feedback.textContent='Opening '+(selected==='email'?'email':'messages')+'…';feedback.append(document.createElement('br'),anchor);anchor.click();
  });
 }
@@ -132,7 +138,7 @@ function requestActions(id){
  drawer.querySelector('#requestActionOpen').addEventListener('click',()=>{
   if(selected==='preview'&&!siteKey.value.trim()){feedback.textContent='Enter the site key first.';siteKey.focus();return}
   const method=pref||(window.confirm('No preference recorded. OK to open Email, Cancel to open Messages.')?'email':'text');
-  const target=method==='email'?String(r.email||'').trim():String(r.phone||'').replace(/[^+\d]/g,'');
+  const target=method==='email'?requestContact(r,'email'):requestContact(r,'text').replace(/[^+\d]/g,'');
   if(!target){feedback.textContent='No customer '+(method==='email'?'email':'phone number')+' is saved. Copy the draft instead.';return}
   const href=method==='email'
    ?'mailto:'+target+'?subject='+encodeURIComponent(subject.value)+'&body='+encodeURIComponent(body.value)
