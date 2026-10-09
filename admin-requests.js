@@ -154,7 +154,7 @@ function openPortalRequest(r){
  <div class="request-drawer-head"><div><span class="admin-kicker">CLIENT PORTAL · ${esc(String(r.request_type||'request').replaceAll('_',' ').toUpperCase())}</span><h2>${esc(r.company_name||'Customer request')}</h2><p>${esc(fmtDate(r.created_at))}</p></div><button type="button" class="request-close" aria-label="Close"><i data-lucide="x"></i></button></div>
  <div class="request-drawer-body">
  <section class="request-detail-card"><h3>${esc(r.title||'Request')}</h3><p class="request-notes">${esc(r.details||'No details supplied.')}</p></section>
- <section class="request-detail-card"><h3>Portal account</h3><div class="request-detail-row"><span>Account ID</span><strong>${esc(r.user_id)}</strong></div><p class="request-notes">Company name is self-reported until ownership is verified.</p></section>
+ <section class="request-detail-card"><h3>Preferred contact</h3><div class="request-detail-row"><span>Method</span><strong>${esc(r.preferred_contact_method==='text'?'Text message':r.preferred_contact_method==='email'?'Email':'Not provided')}</strong></div><div class="request-detail-row"><span>Contact</span><strong>${esc(r.preferred_contact_value||'Not provided')}</strong></div></section><section class="request-detail-card"><h3>Portal account</h3><div class="request-detail-row"><span>Account ID</span><strong>${esc(r.user_id)}</strong></div><p class="request-notes">Company name is self-reported until ownership is verified.</p></section>
  <section class="request-status-actions"><h3>Status</h3><div>
  ${['submitted','under_review','in_progress','completed','declined'].map(status=>`<button type="button" data-set-status="${status}" class="${r.status===status?'active':''}">${esc(statusLabel(status))}</button>`).join('')}
  </div></section></div>`;
@@ -198,7 +198,7 @@ async function setStatus(id,status){
 }
 async function load(){
  const c=window.steadyHandsCRMClient;if(!c)return;
- const [web,portal]=await Promise.all([c.from('website_requests').select('*').order('created_at',{ascending:false}),c.from('portal_service_requests').select('id,user_id,company_name,request_type,title,details,status,created_at').order('created_at',{ascending:false})]);
+ const [web,portal]=await Promise.all([c.from('website_requests').select('*').order('created_at',{ascending:false}),c.from('portal_service_requests').select('id,user_id,company_name,request_type,title,details,preferred_contact_method,preferred_contact_value,status,created_at').order('created_at',{ascending:false})]);
  if(web.error||portal.error){document.getElementById('requestList').innerHTML='<div class="cc-empty">Unable to load requests.<br>'+esc(web.error?.message||portal.error?.message||'')+'</div>';return}
  rows=[...(web.data||[]).map(r=>({...r,_source:'website'})),...(portal.data||[]).map(r=>({...r,_source:'portal'}))].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));render();
 }
