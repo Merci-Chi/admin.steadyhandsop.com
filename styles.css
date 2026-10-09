@@ -5554,3 +5554,81 @@ html[data-theme="dark"] .admin-system-hero{background:linear-gradient(135deg,#10
   .admin-app-shell .admin-side-nav{display:block;flex:1 1 0;min-height:0;overflow-y:auto!important;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding-bottom:36px}
   .admin-app-shell .admin-side-link{display:flex;margin-bottom:4px}
 }
+
+
+/* Comprehensive admin dark surfaces. All rules scoped to the selected theme. */
+html[data-theme="dark"] body.admin-app-shell{
+  --page:#07111c;--card:#101f2f;--text:#eaf2fb;--muted:#9aadc2;--line:#2b4054;
+  background:#07111c!important;color:#eaf2fb;
+}
+html[data-theme="dark"] .admin-app-shell .content,
+html[data-theme="dark"] .admin-app-shell .admin-overview-content,
+html[data-theme="dark"] .admin-app-shell .client-content{background:#07111c;color:#eaf2fb}
+html[data-theme="dark"] .admin-app-shell :is(
+ .admin-metric-card,.admin-dashboard-list,.admin-dash-row,.admin-user-card,.admin-user-drawer,
+ .admin-user-summary>div,.admin-user-list,.admin-user-detail-grid>div,.admin-user-profile-status,
+ .admin-lead-card,.admin-lead-list,.admin-lead-summary>div,.admin-lead-toolbar,
+ .admin-request-summary,.admin-request-card,.admin-request-drawer,.request-detail-card,
+ .request-list-card,.request-card-open,.request-status-actions,.request-status-actions button,
+ .request-quick-action,.request-preview,.request-panel,.request-section,
+ .client-table-scroll,.client-table,.client-search,.client-menu,.client-pages,
+ .client-field,.client-selects,.client-chips,.client-footer,.client-summary,
+ .admin-overview-actions a,.admin-attention-grid>div,
+ .admin-activity-list,.admin-activity-row,.admin-call-section,.admin-call-detail-grid>div,
+ .admin-skills-summary>div,.admin-skill-card,.admin-skill-team-list,
+ .admin-finance-list,.admin-finance-summary>div,.admin-finance-row,
+ .admin-audit-list,.admin-audit-summary>div,.admin-audit-row,
+ .admin-system-list,.admin-system-summary>div,.admin-system-row,
+ .admin-more-grid a,.admin-more-note,.admin-access-card,
+ .admin-settings-card,.admin-phone-card,.admin-approval-card,
+ .admin-user-field,.admin-user-quick-links a,.admin-user-admin-actions button,
+ .admin-loading-card,.admin-call-notes,.admin-call-system,
+ .admin-skill-drawer,.admin-finance-drawer,.admin-audit-drawer,
+ .card,.light-card
+){background:#101f2f!important;color:#eaf2fb!important;border-color:#293d52!important}
+html[data-theme="dark"] .admin-app-shell :is(
+ .admin-user-search,.admin-user-filters,.admin-lead-filters,.admin-request-filters,
+ .client-filter-bar,.client-table thead,.client-table th,.client-table td,
+ .request-card-main,.request-card-side,.admin-user-card-main,.admin-dash-main,
+ .admin-activity-call-row,.admin-user-drawer-head,.admin-user-admin-actions,
+ .admin-user-profile-status,.admin-call-system>div
+){border-color:#293d52!important;color:#d7e5f3}
+html[data-theme="dark"] .admin-app-shell :is(
+ input,textarea,select,option,.client-btn,.client-chips button,.client-selects select,
+ .admin-user-filters button,.admin-lead-filters button,.admin-request-filters button,
+ .admin-user-toolbar button,.admin-user-quick-links a,.request-row-delete,
+ .request-quick-action,.admin-phone-toggle,.admin-phone-delete
+){background:#0c1a28!important;color:#e6f0fb!important;border-color:#31485e!important}
+html[data-theme="dark"] .admin-app-shell :is(input,textarea)::placeholder{color:#8199af!important}
+html[data-theme="dark"] .admin-app-shell :is(
+ .admin-overview-actions small,.admin-dash-main small,.admin-user-card small,
+ .client-table small,.request-card-main small,.request-notes,
+ .admin-user-detail-grid span,.admin-kicker+small,.admin-request-card small
+){color:#a0b2c6!important}
+html[data-theme="dark"] .admin-app-shell :is(
+ .admin-dash-main strong,.admin-user-card strong,.admin-lead-card strong,
+ .request-list-card strong,.client-table strong,.admin-dashboard-head h2,
+ .admin-overview-grid strong,.admin-metric-card strong,.client-footer strong
+){color:#eef6ff!important}
+html[data-theme="dark"] .admin-app-shell :is(
+ .admin-loading-card span,.admin-loading-card b,.admin-loading-card small,
+ .admin-skeleton,.skeleton,.skeleton-line,.skeleton-card,
+ [class*="skeleton-shape"],[class*="sk-shape"]
+){background:#1b3145!important;border-color:#293f55!important}
+html[data-theme="dark"] .admin-app-shell :is(
+ .admin-request-drawer-overlay,.admin-user-drawer-overlay,.client-menu-overlay,
+ .admin-audit-overlay,.admin-finance-overlay,.admin-skill-overlay
+){background:rgba(0,5,12,.78)}
+html[data-theme="dark"] .admin-app-shell :is(
+ .admin-user-card:hover,.request-list-card:hover,.admin-dash-row:hover,
+ .admin-overview-actions a:hover,.client-table tbody tr:hover
+){background:#162b40!important}
+html[data-theme="dark"] .admin-app-shell :is(
+ .admin-user-filters button.active,.admin-request-filters button.active,
+ .client-chips button.active
+){background:#19446a!important;color:#f0f8ff!important;border-color:#326b9b!important}
+html[data-theme="dark"] .admin-app-shell .admin-desktop-sidebar,
+html[data-theme="dark"] .admin-app-shell .admin-mobile-menu{background:#0b2035!important}
+html[data-theme="dark"] .admin-app-shell .admin-side-link.active{background:#244768!important;color:#f0f8ff!important}
+html[data-theme="dark"] .admin-app-shell :is(.admin-user-drawer,.admin-request-drawer,.client-menu){box-shadow:0 24px 60px rgba(0,0,0,.48)!important}
+html[data-theme="dark"] .admin-app-shell :is(table,td,th){border-color:#293d52}
