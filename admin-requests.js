@@ -20,6 +20,7 @@ function normalizeServices(value){
  return [];
 }
 function matches(r){
+ if(filter==='deleted')return Boolean(r._source==='portal'&&r.deleted_at)&&(!query.trim()||[r.company_name,r.title,r.details].some(v=>String(v||'').toLowerCase().includes(query.trim().toLowerCase())));if(r._source==='portal'&&r.deleted_at)return false;
  if(filter!=='all'&&String(r.status||'new')!==filter&&!(filter==='new'&&r.status==='submitted')&&!(filter==='in_progress'&&r.status==='under_review'))return false;
  const q=query.trim().toLowerCase();if(!q)return true;
  return [r.company_name,r.contact_name,r.email,r.phone,r.business_category,r.website_url,r.title,r.details,r.request_type].some(v=>String(v||'').toLowerCase().includes(q));
@@ -29,7 +30,7 @@ function render(){
  const list=document.getElementById('requestList');
  const visible=rows.filter(matches);
  const counts={new:0,in_progress:0,completed:0};
- rows.forEach(r=>{const status=r.status==='submitted'?'new':r.status==='under_review'?'in_progress':r.status;if(counts[status]!=null)counts[status]++});
+ rows.filter(r=>!(r._source==='portal'&&r.deleted_at)).forEach(r=>{const status=r.status==='submitted'?'new':r.status==='under_review'?'in_progress':r.status;if(counts[status]!=null)counts[status]++});
  document.getElementById('requestSummary').innerHTML=
   '<span><strong>'+counts.new+'</strong> New</span><span><strong>'+counts.in_progress+'</strong> In Progress</span><span><strong>'+counts.completed+'</strong> Completed</span>';
  list.innerHTML=visible.length?visible.map(r=>{
@@ -41,7 +42,7 @@ function render(){
       <span class="request-avatar">${esc(initials(r.company_name))}</span>
       <span class="request-card-main">
         <strong>${esc(r.company_name||'Unnamed business')}</strong>
-        <small>${esc(r._source==='portal'?'Client Portal · '+(r.request_type||'Request'):((r.contact_name||'No contact')+' · '+(r.business_category||'No category')))}</small>
+        <small>${esc(r._source==='portal'?(r.deleted_at?'Deleted · ':'Client Portal · ')+(r.request_type||'Request'):((r.contact_name||'No contact')+' · '+(r.business_category||'No category')))}</small>
         <small>${esc(r._source==='portal'?(r.title||''):r.phone||r.email||'')}</small>
       </span>
       <span class="request-card-side"><span class="request-status ${esc(r.status||'new')} ${unread?'status-unread':'status-read'}">${esc(statusLabel(r.status||'new'))}</span><time>${esc(fmtDate(r.created_at))}</time></span>
@@ -205,7 +206,7 @@ function openPortalRequest(r){
  <div class="request-drawer-head"><div><span class="admin-kicker">CLIENT PORTAL · ${esc(String(r.request_type||'request').replaceAll('_',' ').toUpperCase())}</span><h2>${esc(r.company_name||'Customer request')}</h2><p>${esc(fmtDate(r.created_at))}</p></div><button type="button" class="request-close" aria-label="Close"><i data-lucide="x"></i></button></div>
  <div class="request-drawer-body">
  <section class="request-detail-card"><h3>${esc(r.title||'Request')}</h3><p class="request-notes">${esc(r.details||'No details supplied.')}</p></section>
- <section class="request-detail-card"><h3>Preferred contact</h3><div class="request-detail-row"><span>Method</span><strong>${esc(r.preferred_contact_method==='text'?'Text message':r.preferred_contact_method==='email'?'Email':'Not provided')}</strong></div><div class="request-detail-row"><span>Contact</span><strong>${esc(r.preferred_contact_value||'Not provided')}</strong></div></section><section class="request-detail-card"><h3>Portal account</h3><div class="request-detail-row"><span>Account ID</span><strong>${esc(r.user_id)}</strong></div><p class="request-notes">Company name is self-reported until ownership is verified.</p></section>
+ <section class="request-detail-card"><h3>Preferred contact</h3><div class="request-detail-row"><span>Method</span><strong>${esc(r.preferred_contact_method==='text'?'Text message':r.preferred_contact_method==='email'?'Email':'Not provided')}</strong></div><div class="request-detail-row"><span>Contact</span><strong>${esc(r.preferred_contact_value||'Not provided')}</strong></div></section>${r.deleted_at?'<section class="request-detail-card"><h3>Deleted by customer</h3><p class="request-notes">This request is retained in Admin and hidden from the customer’s active requests.</p></section>':''}<section class="request-detail-card"><h3>Portal account</h3><div class="request-detail-row"><span>Account ID</span><strong>${esc(r.user_id)}</strong></div><p class="request-notes">Company name is self-reported until ownership is verified.</p></section>
  <section class="request-status-actions"><h3>Status</h3><div>
  ${['submitted','under_review','in_progress','completed','declined'].map(status=>`<button type="button" data-set-status="${status}" class="${r.status===status?'active':''}">${esc(statusLabel(status))}</button>`).join('')}
  </div></section></div>`;
@@ -249,7 +250,7 @@ async function setStatus(id,status){
 }
 async function load(){
  const c=window.steadyHandsCRMClient;if(!c)return;
- const [web,portal]=await Promise.all([c.from('website_requests').select('*').order('created_at',{ascending:false}),c.from('portal_service_requests').select('id,user_id,company_name,request_type,title,details,preferred_contact_method,preferred_contact_value,status,created_at').order('created_at',{ascending:false})]);
+ const [web,portal]=await Promise.all([c.from('website_requests').select('*').order('created_at',{ascending:false}),c.from('portal_service_requests').select('id,user_id,company_name,request_type,title,details,preferred_contact_method,preferred_contact_value,status,created_at,deleted_at').order('created_at',{ascending:false})]);
  if(web.error||portal.error){document.getElementById('requestList').innerHTML='<div class="cc-empty">Unable to load requests.<br>'+esc(web.error?.message||portal.error?.message||'')+'</div>';return}
  rows=[...(web.data||[]).map(r=>({...r,_source:'website'})),...(portal.data||[]).map(r=>({...r,_source:'portal'}))].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));render();
 }
