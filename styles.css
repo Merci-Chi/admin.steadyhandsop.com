@@ -5695,3 +5695,84 @@ html[data-theme="dark"] body.admin-app-shell :is(
 html[data-theme="dark"] body.admin-app-shell :is(
  .admin-user-drawer,.admin-request-drawer,.client-drawer,.client-modal,.request-modal
 ){background:#0c1b2b!important;color:#eaf3fd!important}
+
+
+/* Dark mode contrast + EVERY dialog/drawer (outside app included). */
+html[data-theme="dark"] body.admin-app-shell :is(
+ .app-modal,.calendar-sheet,.settings-sheet,.call-tool-sheet,.call-keypad-sheet,
+ .post-call-sheet,.activity-transcript-sheet,.device-notification-popup,
+ .admin-user-drawer,.admin-lead-drawer,.admin-skill-drawer,
+ .admin-finance-drawer,.admin-audit-drawer,.admin-request-drawer,
+ .client-drawer,.client-modal,.request-modal,.admin-request-modal,
+ .request-action-modal,.admin-request-drawer-body,.request-drawer-body,
+ .request-detail-card,.modal-note,.modal-tags span,.modal-check,
+ .admin-user-profile-status,.admin-lead-drawer section,
+ .admin-audit-json pre,.admin-call-transcript-sheet
+ ){
+ background:#0d1d2d!important;color:#edf6ff!important;border-color:#30465d!important;
+}
+html[data-theme="dark"] body.admin-app-shell :is(
+ .app-modal,.calendar-sheet,.settings-sheet,.call-tool-sheet,.call-keypad-sheet,
+ .post-call-sheet,.activity-transcript-sheet,.device-notification-popup,
+ .admin-user-drawer,.admin-lead-drawer,.admin-skill-drawer,
+ .admin-finance-drawer,.admin-audit-drawer,.admin-request-drawer,
+ .client-drawer,.client-modal,.request-modal,.admin-request-modal,
+ .request-action-modal
+ ) :is(h1,h2,h3,h4,h5,h6,p,label,strong,b,span,small,li,td,th,dt,dd){
+ color:#eaf3ff!important;
+}
+html[data-theme="dark"] body.admin-app-shell :is(
+ .content,.admin-request-drawer,.admin-lead-drawer,.admin-user-drawer,
+ .admin-skill-drawer,.admin-finance-drawer,.admin-audit-drawer,
+ .app-modal,.calendar-sheet,.settings-sheet,.request-modal,.client-modal
+ ) :is(h1,h2,h3,h4,h5,h6,strong,b){
+ color:#f1f8ff!important;
+}
+html[data-theme="dark"] body.admin-app-shell :is(
+ .content,.admin-request-drawer,.admin-lead-drawer,.admin-user-drawer,
+ .admin-skill-drawer,.admin-finance-drawer,.admin-audit-drawer,
+ .app-modal,.calendar-sheet,.settings-sheet,.request-modal,.client-modal
+ ) :is(p,label,td,th,dd,li){
+ color:#deebf8!important;
+}
+html[data-theme="dark"] body.admin-app-shell :is(
+ .admin-dashboard-head,.admin-user-card,.admin-lead-card,.admin-request-card,
+ .request-list-card,.request-detail-card,.client-table,.client-table-scroll,
+ .admin-overview-actions a,.admin-metric-card,.admin-system-row
+ ) :is(span,small){
+ color:#c1d1e2!important;
+}
+html[data-theme="dark"] body.admin-app-shell :is(
+ .modal-input,.modal-textarea,.modal-action:not(.primary):not(.danger),
+ .app-modal-close,.settings-sheet-close,.settings-field,
+ .admin-user-drawer input,.admin-user-drawer select,
+ .admin-lead-drawer input,.admin-lead-drawer textarea,.admin-lead-drawer select,
+ .admin-request-drawer input,.admin-request-drawer textarea,.admin-request-drawer select,
+ .admin-skill-drawer input,.admin-finance-drawer input,
+ .admin-audit-drawer input,.calendar-sheet input,.calendar-sheet select,
+ .request-action-modal input,.request-action-modal textarea,
+ .client-modal input,.client-modal select,.client-modal textarea
+ ){
+ background:#10263b!important;color:#f0f7ff!important;border-color:#3a536c!important;
+}
+html[data-theme="dark"] body.admin-app-shell :is(input,textarea)::placeholder{
+ color:#a4b8cc!important;opacity:1;
+}
+html[data-theme="dark"] body.admin-app-shell :is(
+ .modal-help,.modal-note,.settings-sheet-note,.settings-inline-message,
+ .admin-user-drawer-head p,.request-drawer-head p
+ ){color:#b8cce0!important}
+html[data-theme="dark"] body.admin-app-shell :is(
+ .admin-user-drawer-overlay,.admin-lead-drawer-overlay,
+ .admin-skill-drawer-overlay,.admin-finance-drawer-overlay,
+ .admin-audit-drawer-overlay,.admin-request-overlay,
+ .app-modal-overlay,.calendar-sheet-overlay,.settings-sheet-overlay,
+ .call-tool-overlay,.post-call-overlay,.client-modal-overlay,
+ .request-modal-overlay,.device-notification-popup-overlay
+ ){background:rgba(0,5,14,.8)!important}
+html[data-theme="dark"] body.admin-app-shell :is(
+ .admin-request-drawer,.admin-user-drawer,.admin-lead-drawer,
+ .admin-skill-drawer,.admin-finance-drawer,.admin-audit-drawer
+ ) :is(button,a):not(.primary):not(.danger):not(.active){
+ color:#e4f0fc;
+}
