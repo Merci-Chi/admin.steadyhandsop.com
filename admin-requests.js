@@ -50,8 +50,11 @@ function openRequest(id){
  const overlay=document.getElementById('requestOverlay'),drawer=document.getElementById('requestDrawer');
  drawer.innerHTML=`
   <div class="request-drawer-head">
-    <div><span class="admin-kicker">WEBSITE REQUEST</span><h2>${esc(r.company_name||'Website Request')}</h2><p>${esc(fmtDate(r.created_at))}</p></div>
-    <button type="button" class="request-close" aria-label="Close"><i data-lucide="x"></i></button>
+    <div class="request-drawer-title"><span class="admin-kicker">WEBSITE REQUEST</span><h2>${esc(r.company_name||'Website Request')}</h2><p>${esc(fmtDate(r.created_at))}</p></div>
+    <div class="request-drawer-tools">
+      <button type="button" class="request-delete" aria-label="Delete request" title="Delete request" data-delete-request="${esc(r.id)}"><i data-lucide="trash-2"></i></button>
+      <button type="button" class="request-close" aria-label="Close"><i data-lucide="x"></i></button>
+    </div>
   </div>
   <div class="request-drawer-body">
     <section class="request-detail-card">
@@ -92,9 +95,34 @@ function openRequest(id){
   </div>`;
  overlay.hidden=false;document.body.style.overflow='hidden';window.lucide?.createIcons();
  drawer.querySelector('.request-close')?.addEventListener('click',closeDrawer);
+ drawer.querySelector('[data-delete-request]')?.addEventListener('click',()=>deleteRequest(r.id));
  drawer.querySelectorAll('[data-set-status]').forEach(btn=>btn.addEventListener('click',()=>setStatus(r.id,btn.dataset.setStatus)));
 }
 function closeDrawer(){document.getElementById('requestOverlay').hidden=true;document.body.style.overflow=''}
+async function deleteRequest(id){
+ const request=rows.find(x=>String(x.id)===String(id));
+ if(!request)return;
+ const business=String(request.company_name||'this website request');
+ if(!window.confirm('Delete the request for "'+business+'" permanently? This cannot be undone.'))return;
+ const c=window.steadyHandsCRMClient;
+ if(!c){alert('Admin database connection is unavailable.');return}
+ const button=document.querySelector('[data-delete-request]');
+ if(button){button.disabled=true;button.setAttribute('aria-busy','true')}
+ const {data,error}=await c.from('website_requests').delete().eq('id',id).select('id');
+ if(error){
+  if(button){button.disabled=false;button.removeAttribute('aria-busy')}
+  alert(error.message||'Could not delete the request. Make sure you are signed in as an administrator.');
+  return;
+ }
+ if(!data||!data.some(x=>String(x.id)===String(id))){
+  if(button){button.disabled=false;button.removeAttribute('aria-busy')}
+  alert('This request was not deleted. Your account may not have administrator delete permission, or the request has already been removed.');
+  return;
+ }
+ rows=rows.filter(x=>String(x.id)!==String(id));
+ closeDrawer();
+ render();
+}
 async function setStatus(id,status){
  const c=window.steadyHandsCRMClient;if(!c)return;
  const {error}=await c.from('website_requests').update({status,updated_at:new Date().toISOString()}).eq('id',id);
