@@ -5362,14 +5362,14 @@ html[data-theme="dark"] .admin-system-hero{background:linear-gradient(135deg,#10
     backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)
   }
   .admin-mobile-menu{
-    width:min(330px,86vw);height:100%;background:#102945;color:#fff;
+    width:min(330px,86vw);height:100%;height:100dvh;min-height:0;overflow:hidden;box-sizing:border-box;background:#102945;color:#fff;
     box-shadow:18px 0 50px rgba(2,14,28,.32);display:flex;flex-direction:column;
     padding:max(18px,env(safe-area-inset-top)) 14px max(18px,env(safe-area-inset-bottom));
     animation:adminSideIn .18s ease-out
   }
   @keyframes adminSideIn{from{transform:translateX(-100%)}to{transform:translateX(0)}}
   .admin-side-head{
-    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;
     padding:5px 4px 16px;border-bottom:1px solid rgba(255,255,255,.10)
   }
   .admin-side-head span{display:block;font-size:9px;font-weight:850;letter-spacing:.16em;color:#91b6d8}
@@ -5380,7 +5380,7 @@ html[data-theme="dark"] .admin-system-hero{background:linear-gradient(135deg,#10
   }
   .admin-side-close svg{width:20px;height:20px}
   .admin-side-nav{
-    overflow-y:auto;overscroll-behavior:contain;padding:12px 0;display:grid;gap:4px
+    flex:1 1 0;min-height:0;max-height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:12px 0;display:grid;grid-auto-rows:max-content;align-content:start;gap:4px
   }
   .admin-side-link{
     min-height:48px;border-radius:12px;padding:11px 12px;display:flex;align-items:center;
