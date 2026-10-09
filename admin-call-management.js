@@ -15,14 +15,9 @@ function render(){
 async function load(){
  const c=window.steadyHandsCRMClient;if(!c)return;
  msg('Loading…');
- const results=await Promise.all([
- c.from('callcenter_profiles').select('user_id,display_name,email').order('display_name'),
- c.from('callcenter_lead_locks').select('lead_id,user_id,claimed_at,expires_at').gt('expires_at',new Date().toISOString()).order('expires_at').limit(150),
- c.from('crm').select('id,company,name,phone,state_code,callbackdate,callbackat,callback_owner_id').eq('stage','callback').order('callbackdate',{ascending:true,nullsFirst:false}).limit(300)
- ]);
- const error=results.find(x=>x.error)?.error;
+ const {data,error}=await c.rpc('callcenter_admin_management_snapshot');
  if(error){msg('Unable to load: '+error.message);return;}
- profiles=results[0].data||[];locks=results[1].data||[];leads=results[2].data||[];
+ profiles=data?.profiles||[];locks=data?.locks||[];leads=data?.callbacks||[];
  msg('Updated '+new Date().toLocaleTimeString());render();
 }
 document.addEventListener('click',async ev=>{
