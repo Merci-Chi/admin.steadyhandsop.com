@@ -5428,3 +5428,17 @@ html[data-theme="dark"] .admin-system-hero{background:linear-gradient(135deg,#10
  .request-row-actions{flex-direction:column;justify-content:center;padding:0 5px;margin:9px 0}
  .request-row-delete,.request-row-open{width:36px;height:36px;flex-basis:36px}
 }
+
+/* Website request plus-button action composer */
+.request-quick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.request-quick-action{min-height:86px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:9px;padding:14px;border-radius:14px;border:1px solid #dce5ef;background:#f8fafc;color:#173653;font-weight:800;text-align:left;cursor:pointer}
+.request-quick-action svg{width:23px;height:23px;color:#1688ff}
+.request-quick-action:focus-visible,.request-action-buttons button:focus-visible{outline:3px solid #1688ff;outline-offset:2px}
+#requestActionComposer label{display:block;font-weight:800;font-size:13px;margin:14px 0 6px}
+#requestActionComposer input,#requestActionComposer textarea{display:block;width:100%;border:1px solid #d6e1ec;border-radius:12px;padding:12px;font:inherit;color:#122033;background:white;box-sizing:border-box}
+#requestActionComposer textarea{resize:vertical;line-height:1.5}
+.request-action-pref{font-size:13px;color:#61758c}
+.request-action-buttons{display:flex;gap:10px;margin-top:14px}
+.request-action-buttons button{flex:1;border:0;border-radius:12px;padding:12px;background:#eaf1f9;color:#173653;font-weight:800;cursor:pointer}
+.request-action-buttons button:last-child{background:#102945;color:white}
+#requestActionFeedback{font-size:12px;color:#607287;line-height:1.4}
