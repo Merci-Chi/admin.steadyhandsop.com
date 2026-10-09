@@ -30,7 +30,7 @@
     });
   }
 
-  document.addEventListener('DOMContentLoaded', async () => {
+  async function runAdminAccessCheck() {
     try {
       if (!window.supabase) throw new Error('Sign-in library unavailable');
 
@@ -84,5 +84,18 @@
       console.error('Admin access check failed:', error);
       showAccessDenied(error?.message || 'Unable to verify administrator access.');
     }
-  });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', runAdminAccessCheck, { once: true });
+  } else {
+    runAdminAccessCheck();
+  }
+
+  // Never leave the admin shell invisibly stuck if startup event handling fails.
+  window.setTimeout(() => {
+    if (document.documentElement.classList.contains('auth-checking')) {
+      showAccessDenied('Administrator sign-in check did not finish. Reload the page or return to sign in.');
+    }
+  }, 10000);
 })();
