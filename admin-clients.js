@@ -1,6 +1,6 @@
 (()=>{
 const $=s=>document.querySelector(s);
-const esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'"/g,'&quot;').replace(/'/g,'&#39;');
+const esc=v=>String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
 const date=v=>v?new Date(v).toLocaleDateString():'—';
 const state={clients:[],q:'',filter:'all',signatures:[],selected:null};
 const paymentFields=['square_invoice_url','invoice_url','square_payment_url','payment_link','payment_url','checkout_url'];
@@ -46,12 +46,13 @@ async function openClient(id){
 }
 function close(){$('#clientOverlay').hidden=true;document.body.style.overflow=''}
 async function load(){
- const c=window.steadyHandsCRMClient;if(!c)return;
+ $('#clientSummary').textContent='Connecting to client records…';
+ const c=window.steadyHandsCRMClient;if(!c){$('#clientList').innerHTML='<div class="cc-empty">Admin database is unavailable. Please reload or sign in again.</div>';$('#clientSummary').textContent='Unable to load';return}
  const [req,sig]=await Promise.all([
   c.from('portal_service_requests').select('*').order('created_at',{ascending:false}),
   c.from('portal_agreement_signatures').select('id,user_id,agreement_title,agreement_version,created_at').order('created_at',{ascending:false})
  ]);
- if(req.error&&sig.error){$('#clientList').innerHTML='<div class="cc-empty">Unable to load client records. '+esc(req.error.message)+'</div>';return}
+ if(req.error&&sig.error){$('#clientList').innerHTML='<div class="cc-empty">Unable to load client records. '+esc(req.error.message)+' · '+esc(sig.error.message)+'</div>';$('#clientSummary').textContent='Unable to load';return}
  const map=new Map();
  const ensure=id=>{const k=String(id);if(!map.has(k))map.set(k,{id:k,company:'Client account',email:'',phone:'',requests:[],signatures:[]});return map.get(k)};
  for(const r of req.data||[]){if(!r.user_id)continue;const x=ensure(r.user_id);x.requests.push(r);if(r.company_name)x.company=r.company_name;if(r.preferred_contact_method==='email'&&r.preferred_contact_value)x.email=r.preferred_contact_value;if(r.preferred_contact_method==='text'&&r.preferred_contact_value)x.phone=r.preferred_contact_value}
@@ -63,5 +64,6 @@ $('#clientSearch').addEventListener('input',e=>{state.q=e.target.value;render()}
 document.querySelectorAll('[data-client-filter]').forEach(b=>b.onclick=()=>{state.filter=b.dataset.clientFilter;document.querySelectorAll('[data-client-filter]').forEach(x=>x.classList.toggle('active',x===b));render()});
 $('#clientOverlay').onclick=e=>{if(e.target.id==='clientOverlay')close()};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#clientOverlay').hidden)close()});
-if(window.steadyHandsAdminSession)load();else window.addEventListener('steadyhands:admin-ready',load,{once:true});
+window.addEventListener('error',event=>{const target=$('#clientList');if(target&&target.textContent.includes('Loading clients')){target.textContent='The Clients page encountered an error: '+(event.message||'Unknown error');$('#clientSummary').textContent='Unable to load'}});
+if(window.steadyHandsAdminSession)load().catch(err=>{$('#clientList').textContent='Unable to load clients: '+(err?.message||String(err));$('#clientSummary').textContent='Unable to load'});else window.addEventListener('steadyhands:admin-ready',()=>load().catch(err=>{$('#clientList').textContent='Unable to load clients: '+(err?.message||String(err));$('#clientSummary').textContent='Unable to load'}),{once:true});
 })();
