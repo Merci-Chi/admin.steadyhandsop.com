@@ -5542,6 +5542,8 @@ html[data-theme="dark"] .admin-system-hero{background:linear-gradient(135deg,#10
   .admin-desktop-links .admin-side-link svg{width:18px;height:18px;flex:none}
   .admin-desktop-links .admin-side-link.active{background:white;color:#102945}
   .admin-app-shell .app{position:relative;margin:0 0 0 242px!important;max-width:none!important;width:calc(100% - 242px);height:100vh!important;height:100dvh!important;min-height:0!important;display:flex;flex-direction:column;overflow:hidden!important;border-radius:0!important;padding-bottom:0!important;box-shadow:none!important}
+  /* Keep the main panel anchored exactly once beside the 242px rail. */
+  body.admin-app-shell > .app{position:fixed!important;top:0!important;bottom:0!important;left:242px!important;right:0!important;margin:0!important;width:auto!important;max-width:none!important;transform:none!important}
   .admin-app-shell .topbar{flex:0 0 auto}
   .admin-app-shell .content{flex:1 1 0;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;padding-bottom:40px}
   .admin-app-shell .bottom-nav{display:none!important}
