@@ -101,7 +101,7 @@
         <label class="full">Notes<textarea id="leadNotes">${esc(lead.notes || '')}</textarea></label>
       </div>
 
-      <div class="admin-lead-actions">
+      <div class="admin-lead-actions">\n        <button type="button" id="adminSharePreview" class="primary"><i data-lucide="link"></i>Create Preview Signup Link</button>
         <button type="button" class="primary" id="adminSaveLead"><i data-lucide="save"></i>Save Changes</button>
         <button type="button" id="adminArchiveLead"><i data-lucide="${isArchived(lead)?'archive-restore':'archive'}"></i>${isArchived(lead)?'Restore Lead':'Archive Lead'}</button>
         <button type="button" class="danger" id="adminDeleteLead"><i data-lucide="trash-2"></i>Delete Permanently</button>
@@ -114,6 +114,20 @@
     drawer.querySelector('#adminCloseLead').onclick = close;
     overlay.onclick = e => { if (e.target === overlay) close(); };
 
+    drawer.querySelector('#adminSharePreview').onclick=async()=>{
+      const button=drawer.querySelector('#adminSharePreview');
+      const msg=drawer.querySelector('#adminLeadMessage');
+      const key=String(lead.sitekey||'').trim();
+      const url=String(lead.previewurl||'').trim();
+      if(!key||!url){msg.textContent='Save a site key and preview URL on this lead before generating a link.';return}
+      if(!/^https:\/\//i.test(url)){msg.textContent='Preview URL must start with https://';return}
+      button.disabled=true;msg.textContent='Creating a private preview invitation…';
+      const {data,error}=await window.steadyHandsCRMClient.rpc('create_portal_preview_invite',{p_site_key:key,p_site_title:lead.company||lead.name||'Website Preview',p_preview_url:url});
+      button.disabled=false;
+      if(error){msg.textContent='Could not create invitation: '+error.message;return}
+      try{await navigator.clipboard.writeText(data);msg.textContent='Preview signup link copied to clipboard.'}
+      catch{msg.textContent='Preview signup link: '+data}
+    };
     drawer.querySelector('#adminSaveLead').onclick = async () => {
       const msg = drawer.querySelector('#adminLeadMessage');
       const payload = {
