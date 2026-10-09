@@ -5322,7 +5322,7 @@ html[data-theme="dark"] .admin-system-hero{background:linear-gradient(135deg,#10
 .request-drawer-head{position:sticky;top:0;z-index:2;background:linear-gradient(180deg,var(--navy),#14314f);color:#fff;padding:18px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
 .request-drawer-head h2{margin:2px 0 3px;font-size:21px}
 .request-drawer-head p{margin:0;color:#c7d6e5;font-size:10px}
-.request-close{width:38px;height:38px;border:0;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;display:grid;place-items:center}
+.request-drawer-tools{display:flex;align-items:center;gap:8px;flex:0 0 auto}.request-delete{width:38px;height:38px;border:1px solid rgba(255,255,255,.18);border-radius:50%;background:rgba(190,45,55,.18);color:#ffc3c5;display:grid;place-items:center;cursor:pointer;transition:background .15s,color .15s,border-color .15s}.request-delete:hover{background:#b42332;color:#fff;border-color:#b42332}.request-delete:disabled{opacity:.55;cursor:wait}.request-drawer-title{min-width:0;overflow-wrap:anywhere}.request-close{width:38px;height:38px;border:0;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;display:grid;place-items:center}
 .request-drawer-body{padding:12px}
 .request-detail-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px}
 .request-detail-card h3,.request-status-actions h3{margin:0 0 10px;font-size:13px}
