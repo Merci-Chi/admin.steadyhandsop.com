@@ -104,28 +104,6 @@
     `;
     document.body.appendChild(overlay);
 
-    // Self-contained scroll styling: avoids depending on an older cached stylesheet.
-    const menuStyle = document.createElement('style');
-    menuStyle.textContent = `@media(max-width:699px){
-      .admin-side-overlay:not([hidden]){height:100dvh;overflow:hidden}
-      .admin-mobile-menu{height:100dvh!important;max-height:100dvh!important;min-height:0!important;overflow:hidden!important;display:flex!important;flex-direction:column!important;box-sizing:border-box!important}
-      .admin-side-head{flex:0 0 auto!important}
-      .admin-side-nav{display:block!important;flex:1 1 0!important;min-height:0!important;height:0!important;overflow-y:scroll!important;overflow-x:hidden!important;overscroll-behavior-y:contain!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important;padding-bottom:40px!important}
-      .admin-side-link{display:flex!important;min-height:48px!important;margin-bottom:4px!important}
-    }`;
-    document.head.appendChild(menuStyle);
-
-    const scrollNav = overlay.querySelector('.admin-side-nav');
-    // Trackpad/mouse wheel fallback for browsers or embedded PWAs that capture
-    // wheel events on the page instead of its independently scrolling drawer.
-    scrollNav.addEventListener('wheel', event => {
-      if (scrollNav.scrollHeight <= scrollNav.clientHeight + 1) return;
-      const before = scrollNav.scrollTop;
-      const max = scrollNav.scrollHeight - scrollNav.clientHeight;
-      scrollNav.scrollTop = Math.max(0, Math.min(max, before + event.deltaY));
-      if (scrollNav.scrollTop !== before) event.preventDefault();
-    }, { passive:false });
-
     const closeButton = overlay.querySelector('.admin-side-close');
     const setOpen = open => {
       overlay.hidden = !open;
@@ -166,6 +144,14 @@
     });
 
     document.body.classList.add('admin-app-shell');
+    // Desktop rail is a separate fixed scroll region from the main .app.
+    if (!document.querySelector('.admin-desktop-sidebar')) {
+      const rail = document.createElement('aside');
+      rail.className = 'admin-desktop-sidebar';
+      rail.setAttribute('aria-label', 'Admin pages');
+      rail.innerHTML = '<div class="admin-desktop-brand"><small>STEADY HANDS</small><strong>Admin Menu</strong></div><nav class="admin-desktop-links">' + sideNav() + '</nav>';
+      document.body.insertBefore(rail, document.body.firstChild);
+    }
     installMobileSideMenu();
 
     // The separate admin app never originates outbound calls.
