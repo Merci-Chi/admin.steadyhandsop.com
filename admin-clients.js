@@ -3,7 +3,7 @@ const $=s=>document.querySelector(s), db=()=>window.steadyHandsCRMClient;
 const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const safeUrl=v=>{try{const u=new URL(v);return u.protocol==='https:'?u.href:''}catch{return ''}};
 const displayDate=v=>v?new Date(v).toLocaleDateString():'—';
-const state={clients:[],requests:[],signatures:[],query:'',filter:'all',hosting:'all',team:'all',page:0,perPage:8};
+const state={clients:[],requests:[],signatures:[],subscriptions:[],payments:[],query:'',filter:'all',hosting:'all',team:'all',page:0,perPage:8};
 const statusNames={onboarding:'Onboarding',live:'Live',needs_review:'Needs Review',waiting_on_content:'Waiting on Content',inactive:'Inactive'};
 const toast=msg=>{$('#clientDataNotice').textContent=msg||''};
 const icon=(name)=>'<i data-lucide="'+name+'"></i>';
@@ -12,6 +12,11 @@ const initials=v=>String(v||'C').trim().slice(0,1).toUpperCase();
 const related=c=>state.requests.filter(r=>c.portal_user_id&&String(r.user_id)===String(c.portal_user_id));
 const signed=c=>state.signatures.filter(r=>c.portal_user_id&&String(r.user_id)===String(c.portal_user_id));
 const latest=c=>related(c)[0];
+const normalized=v=>String(v||'').trim().toLowerCase();
+const subscriptionsFor=c=>state.subscriptions.filter(s=>(c.portal_user_id&&s.userid===c.portal_user_id)||(c.email&&normalized(s.email)===normalized(c.email))||(c.contact_name&&normalized(s.name)===normalized(c.contact_name)&&!!s.name));
+const paymentsFor=c=>{const subs=subscriptionsFor(c),ids=new Set(subs.map(s=>s.id)),customers=new Set(subs.map(s=>s.customerid).filter(Boolean));return state.payments.filter(p=>(p.squareid&&ids.has(p.squareid))||(p.customerid&&customers.has(p.customerid))||(c.crmid&&p.crmid===c.crmid));};
+const currency=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format((Number(n)||0)/100);
+
 function matches(c){
  const q=state.query.trim().toLowerCase();
  return (!q||[c.company_name,c.contact_name,c.email,c.phone,c.site_url,c.assigned_to].some(v=>String(v||'').toLowerCase().includes(q)))
@@ -86,13 +91,16 @@ async function openClient(id){
  drawer(nameOf(c),
  '<section class="request-detail-card"><h3>Client overview</h3><div class="request-detail-row"><span>Contact</span><strong>'+esc(c.contact_name||'—')+'</strong></div><div class="request-detail-row"><span>Email</span><strong>'+esc(c.email||'—')+'</strong></div><div class="request-detail-row"><span>Phone</span><strong>'+esc(c.phone||'—')+'</strong></div><div class="request-detail-row"><span>Website</span><strong>'+(safeUrl(c.site_url)?'<a target="_blank" rel="noopener noreferrer" href="'+esc(safeUrl(c.site_url))+'">Open website ↗</a>':'Not set')+'</strong></div></section>'+
  '<section class="request-detail-card"><h3>Hosting & billing</h3><div class="request-detail-row"><span>Hosting</span><strong>'+esc(c.hosting_plan||'none')+'</strong></div><div class="request-detail-row"><span>Billing status</span><strong>'+esc(c.billing_status||'unknown')+'</strong></div><div class="request-detail-row"><span>Assigned to</span><strong>'+esc(c.assigned_to||'Unassigned')+'</strong></div></section>'+
+ '<section class="request-detail-card"><h3>Square subscriptions</h3>'+(()=>{const subs=subscriptionsFor(c);return subs.length?subs.map(s=>'<div class="request-detail-row"><span>'+esc(s.plan||'Subscription')+'<small style="display:block">'+esc(s.status||'Unknown')+' · '+esc(s.cadence||'')+'</small></span><strong>'+currency(s.amount)+'</strong></div>').join('')+'<p class="request-notes">Total active monthly: <strong>'+currency(subs.filter(s=>String(s.status).toUpperCase()==='ACTIVE'&&String(s.cadence).toUpperCase()==='MONTHLY').reduce((n,s)=>n+(Number(s.amount)||0),0))+'</strong></p>':'<p class="request-notes">No matched subscriptions. Match the client email/name with the Square record.</p>'})()+'</section>'+
+ '<section class="request-detail-card"><h3>Payment history</h3>'+(()=>{const payments=paymentsFor(c).sort((a,b)=>new Date(b.paid||b.created||0)-new Date(a.paid||a.created||0));return payments.length?payments.slice(0,30).map(p=>'<div class="request-detail-row"><span>'+esc(displayDate(p.paid||p.created))+' · '+esc(p.status||'Unknown')+'</span><strong>'+currency(p.amount)+'</strong></div>').join(''):'<p class="request-notes">No matched payments in the synced payment history.</p>'})()+'</section>'+
+ '<section class="request-detail-card"><h3>Square invoicing</h3><p class="request-notes">Create and send an official invoice in Square. This opens Square; it does not issue an invoice automatically.</p><a class="client-btn secondary" href="https://app.squareup.com/dashboard/invoices" target="_blank" rel="noopener noreferrer">Open Square Invoices ↗</a></section>'+
  '<section class="request-detail-card"><h3>Agreement & signature</h3>'+(signatures.length?signatures.map((s,i)=>'<div class="request-detail-row"><span>'+esc(s.agreement_title||s.agreement_version||'Agreement')+'</span><button data-signature="'+i+'">View signature</button></div>').join(''):'<p class="request-notes">No signature found. This does not affect client status.</p>')+'</section>'+
  '<section class="request-detail-card"><h3>Square invoices / payment links</h3>'+(links.join('<div class="request-detail-row">')||'<p class="request-notes">No links recorded in requests.</p>')+'</section>'+
  '<section class="request-detail-card"><h3>Recent requests</h3>'+(requests.length?requests.slice(0,10).map(r=>'<div class="request-detail-row"><span>'+esc(displayDate(r.created_at))+'</span><strong>'+esc(r.title||r.request_type||'Website request')+'</strong></div>').join(''):'<p class="request-notes">No requests on file.</p>')+'</section>'+
  '<section class="request-detail-card"><h3>Internal notes</h3><p class="request-notes">'+esc(c.notes||'No notes yet.')+'</p></section>'+
  '<div class="client-drawer-actions"><button class="client-btn primary" id="clientEdit">Edit Client</button><button class="client-btn danger" id="clientRemove">Remove Client</button></div>');
  $('#clientEdit').onclick=()=>edit(c);
- $('#clientRemove').onclick=async()=>{if(!confirm('Remove '+nameOf(c)+' from Clients? This will NOT delete their portal account, requests, or signatures.'))return;const res=await db().from('admin_client_records').delete().eq('id',c.id);if(res.error){toast(res.error.message);return}close();await load();toast('Client removed from the Clients list.')};
+ $('#clientRemove').onclick=async()=>{if(prompt('Type REMOVE to remove '+nameOf(c)+' from the admin Clients list. Their portal account, requests, signatures and Square subscriptions will remain unchanged.')!=='REMOVE')return;const res=await db().from('admin_client_records').delete().eq('id',c.id);if(res.error){toast(res.error.message);return}close();await load();toast('Client removed from the Clients list.')};
  document.querySelectorAll('[data-signature]').forEach(b=>b.onclick=async()=>{
  const s=signatures[Number(b.dataset.signature)];b.disabled=true;
  const {data,error}=await db().from('portal_agreement_signatures').select('signature_png').eq('id',s.id).maybeSingle();b.disabled=false;
@@ -114,12 +122,14 @@ async function load(){
  const res=await client.from('admin_client_records').select('*').order('company_name',{ascending:true});
  if(res.error){toast('Client records are not ready: '+res.error.message+'. Run sql/admin-client-records.sql in your main CRM Supabase SQL editor.');$('#clientList').innerHTML='<tr><td colspan="8" class="client-empty">Client records unavailable. Database setup is required.</td></tr>';$('#clientSummary').textContent='Unable to load';return}
  state.clients=res.data||[];
- const [r,s]=await Promise.all([
+ const [r,s,sq,pay]=await Promise.all([
  client.from('portal_service_requests').select('*').order('created_at',{ascending:false}),
- client.from('portal_agreement_signatures').select('id,user_id,agreement_title,agreement_version,created_at').order('created_at',{ascending:false})
+ client.from('portal_agreement_signatures').select('id,user_id,agreement_title,agreement_version,created_at').order('created_at',{ascending:false}),
+ client.from('square').select('id,userid,customerid,subscriptionid,name,company,email,plan,amount,status,cadence,startdate').order('startdate',{ascending:false}),
+ client.from('payments').select('id,squareid,crmid,customerid,status,amount,paid,created').order('created',{ascending:false}).limit(500)
  ]);
- state.requests=r.data||[];state.signatures=s.data||[];
- toast(r.error||s.error?'Some request or signature details could not be loaded. Client records are still available.':'');
+ state.requests=r.data||[];state.signatures=s.data||[];state.subscriptions=sq.data||[];state.payments=pay.data||[];
+ toast(r.error||s.error||sq.error||pay.error?'Some request, signature, subscription or payment records could not be loaded. Client records are still available.':'');
  render();
 }
 $('#clientSearch').oninput=e=>{state.query=e.target.value;state.page=0;render()};
