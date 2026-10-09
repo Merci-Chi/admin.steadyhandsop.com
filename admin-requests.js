@@ -24,16 +24,21 @@ function render(){
  document.getElementById('requestSummary').innerHTML=
   '<span><strong>'+counts.new+'</strong> New</span><span><strong>'+counts.in_progress+'</strong> In Progress</span><span><strong>'+counts.completed+'</strong> Completed</span>';
  list.innerHTML=visible.length?visible.map(r=>`
-  <button class="admin-request-card" type="button" data-request-id="${esc(r.id)}">
-    <span class="request-avatar">${esc(initials(r.company_name))}</span>
-    <span class="request-card-main">
-      <strong>${esc(r.company_name||'Unnamed business')}</strong>
-      <small>${esc(r.contact_name||'No contact')} · ${esc(r.business_category||'No category')}</small>
-      <small>${esc(r.phone||r.email||'')}</small>
-    </span>
-    <span class="request-card-side">${badge(r.status)}<time>${esc(fmtDate(r.created_at))}</time></span>
-    <i data-lucide="chevron-right"></i>
-  </button>`).join(''):'<div class="cc-empty">No requests found.</div>';
+  <div class="admin-request-row">
+    <div class="admin-request-card" role="button" tabindex="0" data-request-id="${esc(r.id)}">
+      <span class="request-avatar">${esc(initials(r.company_name))}</span>
+      <span class="request-card-main">
+        <strong>${esc(r.company_name||'Unnamed business')}</strong>
+        <small>${esc(r.contact_name||'No contact')} · ${esc(r.business_category||'No category')}</small>
+        <small>${esc(r.phone||r.email||'')}</small>
+      </span>
+      <span class="request-card-side">${badge(r.status)}<time>${esc(fmtDate(r.created_at))}</time></span>
+      <i data-lucide="chevron-right"></i>
+    </div>
+    <button class="request-row-delete" type="button" data-delete-request="${esc(r.id)}" aria-label="Delete ${esc(r.company_name||'website request')}" title="Delete request">
+      <i data-lucide="trash-2"></i>
+    </button>
+  </div>`).join(''):'<div class="cc-empty">No requests found.</div>';
  window.lucide?.createIcons();
 }
 function colorRow(label,value){
@@ -50,11 +55,8 @@ function openRequest(id){
  const overlay=document.getElementById('requestOverlay'),drawer=document.getElementById('requestDrawer');
  drawer.innerHTML=`
   <div class="request-drawer-head">
-    <div class="request-drawer-title"><span class="admin-kicker">WEBSITE REQUEST</span><h2>${esc(r.company_name||'Website Request')}</h2><p>${esc(fmtDate(r.created_at))}</p></div>
-    <div class="request-drawer-tools">
-      <button type="button" class="request-delete" aria-label="Delete request" title="Delete request" data-delete-request="${esc(r.id)}"><i data-lucide="trash-2"></i></button>
-      <button type="button" class="request-close" aria-label="Close"><i data-lucide="x"></i></button>
-    </div>
+    <div><span class="admin-kicker">WEBSITE REQUEST</span><h2>${esc(r.company_name||'Website Request')}</h2><p>${esc(fmtDate(r.created_at))}</p></div>
+    <button type="button" class="request-close" aria-label="Close"><i data-lucide="x"></i></button>
   </div>
   <div class="request-drawer-body">
     <section class="request-detail-card">
@@ -95,18 +97,17 @@ function openRequest(id){
   </div>`;
  overlay.hidden=false;document.body.style.overflow='hidden';window.lucide?.createIcons();
  drawer.querySelector('.request-close')?.addEventListener('click',closeDrawer);
- drawer.querySelector('[data-delete-request]')?.addEventListener('click',()=>deleteRequest(r.id));
  drawer.querySelectorAll('[data-set-status]').forEach(btn=>btn.addEventListener('click',()=>setStatus(r.id,btn.dataset.setStatus)));
 }
 function closeDrawer(){document.getElementById('requestOverlay').hidden=true;document.body.style.overflow=''}
-async function deleteRequest(id){
+async function deleteRequest(id, triggerButton){
  const request=rows.find(x=>String(x.id)===String(id));
  if(!request)return;
  const business=String(request.company_name||'this website request');
  if(!window.confirm('Delete the request for "'+business+'" permanently? This cannot be undone.'))return;
  const c=window.steadyHandsCRMClient;
  if(!c){alert('Admin database connection is unavailable.');return}
- const button=document.querySelector('[data-delete-request]');
+ const button=triggerButton||document.querySelector('.request-row-delete[data-delete-request="'+String(id).replace(/"/g,'\\"')+'"]');
  if(button){button.disabled=true;button.setAttribute('aria-busy','true')}
  const {data,error}=await c.from('website_requests').delete().eq('id',id).select('id');
  if(error){
@@ -140,7 +141,16 @@ document.querySelectorAll('[data-request-filter]').forEach(btn=>btn.addEventList
  filter=btn.dataset.requestFilter;document.querySelectorAll('[data-request-filter]').forEach(x=>x.classList.toggle('active',x===btn));render();
 }));
 document.getElementById('requestSearch')?.addEventListener('input',e=>{query=e.target.value;render()});
-document.getElementById('requestList')?.addEventListener('click',e=>{const card=e.target.closest('[data-request-id]');if(card)openRequest(card.dataset.requestId)});
+document.getElementById('requestList')?.addEventListener('click',e=>{
+ const deleteButton=e.target.closest('[data-delete-request]');
+ if(deleteButton){e.preventDefault();e.stopPropagation();deleteRequest(deleteButton.dataset.deleteRequest,deleteButton);return}
+ const card=e.target.closest('[data-request-id]');
+ if(card)openRequest(card.dataset.requestId);
+});
+document.getElementById('requestList')?.addEventListener('keydown',e=>{
+ const card=e.target.closest('[data-request-id]');
+ if(card&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openRequest(card.dataset.requestId)}
+});
 document.getElementById('requestOverlay')?.addEventListener('click',e=>{if(e.target.id==='requestOverlay')closeDrawer()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('requestOverlay')?.hidden)closeDrawer()});
 if(window.steadyHandsAdminSession)load();else window.addEventListener('steadyhands:admin-ready',load,{once:true});
