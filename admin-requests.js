@@ -66,12 +66,25 @@ function requestContact(r,method){
  if(method==='email')return (preferred.includes('mail')&&value.includes('@')?value:'')||String(r.email||'').trim()||(value.includes('@')?value:'');
  return (preferred.includes('text')||preferred.includes('sms')?value:'')||String(r.phone||'').trim()||(!value.includes('@')?value:'');
 }
+function polishedPreview(name,key){
+ return ['Hello '+name+',','','Great news! Your website preview from Steady Hands is ready for you to explore.','','VIEW YOUR WEBSITE PREVIEW','https://viewyoursite.today','','YOUR PERSONAL SITE KEY',key||'[SITE KEY]','','To view your preview, open the link above and enter your site key when prompted.','','Take a look around and let us know what you think. If you would like any changes to the design, content, or layout, simply reply to this message. We would be happy to help.','','We look forward to hearing your feedback!','','Best regards,','Steady Hands LLC','Website Design & Support','https://steadyhandsop.com'].join('\\n');
+}
+function polishedTemplate(kind,name,key){
+ if(kind==='preview')return polishedPreview(name,key);
+ const chunks={
+ estimate:['Thank you for your interest in having your website built by Steady Hands.','', 'ESTIMATED PRICING','Website setup: $100 one-time','Standard hosting: $20/month','Backend hosting: $30/month (alternative to Standard)','', 'These are our standard rates, not a finalized quote or payment request. Please reply with your preferred hosting plan and any questions.'],
+ invoice:['Thank you for choosing Steady Hands!','', 'WEBSITE PAYMENT OVERVIEW','Website setup: $100 one-time','Standard hosting: $20/month OR backend hosting: $30/month','', 'Your official invoice and secure payment instructions will be provided separately. Please do not send payment based on this message alone.'],
+ followup:['I wanted to follow up on your website request with Steady Hands.','', 'Do you have any questions about your preview, website options, or next steps? We would be happy to help whenever you are ready.'],
+ update:['We wanted to share an update on your website request.','', 'LATEST UPDATE','[Add the current progress and next steps here]','', 'If there is anything you would like us to know, please reply to this message.']
+ };
+ return ['Hello '+name+',','',...(chunks[kind]||chunks.followup),'','Best regards,','Steady Hands LLC','Website Design & Support','https://steadyhandsop.com'].join('\\n');
+}
 function previewDelivery(r,drawer){
  const preferred=String(r.preferred_contact_method||r.preferred_contact||r.delivery_method||r.contact_method||r.reply_method||'').toLowerCase();
  const method=preferred.includes('text')||preferred.includes('sms')?'text':preferred.includes('mail')?'email':'';
  const first=String(r.contact_name||r.company_name||'there').trim().split(/\s+/)[0];
  const key=String(r.site_key||'').trim();
- const body=key=>`Hi ${first}! Your website preview from Steady Hands is ready! Visit https://viewyoursite.today and enter your site key: ${key||'[SITE KEY]'}. We'd love your feedback! — Steady Hands`;
+ const body=key=>polishedPreview(first,key);
  const section=document.createElement('section');
  section.className='request-detail-card';
  section.innerHTML=`<h3>Send website preview</h3><p style="color:#64748b;font-size:13px">Paste a site key to prepare a draft for your client.</p>
@@ -101,16 +114,16 @@ function previewDelivery(r,drawer){
 function requestActions(id){
  const r=rows.find(x=>String(x.id)===String(id));if(!r)return;
  const overlay=document.getElementById('requestOverlay'),drawer=document.getElementById('requestDrawer');
- const first=String(r.contact_name||'there').trim().split(/\s+/)[0];
+ const first=String(r.contact_name||r.company_name||'there').trim().split(/\s+/)[0];
  const preferred=String(r.preferred_contact_method||r.preferred_contact||r.delivery_method||r.contact_method||'').toLowerCase();
  const pref=preferred.includes('text')||preferred.includes('sms')?'text':preferred.includes('mail')?'email':'';
  const key=String(r.site_key||'').trim();
  const templates={
-  preview:{name:'Website preview',subject:'Your Steady Hands website preview',message:`Hi ${first}! Your website preview is ready. Visit https://viewyoursite.today and use site key: ${key||'[SITE KEY]'}. We'd love your feedback! — Steady Hands`},
-  estimate:{name:'Estimate',subject:'Website estimate from Steady Hands',message:`Hi ${first}! Here is your estimated website pricing from Steady Hands:\n\nWebsite development: $100 one-time\nStandard hosting: $20/month OR backend hosting: $30/month\n\nThis is an estimate, not an invoice or payment request. Let us know which plan works best for you! — Steady Hands`},
-  invoice:{name:'Invoice message',subject:'Website payment details from Steady Hands',message:`Hi ${first}! We're preparing your website payment details. Website development is $100 one-time, with standard hosting at $20/month or backend hosting at $30/month. We will provide an official invoice and secure payment link separately. — Steady Hands`},
-  followup:{name:'Follow-up',subject:'Following up — Steady Hands',message:`Hi ${first}! Just checking in about your website request with Steady Hands. Do you have any questions, or is there anything we can help with? — Steady Hands`},
-  update:{name:'Progress update',subject:'Update on your website request',message:`Hi ${first}! Here's a quick update about your Steady Hands website request: [ENTER UPDATE]. Let us know if you have any questions! — Steady Hands`}
+ preview:{name:'Website preview',subject:'Your website preview is ready | Steady Hands',message:polishedTemplate('preview',first,key)},
+ estimate:{name:'Estimate',subject:'Your website estimate | Steady Hands',message:polishedTemplate('estimate',first,key)},
+ invoice:{name:'Invoice message',subject:'Website payment information | Steady Hands',message:polishedTemplate('invoice',first,key)},
+ followup:{name:'Follow-up',subject:'Following up on your website request | Steady Hands',message:polishedTemplate('followup',first,key)},
+ update:{name:'Progress update',subject:'Update on your website request | Steady Hands',message:polishedTemplate('update',first,key)}
  };
  drawer.innerHTML=`<div class="request-drawer-head"><div><span class="admin-kicker">REQUEST ACTIONS</span><h2>${esc(r.company_name||'Website request')}</h2><p>Choose what you would like to do</p></div><button class="request-close" type="button" aria-label="Close"><i data-lucide="x"></i></button></div>
  <div class="request-drawer-body"><section class="request-detail-card">
@@ -133,7 +146,7 @@ function requestActions(id){
  const subject=drawer.querySelector('#requestActionSubject'),body=drawer.querySelector('#requestActionBody'),siteKey=drawer.querySelector('#requestActionSiteKey'),feedback=drawer.querySelector('#requestActionFeedback'),composer=drawer.querySelector('#requestActionComposer');
  function pick(k){selected=k;const t=templates[k];composer.hidden=false;drawer.querySelector('#requestActionTitle').textContent=t.name+' draft';subject.value=t.subject;body.value=t.message;drawer.querySelector('#requestActionSiteKeyWrap').hidden=k!=='preview';feedback.textContent='Review before sending. Opening an app does not send automatically.';composer.scrollIntoView({behavior:'smooth',block:'nearest'})}
  drawer.querySelectorAll('[data-template]').forEach(btn=>btn.addEventListener('click',()=>pick(btn.dataset.template)));
- siteKey.addEventListener('input',()=>{if(selected==='preview')body.value=templates.preview.message.replace(key||'[SITE KEY]',siteKey.value.trim()||'[SITE KEY]')});
+ siteKey.addEventListener('input',()=>{if(selected==='preview')body.value=polishedPreview(first,siteKey.value.trim())});
  drawer.querySelector('#requestActionCopy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(body.value);feedback.textContent='Draft copied!'}catch{body.focus();body.select();feedback.textContent='Copy the selected message.'}});
  drawer.querySelector('#requestActionOpen').addEventListener('click',()=>{
   if(selected==='preview'&&!siteKey.value.trim()){feedback.textContent='Enter the site key first.';siteKey.focus();return}
