@@ -67,7 +67,7 @@ function requestContact(r,method){
  return (preferred.includes('text')||preferred.includes('sms')?value:'')||String(r.phone||'').trim()||(!value.includes('@')?value:'');
 }
 function polishedPreview(name,key){
- return ['Hello '+name+',','','Great news! Your website preview from Steady Hands is ready for you to explore.','','VIEW YOUR WEBSITE PREVIEW','https://viewyoursite.today','','YOUR PERSONAL SITE KEY',key||'[SITE KEY]','','To view your preview, open the link above and enter your site key when prompted.','','Take a look around and let us know what you think. If you would like any changes to the design, content, or layout, simply reply to this message. We would be happy to help.','','We look forward to hearing your feedback!','','Best regards,','Steady Hands LLC','Website Design & Support','https://steadyhandsop.com'].join('\\n');
+ return ['Hello '+name+',','','Great news! Your website preview from Steady Hands is ready for you to explore.','','VIEW YOUR WEBSITE PREVIEW','https://viewyoursite.today','','YOUR PERSONAL SITE KEY',key||'[SITE KEY]','','To view your preview, open the link above and enter your site key when prompted.','','Take a look around and let us know what you think. If you would like any changes to the design, content, or layout, simply reply to this message. We would be happy to help.','','We look forward to hearing your feedback!','','Best regards,','Steady Hands LLC','Website Design & Support','https://steadyhandsop.com'].join(String.fromCharCode(10));
 }
 function polishedTemplate(kind,name,key){
  if(kind==='preview')return polishedPreview(name,key);
@@ -77,7 +77,7 @@ function polishedTemplate(kind,name,key){
  followup:['I wanted to follow up on your website request with Steady Hands.','', 'Do you have any questions about your preview, website options, or next steps? We would be happy to help whenever you are ready.'],
  update:['We wanted to share an update on your website request.','', 'LATEST UPDATE','[Add the current progress and next steps here]','', 'If there is anything you would like us to know, please reply to this message.']
  };
- return ['Hello '+name+',','',...(chunks[kind]||chunks.followup),'','Best regards,','Steady Hands LLC','Website Design & Support','https://steadyhandsop.com'].join('\\n');
+ return ['Hello '+name+',','',...(chunks[kind]||chunks.followup),'','Best regards,','Steady Hands LLC','Website Design & Support','https://steadyhandsop.com'].join(String.fromCharCode(10));
 }
 function previewDelivery(r,drawer){
  const preferred=String(r.preferred_contact_method||r.preferred_contact||r.delivery_method||r.contact_method||r.reply_method||'').toLowerCase();
