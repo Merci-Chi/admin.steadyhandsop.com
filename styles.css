@@ -5632,3 +5632,66 @@ html[data-theme="dark"] .admin-app-shell .admin-mobile-menu{background:#0b2035!i
 html[data-theme="dark"] .admin-app-shell .admin-side-link.active{background:#244768!important;color:#f0f8ff!important}
 html[data-theme="dark"] .admin-app-shell :is(.admin-user-drawer,.admin-request-drawer,.client-menu){box-shadow:0 24px 60px rgba(0,0,0,.48)!important}
 html[data-theme="dark"] .admin-app-shell :is(table,td,th){border-color:#293d52}
+
+
+/* Dark mode: complete coverage including overlays rendered OUTSIDE .app. */
+html[data-theme="dark"] body.admin-app-shell :is(
+ .admin-request-summary span,.admin-request-row,.admin-request-drawer,
+ .admin-request-drawer-header,.admin-request-drawer-body,.admin-request-drawer-footer,
+ .request-drawer-body,.request-drawer-head,.request-detail-card,.request-status-actions,
+ .request-status-actions button,.request-list-card,.request-card-open,.request-quick-action,
+ .request-email-preview,.request-preview-card,.request-preview-body,.request-details,
+ .request-status-actions>div,.request-form-section,.request-action-sheet,.request-action-modal,
+ .client-status-card,.client-menu,.client-pages button,.client-table thead,
+ .client-btn.secondary,.client-btn.danger,.client-page,.client-section,.client-drawer,
+ .client-drawer-body,.client-drawer-head,.client-dialog,.client-modal,
+ .admin-user-drawer-head,.admin-user-drawer .admin-user-field,
+ .admin-user-drawer .admin-user-detail-grid>div,.admin-user-summary>div,
+ .admin-dashboard-list,.admin-dashboard-section,.admin-dashboard-error,
+ .admin-approval-list,.admin-request-list,.admin-lead-card,.admin-lead-row,
+ .admin-system-row,.admin-system-list,.admin-audit-json pre,
+ .settings-section-title,.settings-row,.settings-logout-btn,.settings-status-card,
+ .settings-about,.settings-permission-row,.settings-sheet,
+ .admin-count,.admin-phone-box,.admin-phone-assign,.admin-empty,
+ .admin-access-denied,.admin-access-icon
+){background-color:#101f2f!important;color:#edf5fc!important;border-color:#2b4054!important}
+html[data-theme="dark"] body.admin-app-shell :is(
+ .admin-request-drawer input,.admin-request-drawer textarea,.admin-request-drawer select,
+ #requestActionComposer input,#requestActionComposer textarea,
+ .edit-request-label input,.edit-request-label textarea,
+ .client-field input,.client-field select,.client-field textarea,
+ .settings-field,.client-search input,.admin-user-drawer input,.admin-user-drawer select
+){background:#0c1a28!important;color:#edf5fc!important;border:1px solid #32485d!important}
+html[data-theme="dark"] body.admin-app-shell :is(
+ .request-list-card,.request-card-open,.request-detail-card,.client-table-scroll,
+ .client-table,.client-table tbody tr,.admin-request-card,.admin-request-summary span
+){box-shadow:none!important}
+html[data-theme="dark"] body.admin-app-shell :is(
+ .admin-request-summary span,.admin-request-card,.request-card-main,.request-row-delete,
+ .client-table th,.client-table td,.client-pages button,.admin-request-drawer p,
+ .admin-request-drawer label,.admin-user-drawer p,.admin-user-drawer label
+){color:#dce9f7!important}
+html[data-theme="dark"] body.admin-app-shell :is(
+ .admin-request-drawer h2,.admin-request-drawer h3,.client-table strong,
+ .admin-user-drawer h2,.request-detail-card strong,.request-list-card strong
+){color:#f3f8fd!important}
+html[data-theme="dark"] body.admin-app-shell :is(
+ .admin-metric-card span,.admin-request-summary small,.client-table small,
+ .request-list-card small,.admin-user-detail-grid span
+){color:#9eb2c6!important}
+html[data-theme="dark"] body.admin-app-shell :is(
+ .admin-skeleton-card,.admin-loading-card,.settings-skeleton-card,.settings-skeleton-profile,
+ .client-skeleton,.request-skeleton,.admin-user-skeleton,
+ [class*="skeleton"]:not(.skeleton-text):not(.skeleton-screen)
+){background-color:#14283b!important;border-color:#2a4156!important}
+html[data-theme="dark"] body.admin-app-shell :is(
+ .admin-loading-card span,.admin-loading-card b,.admin-loading-card small,
+ [class*="skeleton"]::before,[class*="skeleton"]::after
+){background-color:#21384d!important}
+html[data-theme="dark"] body.admin-app-shell :is(
+ .admin-request-drawer-overlay,.admin-user-drawer-overlay,.client-drawer-overlay,
+ .client-modal-overlay,.request-modal-overlay
+){background-color:rgba(0,6,13,.77)!important}
+html[data-theme="dark"] body.admin-app-shell :is(
+ .admin-user-drawer,.admin-request-drawer,.client-drawer,.client-modal,.request-modal
+){background:#0c1b2b!important;color:#eaf3fd!important}
