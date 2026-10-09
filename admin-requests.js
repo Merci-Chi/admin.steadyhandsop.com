@@ -129,7 +129,7 @@ function requestActions(id){
  <div class="request-drawer-body"><section class="request-detail-card">
  <h3>Quick actions</h3><div class="request-quick-grid">
  ${Object.entries(templates).map(([k,t])=>`<button type="button" class="request-quick-action" data-template="${k}"><i data-lucide="${({preview:'eye',estimate:'calculator',invoice:'receipt',followup:'message-circle',update:'bell'})[k]}"></i><span>${esc(t.name)}</span></button>`).join('')}
- <button type="button" class="request-quick-action" data-request-edit><i data-lucide="pencil"></i><span>Edit request</span></button><button type="button" class="request-quick-action" data-request-details><i data-lucide="file-text"></i><span>View details</span></button>
+ <button type="button" class="request-quick-action" data-request-details><i data-lucide="file-text"></i><span>View details</span></button>
  </div></section><section class="request-detail-card" id="requestActionComposer" hidden>
  <h3 id="requestActionTitle">Message draft</h3><p class="request-action-pref">Preferred contact: <strong>${pref==='text'?'Text':pref==='email'?'Email':'Not recorded'}</strong></p>
  <div id="requestActionSiteKeyWrap" hidden><label for="requestActionSiteKey">Site key</label><input id="requestActionSiteKey" value="${esc(key)}" placeholder="Paste site key"></div>
@@ -141,7 +141,6 @@ function requestActions(id){
  overlay.hidden=false;document.body.style.overflow='hidden';window.lucide?.createIcons();
  drawer.querySelector('.request-close').addEventListener('click',closeDrawer);
  drawer.querySelector('[data-request-details]').addEventListener('click',()=>openRequest(id));
- drawer.querySelector('[data-request-edit]').addEventListener('click',()=>editRequest(id));
  let selected='preview';
  const subject=drawer.querySelector('#requestActionSubject'),body=drawer.querySelector('#requestActionBody'),siteKey=drawer.querySelector('#requestActionSiteKey'),feedback=drawer.querySelector('#requestActionFeedback'),composer=drawer.querySelector('#requestActionComposer');
  function pick(k){selected=k;const t=templates[k];composer.hidden=false;drawer.querySelector('#requestActionTitle').textContent=t.name+' draft';subject.value=t.subject;body.value=t.message;drawer.querySelector('#requestActionSiteKeyWrap').hidden=k!=='preview';feedback.textContent='Review before sending. Opening an app does not send automatically.';composer.scrollIntoView({behavior:'smooth',block:'nearest'})}
@@ -162,30 +161,6 @@ function requestActions(id){
  });
 }
 
-async function editRequest(id){
- const r=rows.find(x=>String(x.id)===String(id));if(!r||r.deleted_at)return;
- const overlay=document.getElementById('requestOverlay'),drawer=document.getElementById('requestDrawer');
- drawer.innerHTML='<div class="request-drawer-head"><div><span class="admin-kicker">EDIT REQUEST</span><h2>'+esc(r.company_name||'Website request')+'</h2></div><button class="request-close" type="button" aria-label="Close"><i data-lucide="x"></i></button></div><form class="request-drawer-body" id="editRequestForm"><section class="request-detail-card"><label class="edit-request-label">Business name<input name="company_name" required></label><label class="edit-request-label">Request title<input name="title"></label><label class="edit-request-label">Contact name<input name="contact_name"></label><label class="edit-request-label">Email<input name="email" type="email"></label><label class="edit-request-label">Phone<input name="phone" type="tel"></label><label class="edit-request-label">Details / notes<textarea name="details" rows="7"></textarea></label><div class="request-action-buttons"><button type="button" class="request-edit-cancel">Cancel</button><button type="submit">Save as Edited</button></div><p id="requestEditFeedback" role="status"></p></section></form>';
- const form=drawer.querySelector('#editRequestForm');
- const isPortal=r._source==='portal';
- const visible=isPortal?['company_name','title','details']:['company_name','contact_name','email','phone','details'];
- form.querySelectorAll('[name]').forEach(el=>{el.closest('label').hidden=!visible.includes(el.name);el.value=el.name==='details'&&!isPortal?String(r.specifications_notes||''):String(r[el.name]||'')});
- overlay.hidden=false;document.body.style.overflow='hidden';window.lucide?.createIcons();
- drawer.querySelector('.request-close').addEventListener('click',closeDrawer);
- drawer.querySelector('.request-edit-cancel').addEventListener('click',closeDrawer);
- form.addEventListener('submit',async e=>{
-  e.preventDefault();const c=window.steadyHandsCRMClient;if(!c)return;
-  const btn=form.querySelector('[type="submit"]'),feedback=form.querySelector('#requestEditFeedback');btn.disabled=true;
-  const data=new FormData(form),updates={company_name:String(data.get('company_name')||'').trim(),status:isPortal?'submitted':'new',edited_at:new Date().toISOString()};
-  if(isPortal){updates.title=String(data.get('title')||'').trim();updates.details=String(data.get('details')||'').trim()}
-  else{updates.contact_name=String(data.get('contact_name')||'').trim();updates.email=String(data.get('email')||'').trim();updates.phone=String(data.get('phone')||'').trim();updates.specifications_notes=String(data.get('details')||'').trim()}
-  const {data:changed,error}=await c.from(isPortal?'portal_service_requests':'website_requests').update(updates).eq('id',id).select('id');
-  btn.disabled=false;
-  if(error||!changed?.length){feedback.textContent=error?.message||'Could not save. Check your database permissions and migration.';return}
-  Object.assign(r,updates);readIds.delete(String(id));try{localStorage.setItem(READ_STORAGE_KEY,JSON.stringify([...readIds]))}catch{}
-  closeDrawer();render();
- });
-}
 function openRequest(id){
  const r=rows.find(x=>String(x.id)===String(id));if(!r)return;
  markRead(r.id);
