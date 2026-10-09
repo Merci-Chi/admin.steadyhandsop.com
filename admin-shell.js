@@ -3,9 +3,10 @@
 
   const pageMeta = {
     'index.html': { title:'Overview', active:'overview' },
-    'admin.html': { title:'Users', active:'users' },
+    'admin.html': { title:'Salespeople', active:'salespeople' },
+    'users.html': { title:'Users', active:'users' },
     'clients.html': { title:'Clients', active:'clients' },
-    'leads.html': { title:'Leads', active:'more' },
+    'leads.html': { title:'All Leads', active:'leads' },
     'requests.html': { title:'Requests', active:'requests' },
     'activity.html': { title:'Activity', active:'activity' },
     'skills.html': { title:'Skills', active:'skills' },
@@ -25,7 +26,9 @@
     const items = [
       ['overview','index.html','layout-dashboard','Overview'],
       ['requests','requests.html','inbox','Requests'],
-      ['users','admin.html','users','Users'],
+      ['leads','leads.html','contact-round','All Leads'],
+      ['users','users.html','users','Users'],
+      ['salespeople','admin.html','headset','Salespeople'],
       ['clients','clients.html','briefcase-business','Clients'],
       ['activity','activity.html','history','Activity'],
       ['skills','skills.html','chart-no-axes-column-increasing','Skills'],
@@ -42,11 +45,12 @@
   const sideItems = [
     ['index.html','layout-dashboard','Overview'],
     ['requests.html','inbox','Requests'],
-    ['admin.html','users','Users'],
+    ['leads.html','contact-round','All Leads'],
+    ['users.html','users','Users'],
+    ['admin.html','headset','Salespeople'],
     ['clients.html','briefcase-business','Clients'],
     ['activity.html','history','Activity'],
     ['skills.html','chart-no-axes-column-increasing','Skills'],
-    ['leads.html','contact-round','Leads'],
     ['deals.html','handshake','Deals'],
     ['payouts.html','circle-dollar-sign','Payouts'],
     ['phones.html','phone-forwarded','Phone Numbers'],
