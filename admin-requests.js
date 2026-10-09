@@ -3,7 +3,16 @@ const esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>
 const fmtDate=v=>v?new Date(v).toLocaleString([], {month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}):'';
 const statusLabel=v=>({new:'New',in_progress:'In Progress',completed:'Completed',cancelled:'Cancelled'})[v]||String(v||'New');
 const initials=v=>String(v||'?').trim().slice(0,1).toUpperCase();
-let rows=[],filter='new',query='';
+let rows=[],filter='all',query='';
+const READ_STORAGE_KEY='steadyhands.website_requests.read.v1';
+const readIds=new Set();
+try{JSON.parse(localStorage.getItem(READ_STORAGE_KEY)||'[]').forEach(id=>readIds.add(String(id)))}catch{}
+function markRead(id){
+ const key=String(id);
+ if(readIds.has(key))return;
+ readIds.add(key);
+ try{localStorage.setItem(READ_STORAGE_KEY,JSON.stringify([...readIds]))}catch{}
+}
 
 function normalizeServices(value){
  if(Array.isArray(value))return value;
@@ -23,22 +32,26 @@ function render(){
  rows.forEach(r=>{if(counts[r.status]!=null)counts[r.status]++});
  document.getElementById('requestSummary').innerHTML=
   '<span><strong>'+counts.new+'</strong> New</span><span><strong>'+counts.in_progress+'</strong> In Progress</span><span><strong>'+counts.completed+'</strong> Completed</span>';
- list.innerHTML=visible.length?visible.map(r=>`
-  <div class="admin-request-row">
-    <div class="admin-request-card" role="button" tabindex="0" data-request-id="${esc(r.id)}">
+ list.innerHTML=visible.length?visible.map(r=>{
+  const unread=String(r.status||'new')==='new'&&!readIds.has(String(r.id));
+  const cardClass=unread?'is-unread':'is-read';
+  return `
+  <article class="request-list-card ${cardClass}" data-row-id="${esc(r.id)}">
+    <button class="request-card-open" type="button" data-request-id="${esc(r.id)}" aria-label="Open ${esc(r.company_name||'website request')}">
       <span class="request-avatar">${esc(initials(r.company_name))}</span>
       <span class="request-card-main">
         <strong>${esc(r.company_name||'Unnamed business')}</strong>
         <small>${esc(r.contact_name||'No contact')} · ${esc(r.business_category||'No category')}</small>
         <small>${esc(r.phone||r.email||'')}</small>
       </span>
-      <span class="request-card-side">${badge(r.status)}<time>${esc(fmtDate(r.created_at))}</time></span>
-      <i data-lucide="chevron-right"></i>
-    </div>
-    <button class="request-row-delete" type="button" data-delete-request="${esc(r.id)}" aria-label="Delete ${esc(r.company_name||'website request')}" title="Delete request">
-      <i data-lucide="trash-2"></i>
+      <span class="request-card-side"><span class="request-status ${esc(r.status||'new')} ${unread?'status-unread':'status-read'}">${esc(statusLabel(r.status||'new'))}</span><time>${esc(fmtDate(r.created_at))}</time></span>
     </button>
-  </div>`).join(''):'<div class="cc-empty">No requests found.</div>';
+    <span class="request-row-actions">
+      <button class="request-row-delete" type="button" data-delete-request="${esc(r.id)}" aria-label="Delete ${esc(r.company_name||'website request')}" title="Delete request"><i data-lucide="trash-2"></i></button>
+      <button class="request-row-open" type="button" data-request-id="${esc(r.id)}" aria-label="Open request details" title="Open request"><i data-lucide="chevron-right"></i></button>
+    </span>
+  </article>`;
+ }).join(''):'<div class="cc-empty">No requests found.</div>';
  window.lucide?.createIcons();
 }
 function colorRow(label,value){
@@ -47,6 +60,7 @@ function colorRow(label,value){
 }
 function openRequest(id){
  const r=rows.find(x=>String(x.id)===String(id));if(!r)return;
+ markRead(r.id);
  const services=normalizeServices(r.services);
  const colors=r.color_preferences||{};
  const socials=[
@@ -144,8 +158,12 @@ document.getElementById('requestSearch')?.addEventListener('input',e=>{query=e.t
 document.getElementById('requestList')?.addEventListener('click',e=>{
  const deleteButton=e.target.closest('[data-delete-request]');
  if(deleteButton){e.preventDefault();e.stopPropagation();deleteRequest(deleteButton.dataset.deleteRequest,deleteButton);return}
- const card=e.target.closest('[data-request-id]');
- if(card)openRequest(card.dataset.requestId);
+ const openButton=e.target.closest('[data-request-id]');
+ if(openButton){e.preventDefault();openRequest(openButton.dataset.requestId)}
+});
+document.getElementById('requestList')?.addEventListener('keydown',e=>{
+ const openButton=e.target.closest('[data-request-id]');
+ if(openButton&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openRequest(openButton.dataset.requestId)}
 });
 document.getElementById('requestList')?.addEventListener('keydown',e=>{
  const card=e.target.closest('[data-request-id]');
