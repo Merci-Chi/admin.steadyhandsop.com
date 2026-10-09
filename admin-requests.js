@@ -1,7 +1,7 @@
 (()=>{
 const esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const fmtDate=v=>v?new Date(v).toLocaleString([], {month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}):'';
-const statusLabel=v=>({new:'New',in_progress:'In Progress',completed:'Completed',cancelled:'Cancelled',submitted:'New',under_review:'Under Review',declined:'Declined'})[v]||String(v||'New');
+const statusLabel=v=>({new:'New',in_progress:'In Progress',completed:'Completed',cancelled:'Cancelled',submitted:'Submitted',under_review:'Under Review',declined:'Declined'})[v]||String(v||'New');
 const initials=v=>String(v||'?').trim().slice(0,1).toUpperCase();
 let rows=[],filter='all',query='';
 const READ_STORAGE_KEY='steadyhands.website_requests.read.v1';
