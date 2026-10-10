@@ -73,7 +73,8 @@
       const label=lead?.company||lead?.name||lead?.phone||'Unknown lead';
       const oc=outcomeClass(row);
       return `
-        <a class="admin-activity-row" href="call.html?id=${encodeURIComponent(row.id)}">
+        <div class="admin-activity-entry" style="display:flex;align-items:stretch;gap:8px;">
+        <a class="admin-activity-row" style="flex:1;min-width:0;" href="call.html?id=${encodeURIComponent(row.id)}">
           <span class="admin-activity-icon"><i data-lucide="${(Number(row.duration_seconds)||0)>0?'phone-call':'phone-off'}"></i></span>
           <span class="admin-activity-main">
             <strong>${esc(user?.display_name||user?.email||'Unknown user')}</strong>
@@ -85,12 +86,42 @@
             ${transcript?'<span class="admin-transcript-available"><i data-lucide="file-text"></i>Transcript</span>':''}
           </span>
           <i data-lucide="chevron-right"></i>
-        </a>`;
+        </a>
+        <button type="button" class="admin-activity-delete" data-delete-call-id="${esc(row.id)}" aria-label="Delete activity for ${esc(label)}" title="Delete activity" style="align-self:center;flex:none;padding:10px;border:1px solid var(--border-color, #dbe3ed);border-radius:11px;background:transparent;color:#b33b48;cursor:pointer;"><i data-lucide="trash-2"></i></button>
+        </div>`;
     }).join(''):'<div class="cc-empty">No calls match these filters.</div>';
     window.lucide?.createIcons();
   }
 
+  async function deleteActivity(id) {
+    const row=state.rows.find(item=>String(item.id)===String(id));
+    if(!row) return;
+    const lead=state.leads.get(String(row.crm_id));
+    const label=lead?.company||lead?.name||lead?.phone||'Unknown lead';
+    if(!window.confirm(`Delete this call activity for "${label}" from ${fmtDate(row.created_at)}? This also deletes its linked transcript and cannot be undone. The CRM lead will not be deleted.`)) return;
+    const c=window.steadyHandsCRMClient;
+    if(!c) return window.alert('Unable to connect to CRM.');
+    const button=[...document.querySelectorAll('[data-delete-call-id]')].find(el=>el.dataset.deleteCallId===String(id));
+    if(button) button.disabled=true;
+    try {
+      const {data,error}=await c.rpc('admin_delete_call_activity',{p_activity_id:id});
+      if(error) throw error;
+      if(data!==true) throw new Error('Activity was not found or could not be deleted.');
+      state.rows=state.rows.filter(item=>String(item.id)!==String(id));
+      state.transcripts.delete(String(id));
+      render();
+    } catch(error) {
+      window.alert('Unable to delete activity: '+(error?.message||'Unknown error')+'\\nIf this is a new feature, run the provided Supabase SQL first.');
+      if(button) button.disabled=false;
+    }
+  }
+
   function render(){renderSummary();renderList();}
+
+  document.getElementById('adminActivityList')?.addEventListener('click',event=>{
+    const button=event.target.closest('[data-delete-call-id]');
+    if(button) { event.preventDefault(); event.stopPropagation(); void deleteActivity(button.dataset.deleteCallId); }
+  });
 
   async function load() {
     const c=window.steadyHandsCRMClient;
