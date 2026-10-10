@@ -1,0 +1,77 @@
+:root{--navy:#102a56;--deep:#071a35;--blue:#2268b3;--cyan:#61c7ff;--ink:#173459;--muted:#6d7e95;--line:#dbe6f4;--bg:#edf4fd}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 Inter,Manrope,system-ui,-apple-system,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.58;cursor:default}a{color:#1462a9}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #39b8ff;outline-offset:2px}[hidden]{display:none!important}.eyebrow{font-size:11px;font-weight:850;letter-spacing:.17em;color:#257abc}.auth-layout{min-height:100dvh;display:grid;grid-template-columns:1.04fr 1fr}.brand-side{position:relative;overflow:hidden;background:linear-gradient(155deg,#06162c,#102a56 58%,#1d579b);padding:35px clamp(24px,4vw,65px);display:flex;flex-direction:column;color:#fff}.brand-link{display:flex;align-items:center;gap:14px;position:relative;z-index:2}.brand-logo{width:63px;height:63px;object-fit:contain}.brand-wordmark{width:min(310px,55%);object-fit:contain}.brand-copy{margin:auto 0;z-index:2}.brand-copy .eyebrow{color:#7dd6ff}.brand-copy h1{font-size:clamp(35px,4.7vw,72px);line-height:1.1;letter-spacing:-.05em;margin:24px 0}.brand-copy h1 em{font-style:normal;color:#d5edff}.brand-copy>p:last-child{font-size:16px;max-width:430px;line-height:1.8;color:#d1e6fa}.wave{position:absolute;bottom:-30px;right:-25%;width:130%;height:49%;object-fit:cover;opacity:.67;mask-image:linear-gradient(to bottom,transparent,#000 38%)}.auth-side{display:grid;place-items:center;padding:28px 18px}.auth-card{background:#fff;border:1px solid #d6e4f5;border-radius:24px;box-shadow:0 25px 75px #1c498321;width:min(100%,480px);padding:clamp(24px,4vw,45px)}.mobile-brand{display:none}.auth-card h2,.auth-card h1{font-size:30px;color:var(--navy);letter-spacing:-.04em;margin:10px 0}.sub{color:var(--muted);font-size:14px;line-height:1.7;margin:0 0 22px}
+/* Outreach-specific login extras; do not change authentication behavior. */
+body{background:#edf4fd}
+.auth-side{min-width:0}
+.auth-card{max-height:calc(100dvh - 24px);overflow:auto}
+.password-wrap input{padding-right:83px!important}
+.terms-row{display:flex;align-items:flex-start;gap:9px;margin-top:13px;font-size:12px;color:#506987;line-height:1.5}
+.terms-row input{margin:3px 0 0;accent-color:#17498f;flex:none}
+.terms-row a{font-weight:800}
+.terms-validation{color:#b33b3b;font-size:12px;display:none;margin-top:4px}
+.terms-validation.is-visible{display:block}
+.terms-row.is-invalid{color:#b33b3b}
+#loginMessage{font-size:13px;min-height:20px;margin:12px 0;color:#a43131}
+#loginMessage.success{color:#237347}
+#forgotPassword{margin-top:11px;display:block;margin-left:auto}
+.terms-modal-overlay{position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;background:#f3f6f9}
+.terms-modal-frame{width:100%;flex:1;border:0;background:#f3f6f9}
+@media(max-width:850px){.auth-layout{grid-template-columns:1fr}.brand-side{min-height:235px;padding:20px 24px}.brand-copy{margin:22px 0 5px}.brand-copy h1{font-size:30px;margin:8px 0}.brand-copy>p:last-child{font-size:13px;line-height:1.5}.wave{height:75%;opacity:.33}.brand-logo{width:45px;height:45px}.brand-wordmark{width:190px}.auth-side{padding:22px 18px}.auth-card{max-height:none}}
+@media(max-width:450px){.brand-side{min-height:195px}.brand-copy h1{font-size:27px}.auth-card{padding:23px}.auth-card h2{font-size:27px}.brand-copy>p:last-child{margin-bottom:0}}
+  /* One-time branded reveal when opening the sign-in page. */
+  .outreach-intro {
+    position:fixed; inset:0; z-index:99999;
+    display:grid; place-items:center;
+    background:radial-gradient(circle at -5% -5%,rgba(36,112,205,.22),transparent 34%),
+      radial-gradient(circle at 105% 100%,rgba(29,104,190,.16),transparent 34%),#102945;
+    opacity:1;
+    transition:opacity .48s ease;
+    pointer-events:none;
+  }
+  .outreach-intro::before {
+    content:""; position:absolute; inset:0;
+    background:#000; animation:outreachIntroBlack 1s ease forwards;
+  }
+  .outreach-intro-brand {
+    position:relative; z-index:1; display:flex; flex-direction:column;
+    align-items:center; gap:14px; color:#fff; opacity:0;
+    animation:outreachIntroBrand .65s ease .47s forwards;
+  }
+  .outreach-intro-brand img {
+    width:108px; height:108px; object-fit:cover;
+    border-radius:25px; box-shadow:0 18px 50px rgba(0,0,0,.25);
+  }
+  .outreach-intro-brand span {
+    font-size:16px; font-weight:900; letter-spacing:.25em;
+  }
+  .outreach-intro.is-leaving { opacity:0; }
+  @keyframes outreachIntroBlack { 0%{opacity:1} 100%{opacity:0} }
+  @keyframes outreachIntroBrand { to{opacity:1} }
+  @media (prefers-reduced-motion:reduce) {
+    .outreach-intro,.outreach-intro::before,.outreach-intro-brand{animation:none;transition:none}
+    .outreach-intro::before{opacity:0}
+    .outreach-intro-brand{opacity:1}
+  }
+
+.brand-copy .tagline-art{display:block;width:min(100%,610px);aspect-ratio:2048/260;margin-top:12px;background:#d5edff;-webkit-mask:url("https://onboard.steadyhandsop.com/images/you-run-the-show.png") left center/contain no-repeat;mask:url("https://onboard.steadyhandsop.com/images/you-run-the-show.png") left center/contain no-repeat}
+
+.auth-card form>label{display:block;font-size:12px;font-weight:800;margin:14px 0 7px}.auth-card form input:not([type=checkbox]){width:100%;height:48px;border-radius:11px;border:1px solid #ccdaeb;padding:12px 14px;background:#fcfdff;color:#122e56}.password-wrap{position:relative}.password-wrap input{padding-right:85px!important}.password-wrap button{position:absolute;right:9px;top:8px;border:0;background:transparent;color:#17498f;font-size:12px;font-weight:800;height:30px}.form-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:16px 0 20px}.remember{font-size:12px;display:flex;align-items:center;gap:7px;color:#506987}.remember input{width:16px;height:16px;accent-color:#17498f}.text-btn{border:0;background:transparent;color:#1560aa;font-size:12px;font-weight:800;padding:4px}.primary-button{background:linear-gradient(110deg,#17498f,#2379d2);color:#fff;border:0;border-radius:11px;min-height:48px;padding:12px 23px;font-weight:800}.full{width:100%}.magic{margin-top:22px;text-align:center;display:grid;gap:7px;color:#718198;font-size:12px}.foot{font-size:11px;text-align:center;color:#8192a7;margin:23px 0 0}#message{font-size:13px;min-height:20px;line-height:1.5}#message.error{color:#ac3333}#message.success{color:#237347}
+.login-form .login-field{display:flex;align-items:center;gap:9px;border:1px solid #ccdaeb;border-radius:11px;padding:0 12px;background:#fcfdff;margin-top:7px}
+.login-form .login-field input{flex:1;min-width:0;border:0;background:transparent;height:46px;color:#122e56;outline:none}
+.login-form .login-field button{border:0;background:transparent;color:#17498f;font-weight:800;font-size:12px}
+.login-form .login-field svg{width:17px;height:17px;color:#6d7e95}
+
+/* Keep both staff logins visually consistent. */
+.outreach-login-options{display:grid;gap:12px;margin:15px 0 23px}
+.outreach-check-label{display:flex;align-items:center;gap:11px;color:#173653;font-size:14px;font-weight:800;line-height:1.4;cursor:pointer;position:relative}
+.outreach-check-label>input{position:absolute;width:25px;height:25px;margin:0;opacity:0}
+.outreach-check-box{width:25px;height:25px;flex:0 0 25px;border:2px solid #c5d2df;border-radius:8px;display:grid;place-items:center;color:transparent;background:#fff;transition:background .15s,border-color .15s}
+.outreach-check-label>input:checked+.outreach-check-box{background:#1877e8;border-color:#1877e8;color:#fff}
+.outreach-check-label>input:focus-visible+.outreach-check-box{outline:3px solid #39b8ff;outline-offset:2px}
+.outreach-check-label.is-invalid .outreach-check-box{border-color:#bf323c}
+.outreach-check-label a{color:#1677e8;font-weight:900;text-decoration:underline;text-underline-offset:3px}
+.outreach-login-options .terms-validation{margin:-5px 0 0;font-size:12px}
+.outreach-login-submit{min-height:56px;background:#247bed;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:16px;font-size:19px;box-shadow:0 12px 24px #247bed22}
+.outreach-login-submit span{font-size:25px;font-weight:400}
+.outreach-forgot{display:block;margin:13px auto 0;color:#52657c;font-size:14px;text-decoration:underline;text-underline-offset:3px}
+.outreach-login-foot{font-weight:800;color:#98a9bf;margin-top:20px;display:flex;align-items:center;gap:13px}
+.outreach-login-foot::before,.outreach-login-foot::after{content:"";height:1px;background:#dbe3eb;flex:1}
