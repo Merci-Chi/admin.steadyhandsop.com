@@ -85,7 +85,7 @@
         <div>
           <span class="admin-kicker">LEAD</span>
           <h2>${esc(lead.company || lead.name || 'Lead')}</h2>
-          <p>Created ${esc(fmtDate(lead.created_at))}</p>
+          <p>Created ${esc(fmtDate(lead.created))}</p>
         </div>
         <button type="button" id="adminCloseLead"><i data-lucide="x"></i></button>
       </div>
@@ -237,8 +237,8 @@
     try {
       const [leadsResult, usersResult] = await Promise.all([
         c.from('crm')
-          .select('id,company,name,phone,altphone,email,website,domain,notes,issue,concerns,origin,assigned,assigned_user_id,tags,sources,stage,outcome,callbackdate,callbackat,lastcalled,timezone,leadpotential,tier,previewurl,sitekey,has_site_preview,admin_archived,admin_archived_at,created_at')
-          .order('created_at',{ascending:false})
+          .select('id,company,name,phone,altphone,email,website,domain,notes,issue,concerns,origin,assigned,assigned_user_id,tags,sources,stage,outcome,callbackdate,callbackat,lastcalled,timezone,leadpotential,tier,previewurl,sitekey,has_site_preview,admin_archived,admin_archived_at,created')
+          .order('created',{ascending:false})
           .limit(5000),
         c.from('callcenter_profiles')
           .select('user_id,display_name,email')
