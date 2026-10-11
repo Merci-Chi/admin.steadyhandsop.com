@@ -31,7 +31,7 @@
     <section id="salespersonCreatePanel" class="salesperson-create-panel" hidden><form id="salespersonCreateForm">
       <label>Display name<input id="newSalespersonName" required maxlength="100" autocomplete="off"></label>
       <label>Username<input id="newSalespersonUsername" required placeholder="firstname.lastname" autocomplete="off"><small>@steadyhandsop.com</small></label>
-      <label>Temporary password<input id="newSalespersonPassword" type="password" required minlength="12" autocomplete="new-password"></label>
+      <label>Temporary password<input id="newSalespersonPassword" type="password" required autocomplete="new-password"></label>
       <button type="submit">Create salesperson account</button><p id="salespersonCreateResult" role="status"></p>
     </form></section>
     <section class="admin-user-toolbar">
@@ -64,6 +64,6 @@
 <script src="auth-guard.js?v=20261005-admin-only"></script>
 <script src="admin-shell.js?v=20261009-independent-scroll-v3"></script>
 <script src="admin-users.js?v=20261011-sales-only"></script>
-<script src="admin-salespeople-tools.js?v=20261011-1"></script>
+<script src="admin-salespeople-tools.js?v=20261011-no-password-rules"></script>
 </body>
 </html>
