@@ -27,6 +27,13 @@
   </header>
 
   <main class="content admin-users-content">
+    <section class="salesperson-create-head"><div><h2>Team accounts</h2><p>Create a salesperson login with a @steadyhandsop.com email. Account creation requires the secure server function.</p></div><button type="button" id="salespersonCreateToggle">+ New salesperson</button></section>
+    <section id="salespersonCreatePanel" class="salesperson-create-panel" hidden><form id="salespersonCreateForm">
+      <label>Display name<input id="newSalespersonName" required maxlength="100" autocomplete="off"></label>
+      <label>Username<input id="newSalespersonUsername" required placeholder="firstname.lastname" autocomplete="off"><small>@steadyhandsop.com</small></label>
+      <label>Temporary password<input id="newSalespersonPassword" type="password" required minlength="12" autocomplete="new-password"></label>
+      <button type="submit">Create salesperson account</button><p id="salespersonCreateResult" role="status"></p>
+    </form></section>
     <section class="admin-user-toolbar">
       <div class="admin-user-search">
         <i data-lucide="search"></i>
@@ -56,6 +63,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="auth-guard.js?v=20261005-admin-only"></script>
 <script src="admin-shell.js?v=20261009-independent-scroll-v3"></script>
-<script src="admin-users.js?v=20261005-batch2"></script>
+<script src="admin-users.js?v=20261011-sales-tools"></script>
+<script src="admin-salespeople-tools.js?v=20261011-1"></script>
 </body>
 </html>
