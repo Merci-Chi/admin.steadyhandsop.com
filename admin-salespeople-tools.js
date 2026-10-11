@@ -9,12 +9,12 @@
     const client=c();if(!client){output.textContent='Not connected to Supabase.';return;}
     try{
       const {data,error}=await client.functions.invoke('admin-salesperson-accounts',{body:{action,...body}});
-      if(error)throw new Error(error.message||'Account service unavailable');
+      if(error){let detail='';try{const response=error.context;if(response && typeof response.json==='function'){const payload=await response.json();detail=payload?.error||payload?.message||'';}}catch{}throw new Error(detail||error.message||'Account service unavailable');}
       if(!data?.ok)throw new Error(data?.error||'Account service did not confirm success');
       output.textContent=data.message||'Request completed successfully.';
       if(data.temporary_password)output.textContent+=' Temporary password (copy now): '+data.temporary_password;
       if(action==='create')setTimeout(()=>location.reload(),1600);
-    }catch(err){output.textContent='NOT COMPLETED: '+(err.message||String(err))+'. Configure and deploy the protected admin-salesperson-accounts Edge Function first.';}
+    }catch(err){output.textContent='NOT COMPLETED: '+(err.message||String(err))+'';}
   }
   function setupCreate(){
     const panel=$('salespersonCreatePanel');if(!panel)return;
