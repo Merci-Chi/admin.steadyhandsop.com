@@ -22,7 +22,7 @@
     $('salespersonCreateForm').onsubmit=async ev=>{
       ev.preventDefault();const out=$('salespersonCreateResult');const name=$('newSalespersonName').value.trim(), username=$('newSalespersonUsername').value.trim().toLowerCase(),password=$('newSalespersonPassword').value;
       if(!/^[a-z][a-z0-9._-]{2,40}$/.test(username)){out.textContent='Username must start with a letter and contain 3–41 allowed characters.';return;}
-      if(!/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{12,}$/.test(password)){out.textContent='Use 12+ characters, including uppercase, lowercase, a number and symbol.';return;}
+      if(!password){out.textContent='Enter a temporary password.';return;}
       await invoke('create',{display_name:name,email:username+'@steadyhandsop.com',temporary_password:password},out);
     };
   }
