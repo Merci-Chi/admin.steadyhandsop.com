@@ -63,12 +63,12 @@ function openNewLead(){const overlay=$('adminLeadDrawerOverlay'),drawer=$('admin
 async function targetIds(){if(!state.allMatching)return [...state.selected];const ids=[];const batch=500;let index=0;while(true){const r=await query(client().from('crm').select('id'),{noSort:true}).order('id',{ascending:true}).range(index,index+batch-1);if(r.error)throw r.error;ids.push(...(r.data||[]).map(x=>x.id));if(!r.data||r.data.length<batch)break;index+=batch;if(index>250000)throw Error('The selection is too large for browser-side processing. Narrow the filters.')}return ids}
 async function activeSalespeople(){
  const [perms,profiles]=await Promise.all([
-  client().from('team_permissions').select('user_id,role,active').eq('role','SALES').eq('active',true),
+  client().from('team_permissions').select('user_id,role,active,listed').in('role',['SALES','ADMIN']).eq('active',true),
   client().from('callcenter_profiles').select('user_id,display_name,email,disabled_at').is('disabled_at',null)
  ]);
  if(perms.error)throw perms.error;
  if(profiles.error)throw profiles.error;
- const ids=new Set((perms.data||[]).map(x=>x.user_id));
+ const ids=new Set((perms.data||[]).filter(x=>x.listed!==false && (x.role==='SALES'||(x.role==='ADMIN'&&String((profiles.data||[]).find(p=>p.user_id===x.user_id)?.email||'').toLowerCase()==='kiara@steadyhandsop.com'))).map(x=>x.user_id));
  return (profiles.data||[]).filter(x=>ids.has(x.user_id)).sort((a,b)=>(a.display_name||a.email||'').localeCompare(b.display_name||b.email||''));
 }
 async function openAssignedFilter(){
@@ -97,7 +97,7 @@ async function openAssignment(){
   const people=await activeSalespeople();
   if($('alModalTitle').textContent!=='Assign Selected Leads'||$('alModalWrap').hidden)return;
   if(!people.length){$('alModalBody').innerHTML='<p class="al-status-note">No active salespeople are currently available.</p>';return}
-  $('alModalBody').innerHTML=`<input type="search" id="alAssignSearch" class="al-modal-search" placeholder="Search active salespeople…"><p class="al-status-note">Only active SALES team members are shown. Existing assignments will be replaced.</p><div id="alAssignOptions" class="al-assignee-options"></div><p id="alAssignStatus" class="al-status-note" role="status"></p>`;
+  $('alModalBody').innerHTML=`<input type="search" id="alAssignSearch" class="al-modal-search" placeholder="Search active salespeople…"><p class="al-status-note">Only active salespeople and kiara@steadyhandsop.com are shown. Existing assignments will be replaced.</p><div id="alAssignOptions" class="al-assignee-options"></div><p id="alAssignStatus" class="al-status-note" role="status"></p>`;
   $('alModalFooter').innerHTML='<button type="button" id="alCancelAssign">Cancel</button><button type="button" id="alConfirmAssign" class="al-apply" disabled>Assign Leads</button>';
   $('alCancelAssign').onclick=closeModal;
   let chosen=null;
