@@ -23,7 +23,7 @@ async function view(id){
  const total=progress.trainingTotal||4;
  const done=progress.trainingCompleted??(Array.isArray(training.completedLessons)?training.completedLessons.length:0);
  const signed=agreement.signature;
- const signatureMarkup=typeof signed==='string'&&/^data:image\/(png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(signed)
+ const signatureMarkup=typeof signed==='string'&&/^data:image\/(png|jpeg|webp);base64,[a-z0-9+\\/=]+$/i.test(signed)
   ?'<div class="onboard-detail-row"><dt>Drawn signature</dt><dd><img alt="Employee signature" src="'+esc(signed)+'" style="max-width:100%;max-height:160px;object-fit:contain;background:white;border:1px solid #ddd;border-radius:8px;padding:8px"></dd></div>'
   :'';
  const agreementFields={Acknowledged:agreement.read, 'Signature name':agreement.signatureName, 'Signed at':agreement.agreedAt, 'Agreement track':agreement.track, 'Agreement role':agreement.role};
