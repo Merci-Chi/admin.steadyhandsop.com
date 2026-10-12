@@ -128,7 +128,7 @@ const exportValue=(row,key)=>key==='assigned_to'?label(row.assigned_user_id):row
 const csvCell=value=>{
  const input=Array.isArray(value)?value.map(v=>typeof v==='object'?JSON.stringify(v):String(v)).join('; '):typeof value==='object'&&value!==null?JSON.stringify(value):String(value??'');
  // Prevent spreadsheet formula execution when opening exported customer data.
- const safe=/^[\\s]*[=+@\\-]/.test(input)?"'"+input:input;
+ const safe=/^\s*[=+@-]/.test(input)?"'"+input:input;
  return '"'+safe.replace(/"/g,'""')+'"';
 };
 function downloadExport(content,type,extension){
@@ -163,7 +163,7 @@ async function exportSelected(format){
    const output=ordered.map(row=>({...row,assigned_to:label(row.assigned_user_id)}));
    downloadExport(JSON.stringify(output,null,2),'application/json;charset=utf-8','json');
   }else{
-   const csv='\\uFEFF'+[exportColumns.join(','),...ordered.map(row=>exportColumns.map(key=>csvCell(exportValue(row,key))).join(','))].join('\\r\\n');
+   const csv='\uFEFF'+[exportColumns.join(','),...ordered.map(row=>exportColumns.map(key=>csvCell(exportValue(row,key))).join(','))].join('\r\n');
    downloadExport(csv,'text/csv;charset=utf-8','csv');
   }
  }catch(e){showError(e)}
