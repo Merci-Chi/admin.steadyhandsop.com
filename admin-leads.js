@@ -1,276 +1,66 @@
 (() => {
-  const esc = value => String(value ?? '')
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
-
-  let state = { leads:[], users:[], filter:'active', assignee:'', query:'' };
-
-  const isArchived = lead => lead.admin_archived === true;
-  const fmtDate = value => {
-    if (!value) return '—';
-    const d = new Date(value);
-    return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString([], {month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
-  };
-
-  function userLabel(userId) {
-    const user = state.users.find(row => String(row.user_id) === String(userId));
-    return user ? (user.display_name || user.email || 'User') : 'Unassigned';
-  }
-
-  function renderSummary() {
-    const el = document.getElementById('adminLeadSummary');
-    const active = state.leads.filter(row => !isArchived(row)).length;
-    const archived = state.leads.filter(isArchived).length;
-    const assigned = state.leads.filter(row => !!row.assigned_user_id).length;
-    el.innerHTML = `
-      <div><strong>${state.leads.length}</strong><span>Total</span></div>
-      <div><strong>${active}</strong><span>Active</span></div>
-      <div><strong>${archived}</strong><span>Archived</span></div>
-      <div><strong>${assigned}</strong><span>Assigned</span></div>`;
-  }
-
-  function filtered() {
-    const q = state.query.trim().toLowerCase();
-    return state.leads.filter(lead => {
-      if (state.filter === 'active' && isArchived(lead)) return false;
-      if (state.filter === 'archived' && !isArchived(lead)) return false;
-      if (state.assignee && String(lead.assigned_user_id || '') !== state.assignee) return false;
-      if (!q) return true;
-      return [lead.company,lead.name,lead.phone,lead.email,lead.notes,lead.stage,lead.outcome,userLabel(lead.assigned_user_id)]
-        .some(value => String(value || '').toLowerCase().includes(q));
-    });
-  }
-
-  function renderList() {
-    const list = document.getElementById('adminLeadList');
-    const rows = filtered();
-    list.innerHTML = rows.length ? rows.map(lead => `
-      <button type="button" class="admin-lead-card" data-lead-id="${esc(lead.id)}">
-        <span class="admin-lead-card-icon"><i data-lucide="building-2"></i></span>
-        <span class="admin-lead-card-main">
-          <span class="admin-lead-card-head">
-            <strong>${esc(lead.company || lead.name || 'Unnamed lead')}</strong>
-            ${isArchived(lead) ? '<span class="admin-lead-archived">Archived</span>' : ''}
-          </span>
-          <small>${esc(lead.name || 'No contact')} · ${esc(lead.phone || 'No phone')}</small>
-          <span class="admin-lead-meta">
-            <b>${esc(userLabel(lead.assigned_user_id))}</b>
-            <b>${esc(lead.stage || 'No stage')}</b>
-            <b>${esc(lead.outcome || 'No outcome')}</b>
-          </span>
-        </span>
-        <i data-lucide="chevron-right"></i>
-      </button>`).join('') : '<div class="cc-empty">No leads match this view.</div>';
-
-    list.querySelectorAll('[data-lead-id]').forEach(button => {
-      button.addEventListener('click', () => openLead(button.dataset.leadId));
-    });
-    window.lucide?.createIcons();
-  }
-
-  function assigneeOptions(selected='') {
-    return ['<option value="">Unassigned</option>']
-      .concat(state.users.map(user => `<option value="${esc(user.user_id)}" ${String(selected)===String(user.user_id)?'selected':''}>${esc(user.display_name || user.email || 'User')}</option>`))
-      .join('');
-  }
-
-  function openLead(id) {
-    const lead = state.leads.find(row => String(row.id) === String(id));
-    if (!lead) return;
-    const overlay = document.getElementById('adminLeadDrawerOverlay');
-    const drawer = document.getElementById('adminLeadDrawer');
-
-    drawer.innerHTML = `
-      <div class="admin-user-drawer-head">
-        <div>
-          <span class="admin-kicker">LEAD</span>
-          <h2>${esc(lead.company || lead.name || 'Lead')}</h2>
-          <p>Created ${esc(fmtDate(lead.created))}</p>
-        </div>
-        <button type="button" id="adminCloseLead"><i data-lucide="x"></i></button>
-      </div>
-
-      <div class="admin-lead-form-grid">
-        <label>Company<input id="leadCompany" value="${esc(lead.company || '')}"></label>
-        <label>Contact<input id="leadName" value="${esc(lead.name || '')}"></label>
-        <label>Phone<input id="leadPhone" value="${esc(lead.phone || '')}"></label>
-        <label>Email<input id="leadEmail" type="email" value="${esc(lead.email || '')}"></label>
-        <label>Stage<input id="leadStage" value="${esc(lead.stage || '')}"></label>
-        <label>Outcome<input id="leadOutcome" value="${esc(lead.outcome || '')}"></label>
-        <label class="full">Assigned to<select id="leadAssigned">${assigneeOptions(lead.assigned_user_id)}</select></label>
-        <label class="full">Notes<textarea id="leadNotes">${esc(lead.notes || '')}</textarea></label>
-      </div>
-
-      <div class="admin-lead-actions">\n        <button type="button" id="adminSharePreview" class="primary"><i data-lucide="link"></i>Create Preview Signup Link</button>
-        <button type="button" class="primary" id="adminSaveLead"><i data-lucide="save"></i>Save Changes</button>
-        <button type="button" id="adminArchiveLead"><i data-lucide="${isArchived(lead)?'archive-restore':'archive'}"></i>${isArchived(lead)?'Restore Lead':'Archive Lead'}</button>
-        <button type="button" class="danger" id="adminDeleteLead"><i data-lucide="trash-2"></i>Delete Permanently</button>
-      </div>
-      <p class="admin-user-action-message" id="adminLeadMessage"></p>
-    `;
-
-    overlay.hidden = false;
-    const close = () => overlay.hidden = true;
-    drawer.querySelector('#adminCloseLead').onclick = close;
-    overlay.onclick = e => { if (e.target === overlay) close(); };
-
-    drawer.querySelector('#adminSharePreview').onclick=async()=>{
-      const button=drawer.querySelector('#adminSharePreview');
-      const msg=drawer.querySelector('#adminLeadMessage');
-      const key=String(lead.sitekey||'').trim();
-      const url=String(lead.previewurl||'').trim();
-      if(!key||!url){msg.textContent='Save a site key and preview URL on this lead before generating a link.';return}
-      if(!/^https:\/\//i.test(url)){msg.textContent='Preview URL must start with https://';return}
-      button.disabled=true;msg.textContent='Creating a private preview invitation…';
-      const {data,error}=await window.steadyHandsCRMClient.rpc('create_portal_preview_invite',{p_site_key:key,p_site_title:lead.company||lead.name||'Website Preview',p_preview_url:url});
-      button.disabled=false;
-      if(error){msg.textContent='Could not create invitation: '+error.message;return}
-      try{await navigator.clipboard.writeText(data);msg.textContent='Preview signup link copied to clipboard.'}
-      catch{msg.textContent='Preview signup link: '+data}
-    };
-    drawer.querySelector('#adminSaveLead').onclick = async () => {
-      const msg = drawer.querySelector('#adminLeadMessage');
-      const payload = {
-        company: drawer.querySelector('#leadCompany').value.trim(),
-        name: drawer.querySelector('#leadName').value.trim(),
-        phone: drawer.querySelector('#leadPhone').value.trim(),
-        email: drawer.querySelector('#leadEmail').value.trim(),
-        stage: drawer.querySelector('#leadStage').value.trim(),
-        outcome: drawer.querySelector('#leadOutcome').value.trim(),
-        assigned_user_id: drawer.querySelector('#leadAssigned').value || null,
-        assigned: drawer.querySelector('#leadAssigned').value ? userLabel(drawer.querySelector('#leadAssigned').value) : '',
-        notes: drawer.querySelector('#leadNotes').value.trim()
-      };
-      msg.textContent = 'Saving…';
-      const { data, error } = await window.steadyHandsCRMClient
-        .from('crm').update(payload).eq('id',lead.id).select('*').single();
-      if (error) { msg.textContent = error.message; return; }
-      Object.assign(lead,data);
-      msg.textContent = 'Lead saved.';
-      renderSummary(); renderList();
-    };
-
-    drawer.querySelector('#adminArchiveLead').onclick = async () => {
-      const next = !isArchived(lead);
-      if (!confirm((next ? 'Archive' : 'Restore') + ' this lead?')) return;
-      const msg = drawer.querySelector('#adminLeadMessage');
-      msg.textContent = next ? 'Archiving…' : 'Restoring…';
-      const { data, error } = await window.steadyHandsCRMClient
-        .from('crm')
-        .update({admin_archived:next,admin_archived_at:next?new Date().toISOString():null})
-        .eq('id',lead.id).select('*').single();
-      if (error) { msg.textContent = error.message; return; }
-      Object.assign(lead,data);
-      renderSummary(); renderList(); openLead(lead.id);
-    };
-
-    drawer.querySelector('#adminDeleteLead').onclick = async () => {
-      if (!confirm('Permanently delete this lead? This cannot be undone.')) return;
-      const msg = drawer.querySelector('#adminLeadMessage');
-      msg.textContent = 'Deleting…';
-      const { error } = await window.steadyHandsCRMClient.from('crm').delete().eq('id',lead.id);
-      if (error) { msg.textContent = error.message; return; }
-      state.leads = state.leads.filter(row => String(row.id) !== String(lead.id));
-      close(); renderSummary(); renderList();
-    };
-
-    window.lucide?.createIcons();
-  }
-
-  function openNewLead() {
-    const overlay = document.getElementById('adminLeadDrawerOverlay');
-    const drawer = document.getElementById('adminLeadDrawer');
-    drawer.innerHTML = `
-      <div class="admin-user-drawer-head">
-        <div><span class="admin-kicker">NEW LEAD</span><h2>Add Lead</h2><p>Create a CRM lead for the team.</p></div>
-        <button type="button" id="adminCloseLead"><i data-lucide="x"></i></button>
-      </div>
-      <div class="admin-lead-form-grid">
-        <label>Company<input id="leadCompany"></label>
-        <label>Contact<input id="leadName"></label>
-        <label>Phone<input id="leadPhone"></label>
-        <label>Email<input id="leadEmail" type="email"></label>
-        <label>Stage<input id="leadStage" value="outreach"></label>
-        <label>Outcome<input id="leadOutcome"></label>
-        <label class="full">Assigned to<select id="leadAssigned">${assigneeOptions()}</select></label>
-        <label class="full">Notes<textarea id="leadNotes"></textarea></label>
-      </div>
-      <div class="admin-lead-actions"><button class="primary" id="adminCreateLead"><i data-lucide="plus"></i>Create Lead</button></div>
-      <p class="admin-user-action-message" id="adminLeadMessage"></p>`;
-
-    overlay.hidden = false;
-    const close = () => overlay.hidden = true;
-    drawer.querySelector('#adminCloseLead').onclick = close;
-    overlay.onclick = e => { if (e.target === overlay) close(); };
-
-    drawer.querySelector('#adminCreateLead').onclick = async () => {
-      const msg = drawer.querySelector('#adminLeadMessage');
-      const assignee = drawer.querySelector('#leadAssigned').value || null;
-      const payload = {
-        company: drawer.querySelector('#leadCompany').value.trim(),
-        name: drawer.querySelector('#leadName').value.trim(),
-        phone: drawer.querySelector('#leadPhone').value.trim(),
-        email: drawer.querySelector('#leadEmail').value.trim(),
-        stage: drawer.querySelector('#leadStage').value.trim() || 'outreach',
-        outcome: drawer.querySelector('#leadOutcome').value.trim(),
-        assigned_user_id: assignee,
-        assigned: assignee ? userLabel(assignee) : '',
-        notes: drawer.querySelector('#leadNotes').value.trim(),
-        admin_archived:false
-      };
-      if (!payload.company && !payload.name) { msg.textContent = 'Enter a company or contact name.'; return; }
-      msg.textContent = 'Creating…';
-      const { data, error } = await window.steadyHandsCRMClient.from('crm').insert(payload).select('*').single();
-      if (error) { msg.textContent = error.message; return; }
-      state.leads.unshift(data);
-      close(); renderSummary(); renderList();
-    };
-
-    window.lucide?.createIcons();
-  }
-
-  async function load() {
-    const c = window.steadyHandsCRMClient;
-    if (!c) return;
-    const list = document.getElementById('adminLeadList');
-
-    try {
-      const [leadsResult, usersResult] = await Promise.all([
-        c.from('crm')
-          .select('id,company,name,phone,altphone,email,website,domain,notes,issue,concerns,origin,assigned,assigned_user_id,tags,sources,stage,outcome,callbackdate,callbackat,lastcalled,timezone,leadpotential,tier,previewurl,sitekey,has_site_preview,admin_archived,admin_archived_at,created')
-          .order('created',{ascending:false})
-          .limit(5000),
-        c.from('callcenter_profiles')
-          .select('user_id,display_name,email')
-          .order('display_name',{ascending:true})
-      ]);
-      if (leadsResult.error) throw leadsResult.error;
-      if (usersResult.error) throw usersResult.error;
-
-      state.leads = leadsResult.data || [];
-      state.users = usersResult.data || [];
-
-      const assigneeFilter = document.getElementById('adminLeadAssigneeFilter');
-      assigneeFilter.innerHTML = '<option value="">All users</option>' + state.users.map(user => `<option value="${esc(user.user_id)}">${esc(user.display_name || user.email || 'User')}</option>`).join('');
-
-      renderSummary(); renderList();
-    } catch (error) {
-      console.error('Unable to load leads:',error);
-      list.innerHTML = `<section class="admin-dashboard-error"><strong>Unable to load leads.</strong><p>${esc(error?.message || 'Please refresh and try again.')}</p></section>`;
-    }
-  }
-
-  document.getElementById('adminLeadSearch')?.addEventListener('input', e => { state.query=e.target.value||''; renderList(); });
-  document.getElementById('adminAddLead')?.addEventListener('click', openNewLead);
-  document.getElementById('adminLeadAssigneeFilter')?.addEventListener('change', e => { state.assignee=e.target.value||''; renderList(); });
-  document.querySelectorAll('[data-lead-filter]').forEach(button => {
-    button.addEventListener('click', () => {
-      state.filter = button.dataset.leadFilter || 'active';
-      document.querySelectorAll('[data-lead-filter]').forEach(item => item.classList.toggle('active', item===button));
-      renderList();
-    });
-  });
-
-  if (window.steadyHandsAdminSession) load();
-  else window.addEventListener('steadyhands:admin-ready', load, {once:true});
+'use strict';
+const $=id=>document.getElementById(id);
+const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const client=()=>window.steadyHandsCRMClient;
+const state={rows:[],users:[],page:1,size:10,total:0,totalAll:null,filter:'active',query:'',assignee:'',timezone:'',stateCode:'',preview:'',stage:'',sort:'created_desc',tags:[],sources:[],tagMode:'OR',sourceMode:'OR',selected:new Set(),allMatching:false,availableTags:[],availableSources:[],loaded:false,seq:0};
+const fields='id,company,name,phone,altphone,email,website,domain,notes,issue,concerns,origin,assigned,assigned_user_id,tags,sources,stage,outcome,callbackdate,callbackat,lastcalled,timezone,state_code,leadpotential,tier,previewurl,sitekey,has_site_preview,admin_archived,admin_archived_at,created';
+const isArchived=x=>x.admin_archived===true;
+const label=id=>{const u=state.users.find(x=>String(x.user_id)===String(id));return u?(u.display_name||u.email||'Salesperson'):'Unassigned'};
+const text=x=>typeof x==='string'?x:'';
+const normalizeList=v=>Array.isArray(v)?v.map(x=>typeof x==='string'?x:typeof x==='object'&&x?(x.label||x.name||x.value||''):'').filter(Boolean):[];
+const fmtDate=x=>x?new Date(x).toLocaleString([],{month:'short',day:'numeric',year:'numeric'}):'—';
+const icon=()=>window.lucide?.createIcons?.();
+const fmtNum=n=>Number(n||0).toLocaleString();
+const showError=e=>{console.error('All Leads:',e);alert(e?.message||String(e))};
+function query(base=client().from('crm').select(fields,{count:'exact'}),opts={}){
+ let q=base;
+ if(state.filter==='active')q=q.eq('admin_archived',false);
+ if(state.filter==='archived')q=q.eq('admin_archived',true);
+ if(state.assignee==='unassigned')q=q.is('assigned_user_id',null);
+ else if(state.assignee)q=q.eq('assigned_user_id',state.assignee);
+ if(state.timezone)q=q.eq('timezone',state.timezone);
+ if(state.stateCode)q=q.ilike('state_code',state.stateCode);
+ if(state.stage)q=q.eq('stage',state.stage);
+ if(state.preview==='yes')q=q.eq('has_site_preview',true);
+ if(state.preview==='no')q=q.eq('has_site_preview',false);
+ if(state.tags.length)q=state.tagMode==='AND'?q.contains('tags',state.tags):q.overlaps('tags',state.tags);
+ if(state.sources.length)q=state.sourceMode==='AND'?q.contains('sources',state.sources):q.overlaps('sources',state.sources);
+ const search=state.query.trim();
+ if(search){const safe=search.replace(/[(),.%_*\\]/g,' ').trim();if(safe){const pat=`%${safe}%`;q=q.or(['company','name','phone','altphone','email','website','notes','state_code','timezone'].map(col=>`${col}.ilike.${pat}`).join(','));}}
+ if(!opts.noSort){const [key,dir]=state.sort.split('_');q=q.order(key,{ascending:dir==='asc',nullsFirst:false}).order('id',{ascending:true})}
+ return q;
+}
+function clearSelection(){state.selected.clear();state.allMatching=false;renderSelection()}
+function renderSelection(){const checked=state.rows.length>0&&state.rows.every(r=>state.selected.has(r.id));$('alSelectPage').checked=checked;$('alSelectPage').indeterminate=!checked&&state.rows.some(r=>state.selected.has(r.id));const n=state.allMatching?state.total:state.selected.size;$('alSelectionText').textContent=`${fmtNum(n)} selected`;$('alSelectAllMatching').hidden=!(state.total>state.rows.length&&!state.allMatching&&checked);$('alSelectAllMatching').textContent=`Select all ${fmtNum(state.total)} matching leads`}
+function renderSummary(){const activeCount=state.filter==='active'?state.total:'—';$('adminLeadSummary').innerHTML=[['users',state.totalAll??'—','Total leads'],['filter',state.total,'Matching filters'],['file-text',state.rows.length,'On this page'],['user-check',state.rows.filter(x=>x.assigned_user_id).length,'Assigned on page'],['archive',state.rows.filter(isArchived).length,'Archived on page']].map(([symbol,n,label])=>`<div><i data-lucide="${symbol}"></i><section><strong>${typeof n==='number'?fmtNum(n):n}</strong><span>${label}</span></section></div>`).join('');icon()}
+function renderPills(){let p=[];if(state.tags.length)p.push(`Tags: ${state.tags.join(', ')} (${state.tagMode})`);if(state.sources.length)p.push(`Sources: ${state.sources.join(', ')} (${state.sourceMode})`);for(const [k,v] of [['Time zone',state.timezone],['State',state.stateCode],['Stage',state.stage],['Preview',state.preview],['Assigned',state.assignee]])if(v)p.push(`${k}: ${k==='Assigned'?label(v):v}`);$('alActiveFilters').innerHTML=p.map(s=>`<span class="al-pill">${esc(s)}</span>`).join('')}
+function renderRows(){const el=$('adminLeadList');if(!state.rows.length){el.innerHTML='<tr><td colspan="10" class="al-empty">No matching leads.</td></tr>';renderSelection();return}
+ el.innerHTML=state.rows.map(r=>`<tr><td><input class="al-rowcheck" type="checkbox" data-check="${esc(r.id)}" aria-label="Select ${esc(r.company||r.name||'lead')}" ${state.selected.has(r.id)||state.allMatching?'checked':''}></td><td><button class="al-company-btn" data-open="${esc(r.id)}"><span class="al-company">${esc(r.company||r.name||'Unnamed lead')}</span><span class="al-sub">${esc(r.website||r.domain||'')}</span></button></td><td>${esc(r.name||'—')}</td><td>${esc(r.phone||'—')}<span class="al-sub">${esc(r.email||'')}</span></td><td>${esc(r.state_code||'—')}<span class="al-sub">${esc(r.timezone||'Time zone unknown')}</span></td><td>${normalizeList(r.tags).slice(0,4).map(x=>`<span class="al-chip">${esc(x)}</span>`).join('')||'—'}</td><td>${normalizeList(r.sources).slice(0,4).map(x=>`<span class="al-chip">${esc(x)}</span>`).join('')||'—'}</td><td><span class="al-chip stage">${esc(r.stage||'notstarted')}</span></td><td>${esc(label(r.assigned_user_id))}</td><td><button class="al-row-actions" data-open="${esc(r.id)}" aria-label="Open lead">⋯</button></td></tr>`).join('');
+ el.querySelectorAll('[data-check]').forEach(x=>x.addEventListener('change',e=>{if(state.allMatching){state.selected=new Set(state.rows.map(row=>row.id));state.allMatching=false}if(e.target.checked)state.selected.add(x.dataset.check);else state.selected.delete(x.dataset.check);renderSelection()}));el.querySelectorAll('[data-open]').forEach(x=>x.addEventListener('click',()=>openLead(x.dataset.open)));renderSelection();}
+function renderPage(){const pages=Math.max(1,Math.ceil(state.total/state.size));const buttons=[];const add=(v,t=v,disabled=false)=>buttons.push(`<button type="button" data-page="${v}" ${disabled?'disabled':''} class="${v===state.page?'current':''}">${t}</button>`);add(state.page-1,'‹',state.page===1);const shown=new Set([1,pages,state.page,state.page-1,state.page+1].filter(v=>v>0&&v<=pages));let prev=0;for(const n of [...shown].sort((a,b)=>a-b)){if(n>prev+1)buttons.push('<span>…</span>');add(n);prev=n}add(state.page+1,'›',state.page===pages);$('alPageButtons').innerHTML=buttons.join('');$('alPageButtons').querySelectorAll('[data-page]').forEach(x=>x.addEventListener('click',()=>{state.page=Number(x.dataset.page);clearSelection();loadRows()}));$('alPageStatus').textContent=state.total?`Showing ${fmtNum((state.page-1)*state.size+1)}–${fmtNum(Math.min(state.page*state.size,state.total))} of ${fmtNum(state.total)} matching leads`:'No matching leads'}
+async function loadRows(){const seq=++state.seq;const el=$('adminLeadList');el.innerHTML='<tr><td colspan="10" class="al-empty">Loading leads…</td></tr>';try{const result=await query().range((state.page-1)*state.size,state.page*state.size-1);if(seq!==state.seq)return;if(result.error)throw result.error;state.rows=result.data||[];state.total=result.count||0;const last=Math.max(1,Math.ceil(state.total/state.size));if(state.page>last){state.page=last;return loadRows()}renderSummary();renderRows();renderPage();renderPills()}catch(e){if(seq!==state.seq)return;el.innerHTML=`<tr><td colspan="10" class="al-empty">Could not load leads: ${esc(e.message)}</td></tr>`;console.error(e)}}
+function refresh(){state.page=1;clearSelection();loadRows()}
+const pause=(f,ms)=>{let t;return (...args)=>{clearTimeout(t);t=setTimeout(()=>f(...args),ms)}};
+function closeModal(){$('alModalWrap').hidden=true}
+function modal(title,hint,body,footer){$('alModalTitle').textContent=title;$('alModalHint').textContent=hint;$('alModalBody').innerHTML=body;$('alModalFooter').innerHTML=footer;$('alModalWrap').hidden=false;$('alModalClose').onclick=closeModal;$('alModalWrap').onclick=e=>{if(e.target===$('alModalWrap'))closeModal()};icon()}
+function footer(apply){return `<button type="button" id="alClearModal">Clear</button><button type="button" id="alApplyModal" class="al-apply">${apply}</button>`}
+async function getFacets(){try{const r=await client().rpc('admin_lead_filter_facets');if(r.error)throw r.error;const rows=r.data||[];state.availableTags=rows.filter(x=>x.kind==='tag');state.availableSources=rows.filter(x=>x.kind==='source');}catch(e){console.warn('Run sql/admin-leads-filter-facets.sql for complete tag/source lists',e);const tags=new Map(),sources=new Map();for(const row of state.rows){for(const val of normalizeList(row.tags))tags.set(val,(tags.get(val)||0)+1);for(const val of normalizeList(row.sources))sources.set(val,(sources.get(val)||0)+1)}state.availableTags=[...tags].map(([value,count])=>({value,count}));state.availableSources=[...sources].map(([value,count])=>({value,count}));}}
+async function openFacet(kind){await getFacets();const tags=kind==='tags',values=tags?state.availableTags:state.availableSources,selected=new Set(tags?state.tags:state.sources);let mode=tags?state.tagMode:state.sourceMode;const label=tags?'Tags':'Sources';modal(label,`View and filter all available ${label.toLowerCase()} from your CRM.`, `<input class="al-modal-search" id="alFacetSearch" type="search" placeholder="Search ${label.toLowerCase()}…"><div class="al-choice-head"><label><input type="checkbox" id="alFacetAll"> Select all visible</label><span>Match:</span><div class="al-mode"><button data-mode="AND">AND</button><button data-mode="OR">OR</button></div></div><div id="alFacetOptions" class="al-choice-grid"></div><p class="al-status-note">Counts are across the CRM and can include archived leads.</p>`,footer(`Apply ${label}`));
+const render=()=>{const search=$('alFacetSearch').value.toLowerCase();const matches=values.filter(x=>String(x.value).toLowerCase().includes(search));$('alFacetOptions').innerHTML=matches.map(x=>`<label class="al-option"><input type="checkbox" data-val="${esc(x.value)}" ${selected.has(x.value)?'checked':''}><span class="al-option-name" title="${esc(x.value)}">${esc(x.value)}</span><span class="al-count">${fmtNum(x.count)}</span></label>`).join('')||'<p>No options found.</p>';$('alFacetOptions').querySelectorAll('[data-val]').forEach(x=>x.onchange=()=>x.checked?selected.add(x.dataset.val):selected.delete(x.dataset.val));$('alFacetAll').checked=matches.length>0&&matches.every(x=>selected.has(x.value));$('alModalBody').querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));};$('alFacetSearch').oninput=render;$('alFacetAll').onchange=e=>{for(const x of values.filter(v=>String(v.value).toLowerCase().includes($('alFacetSearch').value.toLowerCase())))e.target.checked?selected.add(x.value):selected.delete(x.value);render()};$('alModalBody').querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;render()});$('alClearModal').onclick=()=>{selected.clear();render()};$('alApplyModal').onclick=()=>{if(tags){state.tags=[...selected];state.tagMode=mode}else{state.sources=[...selected];state.sourceMode=mode}closeModal();refresh()};render()}
+function openAdvanced(){const opts=(items,selected)=>items.map(([v,t])=>`<option value="${esc(v)}" ${selected===v?'selected':''}>${esc(t)}</option>`).join('');modal('Advanced Filters','Combine these filters with search, tags and sources.',`<div class="al-advanced-grid"><label>Assigned to<select id="advAssignee">${opts([['','All salespeople'],['unassigned','Unassigned'],...state.users.map(u=>[u.user_id,u.display_name||u.email])],state.assignee)}</select></label><label>Time zone<input class="al-modal-field" id="advTimezone" type="text" placeholder="e.g. America/Los_Angeles" value="${esc(state.timezone)}"></label><label>State code<input class="al-modal-field" id="advState" placeholder="e.g. NV" value="${esc(state.stateCode)}"></label><label>Stage<select id="advStage">${opts([['','All stages'],...['notstarted','staging','outreach','review','complete','notinterested','archived','callback'].map(x=>[x,x])],state.stage)}</select></label><label>Site preview<select id="advPreview">${opts([['','All'],['yes','Has preview'],['no','No preview']],state.preview)}</select></label></div>`,footer('Apply Filters'));$('alClearModal').onclick=()=>{state.assignee='';state.timezone='';state.stateCode='';state.stage='';state.preview='';closeModal();refresh()};$('alApplyModal').onclick=()=>{state.assignee=$('advAssignee').value;state.timezone=$('advTimezone').value.trim();state.stateCode=$('advState').value.trim();state.stage=$('advStage').value;state.preview=$('advPreview').value;closeModal();refresh()}}
+function options(selected=''){return `<option value="">Unassigned</option>`+state.users.map(x=>`<option value="${esc(x.user_id)}" ${selected===x.user_id?'selected':''}>${esc(x.display_name||x.email)}</option>`).join('')}
+function openLead(id){const r=state.rows.find(x=>x.id===id);if(!r)return;const overlay=$('adminLeadDrawerOverlay'),drawer=$('adminLeadDrawer');drawer.innerHTML=`<div class="admin-user-drawer-head"><div><span class="admin-kicker">LEAD</span><h2>${esc(r.company||r.name||'Lead')}</h2><p>Created ${esc(fmtDate(r.created))}</p></div><button type="button" id="alCloseDrawer"><i data-lucide="x"></i></button></div><div class="admin-lead-form-grid"><label>Company<input id="leadCompany" value="${esc(r.company)}"></label><label>Contact<input id="leadName" value="${esc(r.name)}"></label><label>Phone<input id="leadPhone" value="${esc(r.phone)}"></label><label>Email<input id="leadEmail" value="${esc(r.email)}"></label><label>Stage<select id="leadStage">${['notstarted','staging','outreach','review','complete','notinterested','archived','callback'].map(x=>`<option ${x===r.stage?'selected':''}>${x}</option>`).join('')}</select></label><label>Outcome<input id="leadOutcome" value="${esc(r.outcome)}"></label><label class="full">Assigned to<select id="leadAssigned">${options(r.assigned_user_id)}</select></label><label class="full">Notes<textarea id="leadNotes">${esc(r.notes)}</textarea></label></div><div class="admin-lead-actions"><button class="primary" id="adminSharePreview"><i data-lucide="link"></i>Create Preview Signup Link</button><button class="primary" id="alSave"><i data-lucide="save"></i>Save Changes</button><button id="alArchive">${isArchived(r)?'Restore':'Archive'} Lead</button><button class="danger" id="alDelete">Delete Permanently</button></div><p id="alDrawerMessage"></p>`;overlay.hidden=false;const close=()=>overlay.hidden=true;drawer.querySelector('#alCloseDrawer').onclick=close;overlay.onclick=e=>{if(e.target===overlay)close()};const msg=()=>drawer.querySelector('#alDrawerMessage');drawer.querySelector('#alSave').onclick=async()=>{const assignee=drawer.querySelector('#leadAssigned').value;const payload={company:drawer.querySelector('#leadCompany').value.trim(),name:drawer.querySelector('#leadName').value.trim(),phone:drawer.querySelector('#leadPhone').value.trim(),email:drawer.querySelector('#leadEmail').value.trim(),stage:drawer.querySelector('#leadStage').value,outcome:drawer.querySelector('#leadOutcome').value.trim(),notes:drawer.querySelector('#leadNotes').value.trim(),assigned_user_id:assignee||null,assigned:assignee?label(assignee):''};msg().textContent='Saving…';const {error}=await client().from('crm').update(payload).eq('id',r.id);if(error){msg().textContent=error.message;return}close();loadRows()};drawer.querySelector('#alArchive').onclick=async()=>{if(!confirm(`${isArchived(r)?'Restore':'Archive'} this lead?`))return;const next=!isArchived(r);const {error}=await client().from('crm').update({admin_archived:next,admin_archived_at:next?new Date().toISOString():null}).eq('id',r.id);if(error){msg().textContent=error.message;return}close();loadRows()};drawer.querySelector('#alDelete').onclick=async()=>{if(!confirm('Permanently delete this lead? This cannot be undone.'))return;const {error}=await client().from('crm').delete().eq('id',r.id);if(error){msg().textContent=error.message;return}close();loadRows()};drawer.querySelector('#adminSharePreview').onclick=async()=>{if(!r.sitekey||!/^https:\/\//.test(r.previewurl||'')){msg().textContent='A site key and HTTPS preview URL are required.';return}const {data,error}=await client().rpc('create_portal_preview_invite',{p_site_key:r.sitekey,p_site_title:r.company||r.name||'Website Preview',p_preview_url:r.previewurl});if(error){msg().textContent=error.message;return}try{await navigator.clipboard.writeText(data);msg().textContent='Link copied.'}catch{msg().textContent=data}};icon()}
+function openNewLead(){const overlay=$('adminLeadDrawerOverlay'),drawer=$('adminLeadDrawer');drawer.innerHTML=`<div class="admin-user-drawer-head"><h2>Add Lead</h2><button id="alCloseDrawer" type="button">×</button></div><div class="admin-lead-form-grid"><label>Company<input id="leadCompany"></label><label>Contact<input id="leadName"></label><label>Phone<input id="leadPhone"></label><label>Email<input id="leadEmail"></label><label class="full">Assigned to<select id="leadAssigned">${options()}</select></label><label class="full">Notes<textarea id="leadNotes"></textarea></label></div><div class="admin-lead-actions"><button class="primary" id="alCreate">Create Lead</button></div><p id="alDrawerMessage"></p>`;overlay.hidden=false;drawer.querySelector('#alCloseDrawer').onclick=()=>overlay.hidden=true;overlay.onclick=e=>{if(e.target===overlay)overlay.hidden=true};drawer.querySelector('#alCreate').onclick=async()=>{const payload={company:drawer.querySelector('#leadCompany').value.trim(),name:drawer.querySelector('#leadName').value.trim(),phone:drawer.querySelector('#leadPhone').value.trim(),email:drawer.querySelector('#leadEmail').value.trim(),notes:drawer.querySelector('#leadNotes').value.trim(),assigned_user_id:drawer.querySelector('#leadAssigned').value||null,stage:'notstarted',admin_archived:false};payload.assigned=payload.assigned_user_id?label(payload.assigned_user_id):'';if(!payload.company&&!payload.name){drawer.querySelector('#alDrawerMessage').textContent='Enter a company or contact.';return}const {error}=await client().from('crm').insert(payload);if(error){drawer.querySelector('#alDrawerMessage').textContent=error.message;return}overlay.hidden=true;refresh()}}
+async function targetIds(){if(!state.allMatching)return [...state.selected];const ids=[];const batch=500;let index=0;while(true){const r=await query(client().from('crm').select('id'),{noSort:true}).order('id',{ascending:true}).range(index,index+batch-1);if(r.error)throw r.error;ids.push(...(r.data||[]).map(x=>x.id));if(!r.data||r.data.length<batch)break;index+=batch;if(index>250000)throw Error('The selection is too large for browser-side processing. Narrow the filters.')}return ids}
+async function applyBulk(){const action=$('alBulkAction').value;$('alBulkAction').value='';if(!action)return;if(!state.allMatching&&!state.selected.size){alert('Select at least one lead first.');return}if(action==='export'){const rows=state.rows.filter(x=>state.allMatching||state.selected.has(x.id));const cols=['company','name','phone','email','stage','timezone','assigned','sources','tags'];const csv=[cols.join(','),...rows.map(r=>cols.map(k=>`"${String(Array.isArray(r[k])?r[k].join('; '):r[k]??'').replace(/"/g,'""')}"`).join(','))].join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='steadyhands-selected-leads.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);return}
+let userId='';if(action==='assign'){const choice=prompt('Enter the salesperson email or UUID:\n'+state.users.map(x=>`${x.display_name||x.email}: ${x.email}`).join('\n'));if(choice===null)return;const match=state.users.find(u=>u.email?.toLowerCase()===choice.toLowerCase()||u.user_id===choice);if(!match){alert('Salesperson not found.');return}userId=match.user_id}
+const count=state.allMatching?state.total:state.selected.size;if(!confirm(`Apply "${action}" to ${fmtNum(count)} leads?${action==='assign'?' Existing assignments will be replaced.':''}`))return;const btn=$('alBulkAction');btn.disabled=true;try{const ids=await targetIds();const changes=action==='assign'?{assigned_user_id:userId,assigned:label(userId)}:action==='unassign'?{assigned_user_id:null,assigned:''}:action==='archive'?{admin_archived:true,admin_archived_at:new Date().toISOString()}:{admin_archived:false,admin_archived_at:null};for(let i=0;i<ids.length;i+=250){const res=await client().from('crm').update(changes).in('id',ids.slice(i,i+250)).select('id');if(res.error)throw res.error;if((res.data||[]).length!==Math.min(250,ids.length-i))throw Error('Not every selected lead was updated. Check row-level security and refresh.')}clearSelection();await loadRows();alert(`Updated ${fmtNum(ids.length)} leads.`)}catch(e){showError(e);await loadRows()}finally{btn.disabled=false}}
+async function initialize(){if(state.loaded)return;state.loaded=true;const c=client();if(!c){state.loaded=false;return}try{const [users,total]=await Promise.all([c.from('callcenter_profiles').select('user_id,display_name,email').order('display_name'),c.from('crm').select('id',{head:true,count:'exact'})]);if(users.error)throw users.error;state.users=users.data||[];if(!total.error)state.totalAll=total.count;await loadRows()}catch(e){state.loaded=false;$('adminLeadList').innerHTML=`<tr><td colspan="10" class="al-empty">${esc(e.message)}</td></tr>`}}
+$('adminLeadSearch').addEventListener('input',pause(e=>{state.query=e.target.value;refresh()},300));$('adminAddLead').onclick=openNewLead;$('alTags').onclick=()=>openFacet('tags');$('alSources').onclick=()=>openFacet('sources');$('alAdvanced').onclick=openAdvanced;
+$('alPageSize').onchange=e=>{const v=e.target.value;if(v==='custom'){const requested=prompt('Number of leads per page (1–5000):','250');const n=Number(requested);if(!Number.isInteger(n)||n<1||n>5000){e.target.value=String(state.size);return}state.size=n;const custom=document.createElement('option');custom.value=String(n);custom.textContent=`${n} per page`;e.target.append(custom);e.target.value=String(n)}else state.size=Number(v);refresh()};
+$('alSort').onchange=e=>{state.sort=e.target.value;refresh()};$('alBulkAction').onchange=applyBulk;
+$('alSelectPage').onchange=e=>{state.allMatching=false;for(const r of state.rows)e.target.checked?state.selected.add(r.id):state.selected.delete(r.id);renderRows()};$('alSelectAllMatching').onclick=()=>{state.allMatching=true;renderSelection()};
+document.querySelectorAll('[data-lead-filter]').forEach(b=>b.onclick=()=>{state.filter=b.dataset.leadFilter;document.querySelectorAll('[data-lead-filter]').forEach(x=>x.classList.toggle('active',x===b));refresh()});
+if(window.steadyHandsAdminSession)initialize();else window.addEventListener('steadyhands:admin-ready',initialize,{once:true});
 })();
