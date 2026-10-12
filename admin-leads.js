@@ -40,7 +40,7 @@ function query(base=client().from('crm').select(fields,{count:'exact'}),opts={})
  return q;
 }
 function clearSelection(){state.selected.clear();state.allMatching=false;renderSelection()}
-function renderSelection(){const assignButton=$('alAssignSelected');if(assignButton)assignButton.disabled=!(state.allMatching||state.selected.size);const checked=state.rows.length>0&&state.rows.every(r=>state.selected.has(r.id));$('alSelectPage').checked=checked;$('alSelectPage').indeterminate=!checked&&state.rows.some(r=>state.selected.has(r.id));const n=state.allMatching?state.total:state.selected.size;$('alSelectionText').textContent=`${fmtNum(n)} selected`;$('alSelectAllMatching').hidden=!(state.total>state.rows.length&&!state.allMatching&&checked);$('alSelectAllMatching').textContent=`Select all ${fmtNum(state.total)} matching leads`}
+function renderSelection(){const assignButton=$('alAssignSelected');if(assignButton)assignButton.disabled=!(state.allMatching||state.selected.size);const exportButton=$('alExportSelected');if(exportButton)exportButton.disabled=!(state.allMatching||state.selected.size);const checked=state.rows.length>0&&state.rows.every(r=>state.selected.has(r.id));$('alSelectPage').checked=checked;$('alSelectPage').indeterminate=!checked&&state.rows.some(r=>state.selected.has(r.id));const n=state.allMatching?state.total:state.selected.size;$('alSelectionText').textContent=`${fmtNum(n)} selected`;$('alSelectAllMatching').hidden=!(state.total>state.rows.length&&!state.allMatching&&checked);$('alSelectAllMatching').textContent=`Select all ${fmtNum(state.total)} matching leads`}
 function renderSummary(){const activeCount=state.filter==='active'?state.total:'—';$('adminLeadSummary').innerHTML=[['users',state.totalAll??'—','Total leads'],['filter',state.total,'Matching filters'],['file-text',state.rows.length,'On this page'],['user-check',state.rows.filter(x=>x.assigned_user_id).length,'Assigned on page'],['archive',state.rows.filter(isArchived).length,'Archived on page']].map(([symbol,n,label])=>`<div><i data-lucide="${symbol}"></i><section><strong>${typeof n==='number'?fmtNum(n):n}</strong><span>${label}</span></section></div>`).join('');icon()}
 function renderPills(){const assignedLabel=$('alAssignedLabel');if(assignedLabel)assignedLabel.textContent=`Assigned: ${state.assignee==='unassigned'?'None':state.assignee?label(state.assignee):'All'}`;let p=[];if(state.tags.length)p.push(`Tags: ${state.tags.join(', ')} (${state.tagMode})`);if(state.sources.length)p.push(`Sources: ${state.sources.join(', ')} (${state.sourceMode})`);for(const [k,v] of [['Time zone',state.timezone],['State',state.stateCode],['Stage',state.stage],['Preview',state.preview]])if(v)p.push(`${k}: ${k==='Assigned'?label(v):v}`);$('alActiveFilters').innerHTML=p.map(s=>`<span class="al-pill">${esc(s)}</span>`).join('')}
 function renderRows(){const el=$('adminLeadList');if(!state.rows.length){el.innerHTML='<tr><td colspan="10" class="al-empty">No matching leads.</td></tr>';renderSelection();return}
@@ -122,12 +122,70 @@ async function openAssignment(){
   };
  }catch(e){$('alModalBody').innerHTML=`<p class="al-status-note">Unable to load active salespeople: ${esc(e.message)}</p>`}
 }
-async function applyBulk(){const action=$('alBulkAction').value;$('alBulkAction').value='';if(!action)return;if(!state.allMatching&&!state.selected.size){alert('Select at least one lead first.');return}if(action==='export'){const rows=state.rows.filter(x=>state.allMatching||state.selected.has(x.id));const cols=['company','name','phone','email','stage','timezone','assigned','sources','tags'];const csv=[cols.join(','),...rows.map(r=>cols.map(k=>`"${String(Array.isArray(r[k])?r[k].join('; '):r[k]??'').replace(/"/g,'""')}"`).join(','))].join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='steadyhands-selected-leads.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);return}
+// Export the complete explicit or filtered selection, not just the rendered page.
+const exportColumns=['id','company','name','phone','altphone','email','website','domain','notes','issue','concerns','origin','assigned','assigned_user_id','assigned_to','tags','sources','stage','outcome','callbackdate','callbackat','lastcalled','timezone','state_code','leadpotential','tier','previewurl','sitekey','has_site_preview','admin_archived','admin_archived_at','created'];
+const exportValue=(row,key)=>key==='assigned_to'?label(row.assigned_user_id):row[key]??'';
+const csvCell=value=>{
+ const input=Array.isArray(value)?value.map(v=>typeof v==='object'?JSON.stringify(v):String(v)).join('; '):typeof value==='object'&&value!==null?JSON.stringify(value):String(value??'');
+ // Prevent spreadsheet formula execution when opening exported customer data.
+ const safe=/^[\\s]*[=+@\\-]/.test(input)?"'"+input:input;
+ return '"'+safe.replace(/"/g,'""')+'"';
+};
+function downloadExport(content,type,extension){
+ const blob=new Blob([content],{type});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download='steadyhands-selected-leads-'+new Date().toISOString().slice(0,10)+'.'+extension;
+ document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),30000);
+}
+async function exportSelected(format){
+ if(!state.allMatching&&!state.selected.size){alert('Select at least one lead first.');return}
+ const button=$('alExportSelected');
+ if(button)button.disabled=true;
+ const oldText=button?.innerHTML;
+ if(button)button.textContent='Exporting…';
+ try{
+  const ids=await targetIds();
+  if(!ids.length)throw Error('No matching leads were found to export.');
+  const rows=[];
+  // Supabase/PostgREST limits result size per request; fetch in small, reliable chunks.
+  for(let i=0;i<ids.length;i+=150){
+   const chunk=ids.slice(i,i+150);
+   const result=await client().from('crm').select(fields).in('id',chunk);
+   if(result.error)throw result.error;
+   rows.push(...(result.data||[]));
+  }
+  if(rows.length!==ids.length)throw Error('Some selected leads could not be retrieved. Nothing was exported.');
+  const byId=new Map(rows.map(row=>[String(row.id),row]));
+  const ordered=ids.map(id=>byId.get(String(id)));
+  if(ordered.some(row=>!row))throw Error('Some selected leads are no longer available. Refresh and retry.');
+  if(format==='json'){
+   const output=ordered.map(row=>({...row,assigned_to:label(row.assigned_user_id)}));
+   downloadExport(JSON.stringify(output,null,2),'application/json;charset=utf-8','json');
+  }else{
+   const csv='\\uFEFF'+[exportColumns.join(','),...ordered.map(row=>exportColumns.map(key=>csvCell(exportValue(row,key))).join(','))].join('\\r\\n');
+   downloadExport(csv,'text/csv;charset=utf-8','csv');
+  }
+ }catch(e){showError(e)}
+ finally{if(button){button.innerHTML=oldText;button.disabled=!(state.allMatching||state.selected.size);icon()}}
+}
+function openExport(){
+ if(!state.allMatching&&!state.selected.size){alert('Select at least one lead first.');return}
+ const count=state.allMatching?state.total:state.selected.size;
+ modal('Export Selected Leads',`Download all ${fmtNum(count)} selected lead(s), including selections across matching results.`,
+ '<p class="al-status-note">Choose a file format. CSV opens in Excel or spreadsheets. JSON preserves structured data such as tags and sources.</p>',
+ '<button type="button" id="alExportCancel">Cancel</button><button type="button" class="al-apply" id="alExportCsv">Download CSV</button><button type="button" class="al-apply" id="alExportJson">Download JSON</button>');
+ $('alExportCancel').onclick=closeModal;
+ for(const [id,format] of [['alExportCsv','csv'],['alExportJson','json']]){
+  $(id).onclick=async()=>{closeModal();await exportSelected(format)};
+ }
+}
+async function applyBulk(){const action=$('alBulkAction').value;$('alBulkAction').value='';if(!action)return;if(!state.allMatching&&!state.selected.size){alert('Select at least one lead first.');return}if(action==='export_csv'||action==='export_json'){await exportSelected(action==='export_csv'?'csv':'json');return}
 if(action==='assign'){await openAssignment();return}
 let userId='';
 const count=state.allMatching?state.total:state.selected.size;if(!confirm(`Apply "${action}" to ${fmtNum(count)} leads?${action==='assign'?' Existing assignments will be replaced.':''}`))return;const btn=$('alBulkAction');btn.disabled=true;try{const ids=await targetIds();const changes=action==='assign'?{assigned_user_id:userId,assigned:label(userId)}:action==='unassign'?{assigned_user_id:null,assigned:''}:action==='archive'?{admin_archived:true,admin_archived_at:new Date().toISOString()}:{admin_archived:false,admin_archived_at:null};for(let i=0;i<ids.length;i+=250){const res=await client().from('crm').update(changes).in('id',ids.slice(i,i+250)).select('id');if(res.error)throw res.error;if((res.data||[]).length!==Math.min(250,ids.length-i))throw Error('Not every selected lead was updated. Check row-level security and refresh.')}clearSelection();await loadRows();alert(`Updated ${fmtNum(ids.length)} leads.`)}catch(e){showError(e);await loadRows()}finally{btn.disabled=false}}
 async function initialize(){if(state.loaded)return;state.loaded=true;const c=client();if(!c){state.loaded=false;return}try{const [users,total]=await Promise.all([c.from('callcenter_profiles').select('user_id,display_name,email').order('display_name'),c.from('crm').select('id',{head:true,count:'exact'})]);if(users.error)throw users.error;state.users=users.data||[];if(!total.error)state.totalAll=total.count;await loadRows()}catch(e){state.loaded=false;$('adminLeadList').innerHTML=`<tr><td colspan="10" class="al-empty">${esc(e.message)}</td></tr>`}}
-$('adminLeadSearch').addEventListener('input',pause(e=>{state.query=e.target.value;refresh()},300));$('adminAddLead').onclick=openNewLead;$('alAssignSelected').onclick=openAssignment;$('alTags').onclick=()=>openFacet('tags');$('alSources').onclick=()=>openFacet('sources');$('alAdvanced').onclick=openAdvanced;$('alAssigned').onclick=openAssignedFilter;
+$('adminLeadSearch').addEventListener('input',pause(e=>{state.query=e.target.value;refresh()},300));$('adminAddLead').onclick=openNewLead;$('alAssignSelected').onclick=openAssignment;$('alExportSelected').onclick=openExport;$('alTags').onclick=()=>openFacet('tags');$('alSources').onclick=()=>openFacet('sources');$('alAdvanced').onclick=openAdvanced;$('alAssigned').onclick=openAssignedFilter;
 $('alPageSize').onchange=e=>{const v=e.target.value;if(v==='custom'){const requested=prompt('Number of leads per page (1–5000):','250');const n=Number(requested);if(!Number.isInteger(n)||n<1||n>5000){e.target.value=String(state.size);return}state.size=n;const custom=document.createElement('option');custom.value=String(n);custom.textContent=`${n} per page`;e.target.append(custom);e.target.value=String(n)}else state.size=Number(v);refresh()};
 $('alSort').onchange=e=>{state.sort=e.target.value;refresh()};$('alBulkAction').onchange=applyBulk;
 $('alSelectPage').onchange=e=>{state.allMatching=false;for(const r of state.rows)e.target.checked?state.selected.add(r.id):state.selected.delete(r.id);renderRows()};$('alSelectAllMatching').onclick=()=>{state.allMatching=true;renderSelection()};
