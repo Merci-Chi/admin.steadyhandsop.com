@@ -16,6 +16,7 @@
 <button id="alAdvanced" class="al-btn al-white" type="button"><i data-lucide="sliders-horizontal"></i> Filters</button>
 <button id="alTags" class="al-btn al-white" type="button"><i data-lucide="tags"></i> Tags</button>
 <button id="alSources" class="al-btn al-white" type="button"><i data-lucide="globe"></i> Sources</button>
+<button id="alAssigned" class="al-btn al-white" type="button" aria-label="Filter leads by assigned salesperson"><i data-lucide="user-round"></i> <span id="alAssignedLabel">Assigned: None</span></button>
 <select id="alPageSize" aria-label="Leads per page"><option value="10">10 per page</option><option value="100">100 per page</option><option value="1000">1,000 per page</option><option value="custom">Custom…</option></select>
 <div class="al-primary-actions"><button id="adminAddLead" class="al-btn al-blue" type="button"><i data-lucide="plus"></i> Add Lead</button><button id="alAssignSelected" class="al-btn al-assign" type="button" disabled><i data-lucide="user-round-check"></i> Assign</button></div></section>
 <section class="admin-lead-filters al-status"><button class="active" data-lead-filter="active">Active</button><button data-lead-filter="archived">Archived</button><button data-lead-filter="all">All</button><span id="alActiveFilters"></span></section>
@@ -28,4 +29,4 @@
 <div class="admin-lead-drawer-overlay" id="adminLeadDrawerOverlay" hidden><aside class="admin-lead-drawer" id="adminLeadDrawer"></aside></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="auth-guard.js?v=20261005-admin-only"></script><script src="admin-shell.js?v=20261009-independent-scroll-v3"></script>
-<script src="admin-leads.js?v=20261011-assignment-v4"></script></body></html>
+<script src="admin-leads.js?v=20261012-assignee-filter-v1"></script></body></html>
