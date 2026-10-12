@@ -24,8 +24,16 @@ function query(base=client().from('crm').select(fields,{count:'exact'}),opts={})
  if(state.stage)q=q.eq('stage',state.stage);
  if(state.preview==='yes')q=q.eq('has_site_preview',true);
  if(state.preview==='no')q=q.eq('has_site_preview',false);
- if(state.tags.length)q=state.tagMode==='AND'?q.contains('tags',state.tags):q.overlaps('tags',state.tags);
- if(state.sources.length)q=state.sourceMode==='AND'?q.contains('sources',state.sources):q.overlaps('sources',state.sources);
+ // CRM tags and sources are JSONB arrays, not PostgreSQL text[] columns.
+ // JSONB supports @> (cs) containment; PostgreSQL array overlap (ov) is invalid here.
+ const jsonFacet=(column,values,mode)=>{
+   if(!values.length)return;
+   if(mode==='AND'){q=q.contains(column,values);return;}
+   const clauses=values.map(value=>`${column}.cs.${JSON.stringify([value])}`);
+   q=q.or(clauses.join(','));
+ };
+ jsonFacet('tags',state.tags,state.tagMode);
+ jsonFacet('sources',state.sources,state.sourceMode);
  const search=state.query.trim();
  if(search){const safe=search.replace(/[(),.%_*\\]/g,' ').trim();if(safe){const pat=`%${safe}%`;q=q.or(['company','name','phone','altphone','email','website','notes','state_code','timezone'].map(col=>`${col}.ilike.${pat}`).join(','));}}
  if(!opts.noSort){const [key,dir]=state.sort.split('_');q=q.order(key,{ascending:dir==='asc',nullsFirst:false}).order('id',{ascending:true})}
