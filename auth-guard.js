@@ -67,18 +67,47 @@
         return;
       }
 
-      // Never grant access based only on a stored session or a cached role.
-      const { data: permission, error: permissionError } = await withTimeout(
-        client.from('team_permissions').select('role,active')
-          .eq('user_id', session.user.id).maybeSingle(),
-        'Administrator permission check'
-      );
-      if (permissionError) throw permissionError;
+      // Query RLS-protected permissions with the authenticated session token.
+      // An abortable network request avoids a stalled Supabase query hanging the app.
+      const controller = new AbortController();
+      const permissionTimer = setTimeout(() => controller.abort(), 8000);
+      let permission;
+      try {
+        const params = new URLSearchParams({
+          select: 'role,active',
+          user_id: 'eq.' + session.user.id,
+          limit: '1'
+        });
+        const response = await fetch(
+          'https://glonbvrcudwuzjundrii.supabase.co/rest/v1/team_permissions?' + params.toString(),
+          {
+            headers: {
+              apikey: 'sb_publishable_VZbed_uuOXSE744UrAfHXw_z2xDdYtr',
+              Authorization: 'Bearer ' + session.access_token,
+              Accept: 'application/json'
+            },
+            cache: 'no-store',
+            signal: controller.signal
+          }
+        );
+        if (!response.ok) {
+          const details = await response.text();
+          throw new Error('Permission request failed (' + response.status + '): ' + details.slice(0, 240));
+        }
+        const rows = await response.json();
+        permission = Array.isArray(rows) ? rows[0] : null;
+      } catch (error) {
+        if (error?.name === 'AbortError') throw new Error('Permission check timed out. Try again.');
+        throw error;
+      } finally {
+        clearTimeout(permissionTimer);
+      }
+
       if (currentAttempt !== attempt) return;
 
       if (permission?.active !== true ||
           String(permission?.role || '').toUpperCase() !== ADMIN_ROLE) {
-        showCheckError('This account does not have active administrator access.');
+        showCheckError('Unauthorized — this account does not have active ADMIN access.');
         return;
       }
 
