@@ -105,32 +105,28 @@
   setPasswordVisibility(password, eye);
 
   let client;
+  const withTimeout = (promise, label) => {
+    let timeout;
+    return Promise.race([
+      Promise.resolve(promise),
+      new Promise((_, reject) => {
+        timeout = setTimeout(() => reject(new Error(label + ' is taking too long. Please try again.')), 20000);
+      })
+    ]).finally(() => clearTimeout(timeout));
+  };
+  let loginInProgress = false;
   let recoveryMode = new URLSearchParams(location.search).get('reset') === '1';
 
-  async function verifyAdminAccess() {
-    const { data:sessionData, error:sessionError } = await client.auth.getSession();
-    if (sessionError) throw sessionError;
-
-    const userId = sessionData?.session?.user?.id;
-    if (!userId) return false;
-
-    const { data:permission, error:permissionError } = await client
-      .from('team_permissions')
-      .select('role,active')
-      .eq('user_id', userId)
-      .maybeSingle();
-
+  async function verifyAdminAccess(signedInUser) {
+    const userId = signedInUser?.id;
+    if (!userId) throw new Error('Could not identify the signed-in account.');
+    const { data:permission, error:permissionError } = await withTimeout(
+      client.from('team_permissions').select('role,active')
+        .eq('user_id', userId).maybeSingle(), 'Administrator access check'
+    );
     if (permissionError) throw permissionError;
-
-    const allowed = permission?.active === true &&
+    return permission?.active === true &&
       String(permission?.role || '').toUpperCase() === 'ADMIN';
-
-    if (!allowed) {
-      await client.auth.signOut();
-      return false;
-    }
-
-    return true;
   }
 
   function showRecoveryForm() {
@@ -187,24 +183,12 @@
       }
     });
 
-    client.auth.getSession().then(({ data, error }) => {
-      if (error) throw error;
-      if (recoveryMode) {
-        showRecoveryForm();
-        return;
-      }
-      if (data.session) {
-        verifyAdminAccess().then(allowed => {
-          if (allowed) location.replace('index.html');
-          else message.textContent = 'Administrator access is required for this app.';
-        }).catch(error => {
-          console.error('Admin access check:', error);
-          message.textContent = error?.message || 'Unable to verify administrator access.';
-        });
-      }
-    }).catch(e => {
-      console.error('Session check:', e);
-    });
+    // Initial auth recovery is handled by Supabase. Do not race a background
+    // getSession/permission check against a new password sign-in.
+    if (recoveryMode) {
+      showRecoveryForm();
+    }
+
   } catch (e) {
     console.error('Login setup:', e);
     message.textContent = 'Unable to connect. Please try again.';
@@ -269,13 +253,15 @@
       currentMessage.textContent = 'Updating password...';
 
       try {
-        const { error } = await client.auth.updateUser({ password: newPassword.value });
+        const { error } = await withTimeout(client.auth.updateUser({ password: newPassword.value }), 'Password update');
         if (error) throw error;
 
         currentMessage.textContent = 'Password updated. Verifying administrator access...';
         history.replaceState({}, '', 'login.html');
 
-        const allowed = await verifyAdminAccess();
+        const { data:updatedSession, error:updatedSessionError } = await withTimeout(client.auth.getSession(), 'Session check');
+        if (updatedSessionError) throw updatedSessionError;
+        const allowed = await verifyAdminAccess(updatedSession?.session?.user);
         if (!allowed) {
           currentMessage.textContent = 'Administrator access is required for this app.';
           currentButton.disabled = false;
@@ -299,15 +285,17 @@
       return;
     }
 
+    if (loginInProgress) return;
+    loginInProgress = true;
     button.disabled = true;
     message.textContent = 'Signing in...';
 
     try {
       const loginEmail = form.elements.email.value.trim();
-      const { error } = await client.auth.signInWithPassword({
+      const { data:signInData, error } = await withTimeout(client.auth.signInWithPassword({
         email: loginEmail,
         password: password.value
-      });
+      }), 'Sign in');
       if (error) throw error;
 
       try {
@@ -318,7 +306,8 @@
         }
       } catch {}
 
-      const allowed = await verifyAdminAccess();
+      message.textContent = 'Checking administrator access...';
+      const allowed = await verifyAdminAccess(signInData?.user);
       if (!allowed) {
         message.textContent = 'Administrator access is required for this app.';
         button.disabled = false;
@@ -330,6 +319,8 @@
       console.error('Sign-in failed:', error);
       message.textContent = error?.message || 'Unable to sign in. Check your email and password.';
       button.disabled = false;
+    } finally {
+      loginInProgress = false;
     }
   });
 })();
