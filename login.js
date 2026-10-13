@@ -124,7 +124,7 @@
       client.from('team_permissions').select('role,active')
         .eq('user_id', userId).maybeSingle(), 'Administrator access check'
     );
-    if (permissionError) throw permissionError;
+    if (permissionError) throw new Error('Unable to verify permissions: ' + permissionError.message);
     return permission?.active === true &&
       String(permission?.role || '').toUpperCase() === 'ADMIN';
   }
@@ -263,7 +263,7 @@
         if (updatedSessionError) throw updatedSessionError;
         const allowed = await verifyAdminAccess(updatedSession?.session?.user);
         if (!allowed) {
-          currentMessage.textContent = 'Administrator access is required for this app.';
+          currentMessage.textContent = 'Unauthorized — this account does not have active ADMIN access.';
           currentButton.disabled = false;
           return;
         }
@@ -309,7 +309,7 @@
       message.textContent = 'Checking administrator access...';
       const allowed = await verifyAdminAccess(signInData?.user);
       if (!allowed) {
-        message.textContent = 'Administrator access is required for this app.';
+        message.textContent = 'Unauthorized — this account does not have active ADMIN access.';
         button.disabled = false;
         return;
       }
