@@ -117,16 +117,39 @@
   let loginInProgress = false;
   let recoveryMode = new URLSearchParams(location.search).get('reset') === '1';
 
-  async function verifyAdminAccess(signedInUser) {
-    const userId = signedInUser?.id;
-    if (!userId) throw new Error('Could not identify the signed-in account.');
-    const { data:permission, error:permissionError } = await withTimeout(
-      client.from('team_permissions').select('role,active')
-        .eq('user_id', userId).maybeSingle(), 'Administrator access check'
-    );
-    if (permissionError) throw new Error('Unable to verify permissions: ' + permissionError.message);
-    return permission?.active === true &&
-      String(permission?.role || '').toUpperCase() === 'ADMIN';
+  async function verifyAdminAccess(signedInUser, accessToken) {
+    if (!signedInUser?.id || !accessToken) throw new Error('Sign-in session incomplete. Please sign in again.');
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    try {
+      const params = new URLSearchParams({
+        select: 'role,active',
+        user_id: 'eq.' + signedInUser.id,
+        limit: '1'
+      });
+      const response = await fetch(url + '/rest/v1/team_permissions?' + params.toString(), {
+        method: 'GET',
+        headers: {
+          apikey: key,
+          Authorization: 'Bearer ' + accessToken,
+          Accept: 'application/json'
+        },
+        cache: 'no-store',
+        signal: controller.signal
+      });
+      if (!response.ok) {
+        const details = await response.text();
+        throw new Error('Permission request failed (' + response.status + '): ' + details.slice(0, 240));
+      }
+      const rows = await response.json();
+      const permission = Array.isArray(rows) ? rows[0] : null;
+      return permission?.active === true && String(permission?.role || '').toUpperCase() === 'ADMIN';
+    } catch (error) {
+      if (error?.name === 'AbortError') throw new Error('Permission request timed out after 8 seconds. Please retry.');
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   function showRecoveryForm() {
@@ -261,7 +284,7 @@
 
         const { data:updatedSession, error:updatedSessionError } = await withTimeout(client.auth.getSession(), 'Session check');
         if (updatedSessionError) throw updatedSessionError;
-        const allowed = await verifyAdminAccess(updatedSession?.session?.user);
+        const allowed = await verifyAdminAccess(updatedSession?.session?.user, updatedSession?.session?.access_token);
         if (!allowed) {
           currentMessage.textContent = 'Unauthorized — this account does not have active ADMIN access.';
           currentButton.disabled = false;
@@ -307,7 +330,7 @@
       } catch {}
 
       message.textContent = 'Checking administrator access...';
-      const allowed = await verifyAdminAccess(signInData?.user);
+      const allowed = await verifyAdminAccess(signInData?.user, signInData?.session?.access_token);
       if (!allowed) {
         message.textContent = 'Unauthorized — this account does not have active ADMIN access.';
         button.disabled = false;
