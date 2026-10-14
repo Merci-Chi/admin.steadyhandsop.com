@@ -9,7 +9,17 @@ async function view(id){
  document.getElementById('onboardingDetailSubtitle').textContent=u.email||'';
  try{
 
- const data=await api({action:'details',userId:id});
+ let data;
+ try{data=await api({action:'details',userId:id});}
+ catch(detailError){
+  const [pause,actions]=await Promise.all([
+   client().from('sh_associate_pause').select('user_id,status,selected_track,submitted_at,signed_at,signature_name,agreement_storage_path,agreement_saved_at').eq('user_id',id).maybeSingle(),
+   client().from('sh_individual_agreement_actions').select('*').eq('assigned_email',u.email||'').limit(100)
+  ]);
+  if(pause.error&&actions.error)throw new Error('Onboarding service: '+detailError.message+'; agreement access: '+pause.error.message+'; '+actions.error.message);
+  const signed=(actions.data||[]).map(a=>({Document:a.document_key||a.action_code||'Agreement',Status:a.status||'Unknown',Signed:a.signed_at||a.completed_at||null}));
+  data={record:{},onboarding:{},progress:{status:'not_started'},agreement:{signatureName:pause.data?.signature_name,agreedAt:pause.data?.signed_at,track:pause.data?.selected_track},personalInformation:{Email:u.email,'Employee name':u.name},workPreferences:{},paymentPreferences:{},training:{},fallbackAgreements:signed,secureNotice:'Full onboarding details are currently unavailable: '+detailError.message};
+ }
  const r=data.record||{};
  const onboarding=data.onboarding||{};
  const progress=data.progress||{};
@@ -34,13 +44,46 @@ async function view(id){
  section('Employee information',rowsFor(info))+
  section('Hours and work preferences',rowsFor(work))+
  section('Agreement',rowsFor(agreementFields)+signatureMarkup+safeLink)+
+ (data.secureNotice?'<p class="onboard-muted">'+esc(data.secureNotice)+'</p>':'')+
+ (data.fallbackAgreements?.length?section('Individual agreement actions',data.fallbackAgreements.map(x=>rowsFor(x)).join('')):'')+
  section('Preferred payment',rowsFor(payment))+
  (Object.keys(remaining).length?section('Additional onboarding answers',rowsFor(remaining)):'');
- if(!Object.keys(onboarding).length&&!Object.keys(r).length){
+ if(!data.secureNotice&&!Object.keys(onboarding).length&&!Object.keys(r).length){
  content.innerHTML='<p class="onboard-muted">This employee has not submitted onboarding information yet.</p>'+section('Training progress',rowsFor({'Completed lessons':done+' of '+total}));
  }
  }catch(err){content.innerHTML='<p role="alert">Could not load onboarding details: '+esc(err.message||String(err))+'</p>';}
 }
 document.getElementById('onboardingDetailClose').onclick=()=>document.getElementById('onboardingDetailOverlay').hidden=true;
 document.getElementById('onboardingDetailOverlay').onclick=e=>{if(e.target===e.currentTarget)e.currentTarget.hidden=true;};
-async function load(){if(!client())return;notice.textContent='Loading onboarding records…';try{const data=await api({action:'list'});users=data.users||[];notice.textContent=users.length+' onboarding records';render()}catch(e){notice.textContent='Onboarding administration is not available yet. The secure admin-onboarding function must be deployed. '+(e.message||'');list.innerHTML=''}}async function reset(id){const u=users.find(x=>x.id===id);if(!u)return;const name=u.name||u.email;if(!confirm('Reset onboarding AND training progress for '+name+'? This cannot be undone. The employee account will remain active.'))return;let typed=prompt('Type RESET to confirm resetting '+name);if(typed!=='RESET')return;notice.textContent='Resetting '+name+'…';try{await api({action:'reset',userId:id});await load();notice.textContent='Onboarding reset for '+name+'. Previous answers were saved in history when available.'}catch(e){notice.textContent='Reset failed: '+(e.message||'Unknown error')}}document.getElementById('onboardingSearch').oninput=e=>{q=e.target.value.trim().toLowerCase();render()};document.getElementById('onboardingRefresh').onclick=load;if(window.steadyHandsAdminSession)load();else window.addEventListener('steadyhands:admin-ready',load,{once:true});})();
+async function fallbackList(){
+ const c=client();
+ const [profiles,permissions,actions]=await Promise.all([
+  c.from('callcenter_profiles').select('user_id,display_name,email').limit(1000),
+  c.from('team_permissions').select('user_id,role').limit(1000),
+  c.rpc('sh_admin_agreement_actions')
+ ]);
+ if(profiles.error)throw profiles.error;
+ if(permissions.error)throw permissions.error;
+ const pm=new Map((permissions.data||[]).map(p=>[String(p.user_id),p.role]));
+ const am=new Map();
+ if(!actions.error)for(const a of actions.data?.actions||[]){const email=String(a.email||'').toLowerCase();if(email)am.set(email,(am.get(email)||0)+1);}
+ return (profiles.data||[]).map(p=>({id:String(p.user_id),name:p.display_name||'',email:p.email||'',role:pm.get(String(p.user_id))||'',agreementCount:am.get(String(p.email||'').toLowerCase())||0,complete:false,step:null}));
+}
+async function load(){
+ if(!client())return;
+ notice.textContent='Loading onboarding records…';
+ try{
+  const data=await api({action:'list'});
+  users=(data.users||[]).map(u=>({...u,id:String(u.id)}));
+  notice.textContent=users.length+' onboarding records';render();
+ }catch(error){
+  try{
+   users=await fallbackList();
+   notice.textContent='Showing available employee and agreement records. Full onboarding details require the secure admin-onboarding function. Error: '+(error.message||error);
+   render();
+  }catch(fallbackError){
+   notice.textContent='Unable to load onboarding. Admin function: '+(error.message||error)+'; secure database: '+(fallbackError.message||fallbackError);
+   list.innerHTML='<p class="cc-empty">No accessible onboarding records. Check admin-onboarding deployment and administrator RLS permissions.</p>';
+  }
+ }
+}async function reset(id){const u=users.find(x=>x.id===id);if(!u)return;const name=u.name||u.email;if(!confirm('Reset onboarding AND training progress for '+name+'? This cannot be undone. The employee account will remain active.'))return;let typed=prompt('Type RESET to confirm resetting '+name);if(typed!=='RESET')return;notice.textContent='Resetting '+name+'…';try{await api({action:'reset',userId:id});await load();notice.textContent='Onboarding reset for '+name+'. Previous answers were saved in history when available.'}catch(e){notice.textContent='Reset failed: '+(e.message||'Unknown error')}}document.getElementById('onboardingSearch').oninput=e=>{q=e.target.value.trim().toLowerCase();render()};document.getElementById('onboardingRefresh').onclick=load;if(window.steadyHandsAdminSession)load();else window.addEventListener('steadyhands:admin-ready',load,{once:true});})();
