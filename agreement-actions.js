@@ -8,6 +8,7 @@ async function rpc(name,args={}){const {data,error}=await window.steadyHandsCRMC
 async function load(){const result=await rpc('sh_admin_agreement_actions');records=result.actions||[];users=result.users||[];const sel=$('aa-user'),value=sel.value;sel.innerHTML='<option value="">Select an associate</option>'+users.map(u=>'<option value="'+esc(u.id)+'">'+esc(u.email)+(u.name?' — '+esc(u.name):'')+'</option>').join('');sel.value=value;draw();drawSigned();}
 function signedAt(a){return a.signed_at||a.completed_at||a.agreed_at||a.signature_at||null;}
 function isSigned(a){return Boolean(signedAt(a)||['signed','completed','accepted','acknowledged'].includes(String(a.status||'').toLowerCase()));}
+function secureDocumentUrl(a){const v=a.signed_document_url||a.agreement_url||a.document_url||a.signed_pdf_url||'';return typeof v==='string'&&/^https:\/\//i.test(v)?v:null;}
 function drawSigned(){
  const el=$('aa-signed-list');if(!el)return;
  const q=String($('aa-signed-search')?.value||'').trim().toLowerCase();
