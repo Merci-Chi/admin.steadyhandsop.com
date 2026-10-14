@@ -2,11 +2,22 @@
   const URL='https://glonbvrcudwuzjundrii.supabase.co';
   const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const state={core:[],attention:[],functions:[]};
+  const details=new Map();
+  const style=document.createElement('style');
+  style.textContent='.admin-system-details-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid #e2a8a8;background:#fff4f4;color:#a62222;border-radius:9px;padding:7px 11px;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}.admin-system-details-btn svg{width:16px;height:16px}.admin-system-error-dialog{border:0;border-radius:16px;max-width:min(560px,calc(100vw - 32px));width:100%;padding:24px;background:#fff;color:#183253;box-shadow:0 22px 75px #0005}.admin-system-error-dialog::backdrop{background:#0b1934a8}.admin-system-error-dialog h2{margin:0 0 12px;font-size:23px}.admin-system-error-dialog pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f6fb;padding:14px;border-radius:10px;font-size:14px}.admin-system-error-dialog .dialog-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:18px}.admin-system-error-dialog button{border:1px solid #c9d7e8;background:#edf4fc;color:#153c72;padding:9px 16px;border-radius:9px;cursor:pointer}';
+  document.head.append(style);
+  const modal=document.createElement('dialog');modal.className='admin-system-error-dialog';modal.innerHTML='<h2>System check details</h2><p id="adminSystemErrorTitle"></p><pre id="adminSystemErrorText"></pre><div class="dialog-actions"><button type="button" id="adminSystemCopyError">Copy error</button><button type="button" id="adminSystemCloseError">Close</button></div>';document.body.append(modal);
+  document.getElementById('adminSystemCloseError').onclick=()=>modal.close();
+  document.getElementById('adminSystemCopyError').onclick=()=>navigator.clipboard?.writeText(document.getElementById('adminSystemErrorText').textContent||'');
+  document.addEventListener('click',event=>{const button=event.target.closest('[data-system-error]');if(!button)return;const item=details.get(button.dataset.systemError);if(!item)return;document.getElementById('adminSystemErrorTitle').textContent=item.title;document.getElementById('adminSystemErrorText').textContent=item.detail;modal.showModal()});
 
   function row(icon,title,detail,status='ok',value=''){
-    return '<div class="admin-system-row '+status+'"><span class="admin-system-icon"><i data-lucide="'+icon+'"></i></span><span class="admin-system-main"><strong>'+esc(title)+'</strong><small>'+esc(detail)+'</small></span>'+(value!==''?'<b>'+esc(value)+'</b>':'')+'<span class="admin-system-dot"></span></div>';
+    const key=status==='bad'||status==='warn'?'check-'+details.size:null;
+    if(key)details.set(key,{title,detail});
+    return '<div class="admin-system-row '+status+'"><span class="admin-system-icon"><i data-lucide="'+icon+'"></i></span><span class="admin-system-main"><strong>'+esc(title)+'</strong><small>'+esc(detail)+'</small></span>'+(value!==''?'<b>'+esc(value)+'</b>':'')+(key?'<button type="button" class="admin-system-details-btn" data-system-error="'+key+'" aria-label="View details for '+esc(title)+'"><i data-lucide="circle-alert"></i>View Error</button>':'')+'<span class="admin-system-dot"></span></div>';
   }
   function render(){
+    details.clear();
     document.getElementById('adminSystemCore').innerHTML=state.core.map(x=>row(...x)).join('')||'<div class="cc-empty">No checks.</div>';
     document.getElementById('adminSystemAttention').innerHTML=state.attention.map(x=>row(...x)).join('')||'<div class="cc-empty">Nothing needs attention.</div>';
     document.getElementById('adminSystemFunctions').innerHTML=state.functions.map(x=>row(...x)).join('')||'<div class="cc-empty">No function checks.</div>';
