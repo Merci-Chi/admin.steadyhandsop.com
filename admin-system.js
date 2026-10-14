@@ -36,10 +36,22 @@
     window.lucide?.createIcons();
   }
 
+  function errorDetail(error,status){
+    const parts=[error?.message,error?.details,error?.hint,error?.code&&('Code: '+error.code),status&&('HTTP '+status)].filter(Boolean);
+    return parts.join('\n')||'Database request failed without an error message. Check the browser Network panel for the CRM request.';
+  }
+
   async function tableCheck(c,table,label){
-    const {count,error}=await c.from(table).select('*',{count:'exact',head:true});
-    if(error) return ['database',label,error.message,'bad','Error'];
-    return ['database',label,'Table available to this admin session.','ok',String(count??0)];
+    try{
+      let result=await c.from(table).select('*',{count:'exact',head:true});
+      // HEAD responses have no body, so the original database error may be empty.
+      // A bounded GET retrieves the server's error without changing data or access.
+      if(result.error)result=await c.from(table).select('*',{count:'exact'}).limit(1);
+      if(result.error)return ['database',label,errorDetail(result.error,result.status),'bad','Error'];
+      return ['database',label,'Table available to this admin session.','ok',String(result.count??0)];
+    }catch(error){
+      return ['database',label,errorDetail(error),'bad','Error'];
+    }
   }
 
   async function exactCount(query){
