@@ -70,8 +70,28 @@
     window.lucide?.createIcons();
   }
 
+  async function eligibleSalespeople(c) {
+    const [permissions, profiles] = await Promise.all([
+      c.from('team_permissions').select('user_id,role,active,listed').eq('role','SALES').eq('active',true),
+      c.from('callcenter_profiles').select('user_id,display_name,email,disabled_at').is('disabled_at',null).order('display_name',{ascending:true})
+    ]);
+    if (permissions.error || profiles.error) throw permissions.error || profiles.error;
+    const ids = new Set((permissions.data || [])
+      .filter(p => p.role === 'SALES' && p.active === true && p.listed !== false)
+      .map(p => String(p.user_id)));
+    return (profiles.data || []).filter(p => !p.disabled_at && ids.has(String(p.user_id)));
+  }
+
   async function loadApprovals(main, session) {
     const c = client();
+
+    let salespeople;
+    try {
+      salespeople = await eligibleSalespeople(c);
+    } catch (error) {
+      errorState(main, 'Could not verify active sales associates: ' + error.message);
+      return;
+    }
 
     const [
       { data: pending = [], error: pendingError },
@@ -136,7 +156,7 @@
           <div class="admin-section-head">
             <div>
               <h2>Outbound Phone Numbers</h2>
-              <p>Add Twilio-owned numbers and assign one default caller ID to each account.</p>
+              <p>Add Twilio-owned numbers and assign one default caller ID to each active sales associate.</p>
             </div>
             <span class="admin-count admin-phone-count">${phoneNumbers.length}</span>
           </div>
@@ -161,9 +181,11 @@
               const requestedProfile = row.requested_by_user_id ? profileByUser.get(String(row.requested_by_user_id)) : null;
               const options = [
                 '<option value="">Unassigned</option>',
-                ...profiles.map(profile => {
+                ...(assignedUserId && !salespeople.some(p => String(p.user_id) === String(assignedUserId))
+                  ? ['<option value="' + esc(assignedUserId) + '" selected disabled>Current assignment unavailable — choose an active sales associate or Unassigned</option>'] : []),
+                ...salespeople.map(profile => {
                   const selected = String(profile.user_id) === String(assignedUserId) ? ' selected' : '';
-                  const label = profile.display_name || profile.email || 'Account';
+                  const label = [profile.display_name, profile.email].filter(Boolean).join(' — ') || 'Sales associate';
                   return '<option value="' + esc(profile.user_id) + '"' + selected + '>' + esc(label) + '</option>';
                 })
               ].join('');
@@ -181,7 +203,7 @@
                   </div>
 
                   <label class="admin-phone-assign">
-                    <span>Assigned account</span>
+                    <span>Assigned sales associate</span>
                     <select data-phone-assignment>
                       ${options}
                     </select>
@@ -372,9 +394,13 @@
         const userId = select.value || '';
         if (!phoneNumberId) return;
 
+        const previousUserId = assignmentByPhone.get(String(phoneNumberId))?.user_id || '';
         select.disabled = true;
 
         try {
+          if (userId && !(await eligibleSalespeople(c)).some(p => String(p.user_id) === String(userId))) {
+            throw new Error('This account is not an active, listed sales associate. Refresh and choose another account.');
+          }
           const { error:clearPhoneError } = await c
             .from('callcenter_phone_assignments')
             .delete()
@@ -401,6 +427,7 @@
           location.reload();
         } catch (error) {
           select.disabled = false;
+          select.value = previousUserId;
           alert(error?.message || 'Unable to update this caller ID assignment.');
         }
       });
