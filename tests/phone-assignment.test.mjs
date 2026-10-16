@@ -25,7 +25,7 @@ async function setup({failPermissions=false}={}) {
  const main={innerHTML:'',querySelectorAll(selector){return selector==='[data-phone-assignment]'?[select]:[]}};
  const document={getElementById(id){return id==='adminSettingsContent'?main:null},addEventListener(event,fn){handlers[event]=fn}};
  const c={auth:{getSession:async()=>({data:{session:{user:{id:'admin',email:'admin@example.com'}}}})},from(table){
-  const q={select(){return q},eq(){return q},is(){return q},not(){return q},order(){return q},
+  const q={select(){return q},eq(){return q},in(){return q},is(){return q},not(){return q},order(){return q},
    maybeSingle:async()=>({data:{role:'ADMIN',active:true}}),
    delete(){writes.push(table);return q},insert(){writes.push(table);return q},
    then(resolve,reject){
@@ -38,12 +38,13 @@ async function setup({failPermissions=false}={}) {
  return {main,select,handlers,writes,alerts,revoke(){permissions=[]}};
 }
 
-test('phone selector includes only active listed SALES profiles and preserves an unavailable assignment',async()=>{
+test('phone selector includes only active listed SALES and ADMIN profiles and preserves an unavailable assignment',async()=>{
  const {main}=await setup();
  const options=main.innerHTML.match(/<select data-phone-assignment>([\s\S]*?)<\/select>/)[1];
+ assert.match(options,/Administrator/);
  assert.match(options,/Valid Sales — sales@example.com/);
  assert.match(options,/value="demo" selected disabled/);
- assert.doesNotMatch(options,/Administrator|Inactive Sales|Hidden Sales|Disabled Sales|>Demo</);
+ assert.doesNotMatch(options,/Inactive Sales|Hidden Sales|Disabled Sales|>Demo</);
 });
 
 test('revoked eligibility is rejected before any assignment is deleted',async()=>{
@@ -57,6 +58,6 @@ test('revoked eligibility is rejected before any assignment is deleted',async()=
 
 test('failed permission lookup does not fall back to all profiles',async()=>{
  const s=await setup({failPermissions:true});
- assert.match(s.main.innerHTML,/Could not verify active sales associates/);
+ assert.match(s.main.innerHTML,/Could not verify active sales associates and admins/);
  assert.doesNotMatch(s.main.innerHTML,/<select data-phone-assignment>/);
 });
