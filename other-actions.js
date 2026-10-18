@@ -89,7 +89,7 @@
     try{
       const {data,error}=await window.steadyHandsCRMClient.rpc('outreach_admin_assign_action',{p_user_id:userId,p_current_basis:basis,p_start_date:date||null});
       if(error)throw error;if(!data)throw new Error('The database did not confirm the assignment.');
-      $('oa-message').textContent='Questionnaire assigned to the associate’s Outreach Action Needed page.';
+      $('oa-message').textContent='Popup questionnaire assigned. The associate can open it in Outreach → Action Needed.';
     }catch(error){$('oa-message').textContent='Assignment not confirmed: '+(error.message||String(error))+'. Refresh before trying again.';}
     finally{busy=false;await load();}
   });
