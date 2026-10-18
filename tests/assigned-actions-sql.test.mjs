@@ -16,6 +16,7 @@ test('PostgreSQL enforces questionnaire assignment, ownership, dates and atomic 
    insert into public.team_permissions values('${admin}','ADMIN',true),('${associate}','SALES',true),('${other}','SALES',true);`);
   await db.exec(await readFile(new URL('../sql/assigned-action-questionnaires.sql',import.meta.url),'utf8'));
   await db.exec(await readFile(new URL('../sql/questionnaire-phone-setup.sql',import.meta.url),'utf8'));
+  await db.exec(await readFile(new URL('../sql/questionnaire-select-start-date.sql',import.meta.url),'utf8'));
   const actor=id=>db.exec(`reset role;set role authenticated;select set_config('request.jwt.claim.sub','${id}',false);`);
   const first=async(sql,args=[])=> (await db.query(sql,args)).rows[0];
   await actor(admin);
@@ -64,6 +65,16 @@ test('PostgreSQL enforces questionnaire assignment, ownership, dates and atomic 
   await actor(other);
   assert.equal((await db.query('select * from public.outreach_action_assignments')).rows.length,0);
   await assert.rejects(()=>submit(otherAssignment,'commission',false,null),/not assigned/);
+  for(const basis of ['hourly','commission']){
+   await actor(admin);
+   const selected=(await first('select public.outreach_admin_assign_action_v2($1,$2,null,true) as id',[other,basis])).id;
+   await actor(other);
+   await assert.rejects(()=>submit(selected,basis,true,null),/Confirm your current|Choose and confirm/);
+   await extend(selected,null,date);
+   await assert.rejects(()=>extend(selected,null,later),/start date changed/);
+   await submit(selected,basis,true,date);
+   assert.equal((await first("select to_char(confirmed_start_date,'YYYY-MM-DD') as value from public.outreach_action_preferences")).value,date);
+  }
   await db.exec('reset role;set role anon;');await assert.rejects(()=>db.exec('select * from public.outreach_action_assignments'),/permission denied/);
  }finally{await db.close();}
 });

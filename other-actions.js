@@ -16,7 +16,7 @@
     return {'Selected path':basisName(p.selected_path),'Local timezone':p.local_timezone,'Work timezone':p.work_timezone,
       'Preferred window':p.shift_start_minutes==null?undefined:`${time(p.shift_start_minutes)} – ${time(p.shift_start_minutes+120)}`,
       'Preferred weekly hours':p.preferred_weekly_hours,'Quota acknowledged at':p.trial_quota_acknowledged_at,
-      'Confirmed start date':p.confirmed_start_date,'Commission agreement requested':p.commission_agreement_requested,
+      'Confirmed start date':dateLabel(p.confirmed_start_date),'Commission agreement requested':p.commission_agreement_requested,
       'US number setup':({needs_number:'Needs a US number',has_number:'Already has a US number',google_voice:'Has Google Voice'})[p.phone_setup],'US calling number':p.us_phone_number,
       'First response saved':p.created_at,'Latest response saved':p.updated_at};
   }
@@ -38,14 +38,22 @@
       const currentResponse=response&&assignment&&assignment.status==='assigned'&&Date.parse(response.updated_at)<Date.parse(assignment.assigned_at);
       const status=statusLabel(assignment)||(response?'Submitted':'Start date changed');
       const changedRows=changes.map(x=>d().section('Start-date change',{'Previous date':x.previous_start_date,'New date':x.new_start_date,'Changed at':x.changed_at,'Changed by':d().userLabel(users.find(u=>u.user_id===x.changed_by)||{user_id:x.changed_by})})).join('');
-      return `<details class="sa-result"><summary><span><strong>${esc(d().userLabel(user))}</strong>${associate?.current_basis?`<small>${esc(basisName(associate.current_basis))}${associate.start_date?' · Starts '+esc(associate.start_date):''}</small>`:''}</span><span class="sa-badge">${esc(status)}</span></summary><div class="sa-result-body">${d().section('Assignment',{Status:status,'Assigned at':assignment?.assigned_at,'Completed at':assignment?.completed_at})}${d().section('Current agreement',{'Agreement':basisName(associate?.current_basis),'Scheduled start date':associate?.start_date})}${currentResponse?'<p class="sa-save-warning">The response below was submitted before the current assignment. A new response is still pending.</p>':''}${d().section(currentResponse?'Previous response':'Questionnaire response',responseFields(response))}${changedRows}<a href="admin.html?user=${encodeURIComponent(userId)}">Overview</a><a href="onboarding.html?user=${encodeURIComponent(userId)}">Onboarding</a><a href="agreement-actions.html?user=${encodeURIComponent(userId)}">Agreement Actions</a>${assignment?.status==='assigned'?`<button type="button" data-cancel="${esc(userId)}">Cancel assignment</button>`:''}</div></details>`;
+      return `<details class="sa-result"><summary><span><strong>${esc(d().userLabel(user))}</strong>${associate?.current_basis?`<small>${esc(basisName(associate.current_basis))}${associate.start_date?' · Starts '+esc(dateLabel(associate.start_date)):''}</small>`:''}</span><span class="sa-badge">${esc(status)}</span></summary><div class="sa-result-body">${d().section('Assignment',{Status:status,'Assigned at':assignment?.assigned_at,'Completed at':assignment?.completed_at})}${d().section('Current agreement',{'Agreement':basisName(associate?.current_basis),'Scheduled start date':dateLabel(associate?.start_date)})}${currentResponse?'<p class="sa-save-warning">The response below was submitted before the current assignment. A new response is still pending.</p>':''}${d().section(currentResponse?'Previous response':'Questionnaire response',responseFields(response))}${changedRows}<a href="admin.html?user=${encodeURIComponent(userId)}">Overview</a><a href="onboarding.html?user=${encodeURIComponent(userId)}">Onboarding</a><a href="agreement-actions.html?user=${encodeURIComponent(userId)}">Agreement Actions</a>${assignment?.status==='assigned'?`<button type="button" data-cancel="${esc(userId)}">Cancel assignment</button>`:''}</div></details>`;
     }).join('')||'<p class="sa-empty">No matching outcomes.</p>';
+  }
+  const dateLabel=value=>value?new Intl.DateTimeFormat('en-US',{timeZone:'UTC',weekday:'long',month:'long',day:'numeric',year:'numeric'}).format(new Date(value+'T12:00:00Z')):'';
+  function updateDate(){
+    const noStart=$('oa-basis').value.endsWith('_no_start');
+    $('oa-date').disabled=noStart;
+    $('oa-date').required=$('oa-basis').value==='hourly';
+    if(noStart)$('oa-date').value='';
+    $('oa-date-label').textContent=noStart?'The associate will select a start date.':dateLabel($('oa-date').value);
   }
   function selectUser(){
     const record=associates.find(x=>x.user_id===$('oa-user').value);
-    $('oa-basis').value=record?.current_basis||'';
+    $('oa-basis').value=record?.current_basis?(record.current_basis+(!record.start_date&&assignments.find(x=>x.user_id===record.user_id)?.choose_start_date?'_no_start':'')):'';
     $('oa-date').value=record?.start_date||'';
-    $('oa-date').required=$('oa-basis').value==='hourly';
+    updateDate();
   }
   async function load(){
     if(busy)return;
@@ -77,17 +85,18 @@
     }finally{$('oa-refresh').disabled=false;$('oa-assign').disabled=!ready;}
   }
   $('oa-user').addEventListener('change',selectUser);
-  $('oa-basis').addEventListener('change',()=>{$('oa-date').required=$('oa-basis').value==='hourly';});
+  $('oa-basis').addEventListener('change',updateDate);
+  $('oa-date').addEventListener('change',updateDate);
   $('oa-search').addEventListener('input',()=>{if(ready)render();});$('oa-filter').addEventListener('change',()=>{if(ready)render();});$('oa-refresh').addEventListener('click',load);
   $('oa-form').addEventListener('submit',async event=>{
     event.preventDefault();if(!ready||busy||!$('oa-form').reportValidity())return;
-    const userId=$('oa-user').value,basis=$('oa-basis').value,date=$('oa-date').value;
+    const userId=$('oa-user').value,basis=$('oa-basis').value.replace('_no_start',''),chooseDate=$('oa-basis').value.endsWith('_no_start'),date=chooseDate?'':$('oa-date').value;
     if(date&&![1,2,3,4,5].includes(new Date(date+'T12:00:00Z').getUTCDay())){$('oa-message').textContent='Choose a Monday–Friday start date.';return;}
     const old=assignments.find(x=>x.user_id===userId);
     if(old&&!confirm('Assign a new questionnaire to this associate? Any existing open questionnaire will be replaced.'))return;
     busy=true;$('oa-assign').disabled=true;$('oa-refresh').disabled=true;$('oa-message').textContent='Assigning…';
     try{
-      const {data,error}=await window.steadyHandsCRMClient.rpc('outreach_admin_assign_action',{p_user_id:userId,p_current_basis:basis,p_start_date:date||null});
+      const {data,error}=await window.steadyHandsCRMClient.rpc('outreach_admin_assign_action_v2',{p_user_id:userId,p_current_basis:basis,p_start_date:date||null,p_choose_start_date:chooseDate});
       if(error)throw error;if(!data)throw new Error('The database did not confirm the assignment.');
       $('oa-message').textContent='Popup questionnaire assigned. The associate can open it in Outreach → Action Needed.';
     }catch(error){$('oa-message').textContent='Assignment not confirmed: '+(error.message||String(error))+'. Refresh before trying again.';}
