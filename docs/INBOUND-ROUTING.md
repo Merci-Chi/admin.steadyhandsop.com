@@ -5,7 +5,9 @@ Outreach app (default) or Phone forwarding. Save the explicit forwarding number
 with country code. Calls require an enabled Twilio Ready number assigned to an
 active eligible account. Profile/personal numbers are not selected automatically.
 
-Apply `sql/admin-inbound-destinations.sql` first. The same idempotent SQL is included
+Apply `sql/admin-inbound-destinations.sql` first. If the routing columns are missing,
+Admin keeps existing caller-ID controls available and shows routing setup instructions
+in place of the incoming destination controls. The same idempotent SQL is included
 in the paired Outreach migration; either copy may be run. It adds destination
 fields and call routing snapshots, preserves assignments and call history, and
 keeps existing table permissions/RLS unchanged. Its inbound tables prerequisite
