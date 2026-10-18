@@ -6,7 +6,7 @@ const original=await readFile(new URL('../admin-leads.js',import.meta.url),'utf8
 const source=original.slice(0,original.indexOf("$('adminLeadSearch').addEventListener"))+`window.api={state,query,loadRows,initialize,renderSelection,targetIds};})();`;
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};};
-function setup({rows=()=>({data:[{id:'grandma',company:'Grandma',phone:'+17024802338',assigned_user_id:'agent'}]}),count=()=>({count:1}),total=()=>({count:100})}={}){
+function setup({indexed=()=>({error:{message:'Indexed lookup unavailable'}}),rows=()=>({data:[{id:'grandma',company:'Grandma',phone:'+17024802338',assigned_user_id:'agent'}]}),count=()=>({count:1}),total=()=>({count:100})}={}){
  const nodes=new Map(),requests=[];
  const node=id=>{if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',hidden:false,disabled:false,removeAttribute(key){delete this[key]},querySelectorAll(){return []},classList:{toggle(){}}});return nodes.get(id);};
  const client={from(table){const req={table,filters:[],sort:[]};requests.push(req);const q={
@@ -15,7 +15,7 @@ function setup({rows=()=>({data:[{id:'grandma',company:'Grandma',phone:'+1702480
   or(value){req.filters.push(['or',value]);return q;},ilike(k,v){req.filters.push(['ilike',k,v]);return q;},contains(k,v){req.filters.push(['contains',k,v]);return q;},
   gt(k,v){req.filters.push(['gt',k,v]);return q;},limit(value){req.limit=value;return q;},
   order(k,v){req.sort.push([k,v]);return q;},range(start,end){req.range=[start,end];return q;},abortSignal(signal){req.signal=signal;return q;},
-  then(resolve,reject){return Promise.resolve(table==='callcenter_profiles'?{data:[]}:req.options?.head?(req.filters.length?count(req):total(req)):rows(req)).then(resolve,reject);}
+  then(resolve,reject){return Promise.resolve(table==='callcenter_profiles'?{data:[]}:req.options?.head?(req.filters.length?count(req):total(req)):req.options?.count==='exact'?indexed(req):rows(req)).then(resolve,reject);}
  };return q;}};
  const window={steadyHandsCRMClient:client};vm.runInNewContext(source,{window,document:{getElementById:node},AbortController,console:{error(){},warn(){}},setTimeout,clearTimeout,alert(){}});
  return {api:window.api,node,requests};
@@ -127,4 +127,34 @@ test('editing a search cancels its retry delay and prevents more old requests',a
  assert.match(s.node('alSearchProgressText').textContent,/Retrying smaller batch/);
  fail=false;s.api.state.query='new';await s.api.loadRows();await old;
  assert.equal(s.requests.filter(r=>r.limit).length,2);assert.equal(s.api.state.total,1);
+});
+
+test('a complete indexed result wins without finishing a full scan and pagination is cached',async()=>{
+ const pending=deferred(),s=setup({rows:()=>pending.promise,indexed:()=>({data:[{id:'g',company:'Grandma'}],count:1})});
+ s.api.state.query='grandma';const run=s.api.loadRows();await tick();
+ assert.equal(s.api.state.total,1);assert.match(s.node('adminLeadList').innerHTML,/Grandma/);
+ assert.match(s.node('alSearchProgressText').textContent,/1 matches found · Complete/);
+ const scan=s.requests.find(r=>r.limit);assert(scan.signal.aborted);
+ const fast=s.requests.find(r=>r.options?.count==='exact'&&!r.options.head);assert.equal(fast.sort.length,0);
+ assert(fast.filters.some(f=>String(f[1]).includes('notes.ilike.%grandma%')));
+ pending.resolve({data:[{id:'old',company:'Old result'}]});await run;
+ assert.doesNotMatch(s.node('adminLeadList').innerHTML,/Old result/);
+ const before=s.requests.length;await s.api.loadRows(true);assert.equal(s.requests.length,before);
+});
+test('a truncated indexed response cannot masquerade as complete results',async()=>{
+ const s=setup({rows:()=>({data:[{id:'real',company:'Grandma actual'}]}),indexed:()=>({data:[{id:'partial',company:'Partial'}],count:501})});
+ s.api.state.query='grandma';await s.api.loadRows();assert.equal(s.api.state.total,1);
+ assert.match(s.node('adminLeadList').innerHTML,/Grandma actual/);assert.doesNotMatch(s.node('alSearchProgressText').textContent,/matches found/);
+});
+test('an indexed timeout leaves the progressive search running',async()=>{
+ const s=setup({indexed:()=>({error:{code:'57014'}})});s.api.state.query='grandma';await s.api.loadRows();
+ assert.match(s.node('adminLeadList').innerHTML,/Grandma/);assert.match(s.node('alSearchProgressText').textContent,/Complete/);
+});
+
+test('a late quick lookup cannot overwrite a newer completed search',async()=>{
+ const old=deferred();let calls=0;
+ const s=setup({indexed:()=>++calls===1?old.promise:{error:{code:'57014'}},rows:()=>({data:[{id:'new',company:'New result'}]})});
+ s.api.state.query='old';await s.api.loadRows();s.api.state.query='new';await s.api.loadRows();
+ old.resolve({data:[{id:'old',company:'Old result'}],count:1});await tick();
+ assert.match(s.node('adminLeadList').innerHTML,/New result/);assert.doesNotMatch(s.node('adminLeadList').innerHTML,/Old result/);
 });
