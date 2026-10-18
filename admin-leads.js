@@ -14,7 +14,9 @@ const icon=()=>window.lucide?.createIcons?.();
 const fmtNum=n=>Number(n||0).toLocaleString();
 const errorMessage=e=>[e?.message,e?.details,e?.hint,e?.code&&('Code: '+e.code)].filter(Boolean).join(' — ')||'The leads request failed without an error message. Open System → Leads → View Error for database details.';
 const showError=e=>{console.error('All Leads:',e);alert(errorMessage(e))};
-let rowsController=null,countController=null;
+let rowsController=null,countController=null,searchCache=null;
+const searchColumns=['company','name','phone','altphone','email','website','notes','state_code','timezone'];
+const searchTerm=()=>state.query.replace(/[(),.%_*\\]/g,' ').trim().toLowerCase();
 function query(base=client().from('crm').select(fields),opts={}){
  let q=base;
  if(state.filter==='active')q=q.or('admin_archived.eq.false,admin_archived.is.null');
@@ -37,7 +39,7 @@ function query(base=client().from('crm').select(fields),opts={}){
  jsonFacet('tags',state.tags,state.tagMode);
  jsonFacet('sources',state.sources,state.sourceMode);
  const search=state.query.trim();
- if(search){const safe=search.replace(/[(),.%_*\\]/g,' ').trim();if(safe){const pat=`%${safe}%`;q=q.or(['company','name','phone','altphone','email','website','notes','state_code','timezone'].map(col=>`${col}.ilike.${pat}`).join(','));}}
+ if(search&&!opts.skipSearch){const safe=search.replace(/[(),.%_*\\]/g,' ').trim();if(safe){const pat=`%${safe}%`;q=q.or(searchColumns.map(col=>`${col}.ilike.${pat}`).join(','));}}
  if(!opts.noSort){const [key,dir]=state.sort.split('_');q=q.order(key,{ascending:dir==='asc',nullsFirst:false}).order('id',{ascending:true})}
  return q;
 }
@@ -59,7 +61,7 @@ function renderPage(){
   add(state.page+1,'›',state.page>=pages);
  }else{add(state.page);add(state.page+1,'›',!state.hasMore);}
  $('alPageButtons').innerHTML=buttons.join('');
- $('alPageButtons').querySelectorAll('[data-page]').forEach(x=>x.addEventListener('click',()=>{state.page=Number(x.dataset.page);clearSelection();loadRows()}));
+ $('alPageButtons').querySelectorAll('[data-page]').forEach(x=>x.addEventListener('click',()=>{state.page=Number(x.dataset.page);clearSelection();loadRows(true)}));
  const first=(state.page-1)*state.size+1,last=first+state.rows.length-1;
  $('alPageStatus').textContent=state.rows.length?`Showing ${fmtNum(first)}–${fmtNum(last)}${state.totalKnown?' of '+fmtNum(state.total)+' matching leads':state.countPending?' · Counting matches…':' · Total unavailable'}`:'No matching leads';
 }
@@ -91,13 +93,86 @@ async function loadPageRows(signal){
  }
  return {data:rows};
 }
-async function loadRows(){
+// Search in bounded primary-key batches. Each request remains small; the complete
+// scan has no deadline and a database timeout retries the same cursor, never skips it.
+function renderSearchProgress(scan){
+ const panel=$('alSearchProgress');if(!panel)return;
+ panel.hidden=false;
+ const denominator=scan.done?scan.scanned:scan.total;
+ $('alSearchProgressText').textContent=`${fmtNum(scan.scanned)} of ${denominator===null?'…':fmtNum(Math.max(scan.scanned,denominator))} leads searched · ${fmtNum(scan.matches.length)} matches${scan.done?' · Complete':scan.retrying?' · Retrying smaller batch…':''}`;
+ const bar=$('alSearchProgressBar');
+ if(scan.done)bar.value=100;
+ else if(denominator>0)bar.value=Math.min(99,scan.scanned/denominator*100);
+ else bar.removeAttribute('value');
+}
+function searchKey(){return JSON.stringify([searchTerm(),state.filter,state.assignee,state.timezone,state.stateCode,state.stage,state.preview,state.tags,state.sources,state.tagMode,state.sourceMode])}
+function showSearchPage(matches,complete){
+ const [key,dir]=state.sort.split('_'),sign=dir==='asc'?1:-1;
+ // Keep NULLS LAST and a deterministic id tie-breaker.
+ const sorted=[...matches].sort((a,b)=>{
+  const x=a[key],y=b[key];
+  if(x==null&&y!=null)return 1;if(y==null&&x!=null)return -1;
+  const order=x==null?0:x<y?-1:x>y?1:0;
+  return order*sign||(String(a.id)<String(b.id)?-1:String(a.id)>String(b.id)?1:0);
+ });
+ state.total=matches.length;state.totalKnown=complete;state.countPending=false;
+ const start=(state.page-1)*state.size;
+ state.rows=sorted.slice(start,start+state.size);state.hasMore=complete&&sorted.length>start+state.size;
+ renderSummary();renderRows();renderPage();
+ if(!complete){$('alPageStatus').textContent='Searching all leads… Results update as matches are found.';$('alPageButtons').innerHTML='';}
+}
+function waitForSearchRetry(signal,ms){return new Promise(resolve=>{
+ const finish=()=>{clearTimeout(timer);signal.removeEventListener('abort',finish);resolve()};
+ const timer=setTimeout(finish,ms);signal.addEventListener('abort',finish,{once:true});
+ if(signal.aborted)finish();
+})}
+async function scanSearch(seq,signal){
+ const key=searchKey(),term=searchTerm();
+ if(searchCache?.key===key){showSearchPage(searchCache.scan.matches,true);renderSearchProgress(searchCache.scan);return;}
+ const scan={scanned:0,total:null,matches:[],done:false,retrying:false};
+ let cursor=null,batchSize=250,retries=0;
+ renderSearchProgress(scan);
+ // This optional denominator never blocks results or invents an estimated total.
+ void (async()=>{
+  try{
+   const result=await query(client().from('crm').select('id',{head:true,count:'exact'}),{skipSearch:true,noSort:true}).abortSignal(countController.signal);
+   if(seq!==state.seq||scan.done||result.error||!Number.isFinite(result.count))return;
+   scan.total=result.count;renderSearchProgress(scan);
+  }catch(error){console.warn('Search total unavailable:',error)}
+ })();
+ while(!signal.aborted&&seq===state.seq){
+  let q=query(undefined,{skipSearch:true,noSort:true}).order('id',{ascending:true});
+  if(cursor!==null)q=q.gt('id',cursor);
+  const result=await q.limit(batchSize).abortSignal(signal);
+  if(signal.aborted||seq!==state.seq)return;
+  if(result.error){
+   if(result.error.code==='57014'||/timeout|timed out/i.test(result.error.message||'')){
+    batchSize=Math.max(1,Math.floor(batchSize/2));scan.retrying=true;renderSearchProgress(scan);
+    await waitForSearchRetry(signal,Math.min(5000,250*2**Math.min(retries++,5)));continue;
+   }
+   throw result.error;
+  }
+  const batch=result.data||[];
+  scan.retrying=false;retries=0;
+  if(batch.length&&cursor!==null&&(typeof cursor==='number'?batch.at(-1).id<=cursor:String(batch.at(-1).id)<=String(cursor)))throw Error('Search cursor did not advance. Retry the search.');
+  for(const row of batch)if(searchColumns.some(column=>String(row[column]??'').toLowerCase().includes(term)))scan.matches.push(row);
+  scan.scanned+=batch.length;
+  scan.done=batch.length<batchSize;
+  showSearchPage(scan.matches,scan.done);renderSearchProgress(scan);
+  if(scan.done){searchCache={key,scan};return;}
+  cursor=batch.at(-1).id;
+ }
+}
+async function loadRows(reuseSearch=false){
+ if(reuseSearch!==true)searchCache=null;
  const seq=++state.seq;
  rowsController?.abort();countController?.abort();rowsController=new AbortController();countController=new AbortController();
  state.totalKnown=false;state.countPending=true;state.hasMore=false;state.rows=[];state.allMatching=false;renderSelection();renderPills();
  const el=$('adminLeadList');el.innerHTML='<tr><td colspan="10" class="al-empty">Loading leads…</td></tr>';
  $('alPageStatus').textContent='Loading leads…';$('alPageButtons').innerHTML='';
  try{
+  if(searchTerm()){await scanSearch(seq,rowsController.signal);return;}
+  $('alSearchProgress').hidden=true;
   // One extra row gives reliable Next-page navigation without waiting for COUNT(*).
   const result=await loadPageRows(rowsController.signal);
   if(seq!==state.seq)return;
@@ -109,11 +184,12 @@ async function loadRows(){
   if(seq!==state.seq)return;
   state.countPending=false;
   const timedOut=error?.code==='57014'||/statement timeout/i.test(error?.message||'');
+  $('alSearchProgress').hidden=true;
   el.innerHTML=`<tr><td colspan="10" class="al-empty">${timedOut?'Search took too long. Try a more specific name or phone number.':`Could not load leads: ${esc(errorMessage(error))}`} <button type="button" id="alRetryLoad">Retry</button></td></tr>`;
   $('alRetryLoad').onclick=loadRows;$('alPageStatus').textContent='Could not load this page.';console.error(error);
  }
 }
-function refresh(){state.page=1;clearSelection();loadRows()}
+function refresh(){searchCache=null;state.page=1;clearSelection();loadRows()}
 const pause=(f,ms)=>{let t;return (...args)=>{clearTimeout(t);t=setTimeout(()=>f(...args),ms)}};
 function closeModal(){$('alModalWrap').hidden=true}
 function modal(title,hint,body,footer){$('alModalTitle').textContent=title;$('alModalHint').textContent=hint;$('alModalBody').innerHTML=body;$('alModalFooter').innerHTML=footer;$('alModalWrap').hidden=false;$('alModalClose').onclick=closeModal;$('alModalWrap').onclick=e=>{if(e.target===$('alModalWrap'))closeModal()};icon()}
@@ -125,7 +201,7 @@ function openAdvanced(){const opts=(items,selected)=>items.map(([v,t])=>`<option
 function options(selected=''){return `<option value="">Unassigned</option>`+state.users.map(x=>`<option value="${esc(x.user_id)}" ${selected===x.user_id?'selected':''}>${esc(x.display_name||x.email)}</option>`).join('')}
 function openLead(id){const r=state.rows.find(x=>x.id===id);if(!r)return;const overlay=$('adminLeadDrawerOverlay'),drawer=$('adminLeadDrawer');drawer.innerHTML=`<div class="admin-user-drawer-head"><div><span class="admin-kicker">LEAD</span><h2>${esc(r.company||r.name||'Lead')}</h2><p>Created ${esc(fmtDate(r.created))}</p></div><button type="button" id="alCloseDrawer"><i data-lucide="x"></i></button></div><div class="admin-lead-form-grid"><label>Company<input id="leadCompany" value="${esc(r.company)}"></label><label>Contact<input id="leadName" value="${esc(r.name)}"></label><label>Phone<input id="leadPhone" value="${esc(r.phone)}"></label><label>Email<input id="leadEmail" value="${esc(r.email)}"></label><label>Stage<select id="leadStage">${['notstarted','staging','outreach','review','complete','notinterested','archived','callback'].map(x=>`<option ${x===r.stage?'selected':''}>${x}</option>`).join('')}</select></label><label>Outcome<input id="leadOutcome" value="${esc(r.outcome)}"></label><label class="full">Assigned to<select id="leadAssigned">${options(r.assigned_user_id)}</select></label><label class="full">Notes<textarea id="leadNotes">${esc(r.notes)}</textarea></label></div><div class="admin-lead-actions"><button class="primary" id="adminSharePreview"><i data-lucide="link"></i>Create Preview Signup Link</button><button class="primary" id="alSave"><i data-lucide="save"></i>Save Changes</button><button id="alArchive">${isArchived(r)?'Restore':'Archive'} Lead</button><button class="danger" id="alDelete">Delete Permanently</button></div><p id="alDrawerMessage"></p>`;overlay.hidden=false;const close=()=>overlay.hidden=true;drawer.querySelector('#alCloseDrawer').onclick=close;overlay.onclick=e=>{if(e.target===overlay)close()};const msg=()=>drawer.querySelector('#alDrawerMessage');drawer.querySelector('#alSave').onclick=async()=>{const assignee=drawer.querySelector('#leadAssigned').value;const payload={company:drawer.querySelector('#leadCompany').value.trim(),name:drawer.querySelector('#leadName').value.trim(),phone:drawer.querySelector('#leadPhone').value.trim(),email:drawer.querySelector('#leadEmail').value.trim(),stage:drawer.querySelector('#leadStage').value,outcome:drawer.querySelector('#leadOutcome').value.trim(),notes:drawer.querySelector('#leadNotes').value.trim(),assigned_user_id:assignee||null,assigned:assignee?label(assignee):''};msg().textContent='Saving…';const {error}=await client().from('crm').update(payload).eq('id',r.id);if(error){msg().textContent=error.message;return}close();loadRows()};drawer.querySelector('#alArchive').onclick=async()=>{if(!confirm(`${isArchived(r)?'Restore':'Archive'} this lead?`))return;const next=!isArchived(r);const {error}=await client().from('crm').update({admin_archived:next,admin_archived_at:next?new Date().toISOString():null}).eq('id',r.id);if(error){msg().textContent=error.message;return}close();loadRows()};drawer.querySelector('#alDelete').onclick=async()=>{if(!confirm('Permanently delete this lead? This cannot be undone.'))return;const {error}=await client().from('crm').delete().eq('id',r.id);if(error){msg().textContent=error.message;return}close();loadRows()};drawer.querySelector('#adminSharePreview').onclick=async()=>{if(!r.sitekey||!/^https:\/\//.test(r.previewurl||'')){msg().textContent='A site key and HTTPS preview URL are required.';return}const {data,error}=await client().rpc('create_portal_preview_invite',{p_site_key:r.sitekey,p_site_title:r.company||r.name||'Website Preview',p_preview_url:r.previewurl});if(error){msg().textContent=error.message;return}try{await navigator.clipboard.writeText(data);msg().textContent='Link copied.'}catch{msg().textContent=data}};icon()}
 function openNewLead(){const overlay=$('adminLeadDrawerOverlay'),drawer=$('adminLeadDrawer');drawer.innerHTML=`<div class="admin-user-drawer-head"><h2>Add Lead</h2><button id="alCloseDrawer" type="button">×</button></div><div class="admin-lead-form-grid"><label>Company<input id="leadCompany"></label><label>Contact<input id="leadName"></label><label>Phone<input id="leadPhone"></label><label>Email<input id="leadEmail"></label><label class="full">Assigned to<select id="leadAssigned">${options()}</select></label><label class="full">Notes<textarea id="leadNotes"></textarea></label></div><div class="admin-lead-actions"><button class="primary" id="alCreate">Create Lead</button></div><p id="alDrawerMessage"></p>`;overlay.hidden=false;drawer.querySelector('#alCloseDrawer').onclick=()=>overlay.hidden=true;overlay.onclick=e=>{if(e.target===overlay)overlay.hidden=true};drawer.querySelector('#alCreate').onclick=async()=>{const payload={company:drawer.querySelector('#leadCompany').value.trim(),name:drawer.querySelector('#leadName').value.trim(),phone:drawer.querySelector('#leadPhone').value.trim(),email:drawer.querySelector('#leadEmail').value.trim(),notes:drawer.querySelector('#leadNotes').value.trim(),assigned_user_id:drawer.querySelector('#leadAssigned').value||null,stage:'notstarted',admin_archived:false};payload.assigned=payload.assigned_user_id?label(payload.assigned_user_id):'';if(!payload.company&&!payload.name){drawer.querySelector('#alDrawerMessage').textContent='Enter a company or contact.';return}const {error}=await client().from('crm').insert(payload);if(error){drawer.querySelector('#alDrawerMessage').textContent=error.message;return}overlay.hidden=true;refresh()}}
-async function targetIds(){if(!state.allMatching)return [...state.selected];const ids=[];const batch=500;let index=0;while(true){const r=await query(client().from('crm').select('id'),{noSort:true}).order('id',{ascending:true}).range(index,index+batch-1);if(r.error)throw r.error;ids.push(...(r.data||[]).map(x=>x.id));if(!r.data||r.data.length<batch)break;index+=batch;if(index>250000)throw Error('The selection is too large for browser-side processing. Narrow the filters.')}return ids}
+async function targetIds(){if(state.allMatching&&searchCache?.key===searchKey())return searchCache.scan.matches.map(row=>row.id);if(!state.allMatching)return [...state.selected];const ids=[];const batch=500;let index=0;while(true){const r=await query(client().from('crm').select('id'),{noSort:true}).order('id',{ascending:true}).range(index,index+batch-1);if(r.error)throw r.error;ids.push(...(r.data||[]).map(x=>x.id));if(!r.data||r.data.length<batch)break;index+=batch;if(index>250000)throw Error('The selection is too large for browser-side processing. Narrow the filters.')}return ids}
 async function activeSalespeople(){
  const [perms,profiles]=await Promise.all([
   client().from('team_permissions').select('user_id,role,active,listed').in('role',['SALES','ADMIN']).eq('active',true),
