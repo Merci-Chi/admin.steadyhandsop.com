@@ -75,6 +75,39 @@ test('PostgreSQL enforces questionnaire assignment, ownership, dates and atomic 
    await submit(selected,basis,true,date);
    assert.equal((await first("select to_char(confirmed_start_date,'YYYY-MM-DD') as value from public.outreach_action_preferences")).value,date);
   }
+  // Upgrade existing data, then verify independent simultaneous assignments.
+  await db.exec('reset role');
+  await db.exec(await readFile(new URL('../sql/questionnaire-multiple-actions.sql',import.meta.url),'utf8'));
+  // The upgrade is safe to rerun without changing saved snapshots.
+  await db.exec(await readFile(new URL('../sql/questionnaire-multiple-actions.sql',import.meta.url),'utf8'));
+  await actor(admin);
+  const old=(await first('select * from public.outreach_action_assignments where id=$1',[assignment]));
+  assert.equal(old.status,'completed');assert.equal(old.response.selected_path,'commission');
+  const create=(basis,start,choose=false)=>first('select public.outreach_admin_assign_action_v2($1,$2,$3,$4) as id',[associate,basis,start,choose]);
+  const one=(await create('hourly',date)).id;
+  const two=(await create('commission',null)).id;
+  const three=(await create('hourly',null,true)).id;
+  assert.equal(new Set([assignment,one,two,three]).size,4);
+  await actor(associate);
+  await assert.rejects(()=>db.query('select public.outreach_admin_cancel_action_v2($1)',[one]),/administrator access required/);
+  await submit(one,'hourly',true,date); // Uses this action's date despite later assignments.
+  const saved=(await first('select response from public.outreach_action_assignments where id=$1',[one])).response;
+  assert.equal(saved.selected_path,'hourly');assert.equal(saved.confirmed_start_date,date);
+  await submit(two,'commission',false,null);
+  assert.deepEqual((await first('select response from public.outreach_action_assignments where id=$1',[one])).response,saved);
+  assert.equal((await first('select status from public.outreach_action_assignments where id=$1',[three])).status,'assigned');
+  await assert.rejects(()=>submit(one,'hourly',true,date),/already closed/);
+  await extend(three,null,later);
+  assert.equal((await first("select to_char(start_date,'YYYY-MM-DD') as value from public.outreach_action_assignments where id=$1",[one])).value,date);
+  await actor(other);
+  assert.equal((await db.query('select * from public.outreach_action_assignments where id=$1',[one])).rows.length,0);
+  await assert.rejects(()=>submit(three,'hourly',true,later),/not assigned/);
+  await actor(admin);
+  await db.query('select public.outreach_admin_cancel_action_v2($1)',[three]);
+  assert.equal((await first('select status from public.outreach_action_assignments where id=$1',[three])).status,'cancelled');
+  assert.equal((await first('select status from public.outreach_action_assignments where id=$1',[one])).status,'completed');
+  const four=(await first('select public.outreach_admin_assign_action($1,$2,$3) as id',[associate,'hourly',date])).id;
+  assert.notEqual(four,one);
   await db.exec('reset role;set role anon;');await assert.rejects(()=>db.exec('select * from public.outreach_action_assignments'),/permission denied/);
  }finally{await db.close();}
 });
