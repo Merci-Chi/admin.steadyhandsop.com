@@ -111,13 +111,16 @@
         .order('display_name',{ascending:true}),
       c
         .from('callcenter_phone_numbers')
-        .select('id,phone_number,label,active,twilio_status,requested_by_user_id,requested_at,created_at')
+        .select('id,phone_number,label,active,twilio_status,requested_by_user_id,requested_at,created_at,inbound_destination,inbound_forward_number')
         .order('created_at',{ascending:true}),
       c
         .from('callcenter_phone_assignments')
         .select('id,user_id,phone_number_id,updated_at')
     ]);
 
+    if(phoneNumbersError?.code==='42703'&&/inbound_/i.test(phoneNumbersError.message||'')){
+      errorState(main,'Incoming-call routing needs its database update. Apply the Admin inbound destinations migration, then refresh.');return;
+    }
     const callerIdSchemaMissing =
       phoneNumbersError?.code === '42P01' ||
       assignmentsError?.code === '42P01' ||
@@ -141,7 +144,7 @@
         <section class="admin-approval-section admin-callerid-section">
           <div class="admin-section-head">
             <div>
-              <h2>Outbound Phone Numbers</h2>
+              <h2>Calling Numbers</h2>
               <p>Run the caller-ID SQL migration first, then refresh this page.</p>
             </div>
           </div>
@@ -155,7 +158,7 @@
         <section class="admin-approval-section admin-callerid-section">
           <div class="admin-section-head">
             <div>
-              <h2>Outbound Phone Numbers</h2>
+              <h2>Calling Numbers</h2>
               <p>Add Twilio-owned numbers and assign one default caller ID to each active sales associate or admin.</p>
             </div>
             <span class="admin-count admin-phone-count">${phoneNumbers.length}</span>
@@ -210,6 +213,20 @@
                     <small>${assignedProfile ? 'Calls from ' + esc(assignedProfile.display_name || assignedProfile.email || 'this account') + ' use this number.' : 'This number is not assigned to an account.'}</small>
                   </label>
 
+                  <section class="admin-phone-route" aria-label="Incoming call destination">
+                    <label class="admin-phone-assign"><span>Incoming calls go to</span>
+                      <select data-inbound-destination>
+                        <option value="app" ${row.inbound_destination!=='forward'?'selected':''}>Outreach app</option>
+                        <option value="forward" ${row.inbound_destination==='forward'?'selected':''}>Phone forwarding</option>
+                      </select>
+                    </label>
+                    <label class="admin-phone-assign" data-inbound-forward-wrap ${row.inbound_destination!=='forward'?'hidden':''}>
+                      <span>Forwarding number</span><input data-inbound-forward type="tel" placeholder="+17025550101" value="${esc(row.inbound_forward_number||'')}" ${row.inbound_destination!=='forward'?'disabled':''}>
+                    </label>
+                    <p>Outreach app is the default. Assign an active account to receive calls. Unanswered calls go to business voicemail.</p>
+                    <button type="button" data-save-inbound>Save incoming destination</button>
+                    <p data-inbound-status role="status" aria-live="polite"></p>
+                  </section>
                   <div class="admin-phone-actions">
                     <button type="button" class="admin-phone-ready" data-phone-ready>
                       <i data-lucide="${row.twilio_status === 'ready' ? 'shield-check' : 'shield-alert'}"></i>
@@ -386,6 +403,34 @@
 
       location.reload();
     });
+
+    main.querySelectorAll('[data-inbound-destination]').forEach(select=>{
+      const card=select.closest('.admin-phone-card');
+      select.addEventListener('change',()=>{
+        const forwarding=select.value==='forward';
+        card.querySelector('[data-inbound-forward-wrap]').hidden=!forwarding;
+        card.querySelector('[data-inbound-forward]').disabled=!forwarding;
+        card.querySelector('[data-inbound-status]').textContent='Unsaved changes';
+      });
+    });
+    main.querySelectorAll('[data-save-inbound]').forEach(button=>button.addEventListener('click',async()=>{
+      const card=button.closest('.admin-phone-card'),result=card.querySelector('[data-inbound-status]');
+      const mode=card.querySelector('[data-inbound-destination]').value;
+      const raw=card.querySelector('[data-inbound-forward]').value.trim();
+      const digits=raw.replace(/\D/g,'');
+      const forward=raw.startsWith('+')?'+'+digits:digits.length===10?'+1'+digits:digits.length===11&&digits.startsWith('1')?'+'+digits:'';
+      if(!['app','forward'].includes(mode)){result.textContent='Choose a valid incoming destination.';return;}
+      if(mode==='forward'&&(!/^\+?[\d\s().-]+$/.test(raw)||!/^\+[1-9]\d{7,14}$/.test(forward)||phoneNumbers.some(p=>p.phone_number===forward))){result.textContent='Enter a phone number with country code outside your managed Twilio numbers.';return;}
+      button.disabled=true;result.textContent='Saving incoming destination…';
+      try{
+        const auth=await getAdminSession();if(!auth.isAdmin)throw Error('Active Admin access is required.');
+        const response=await c.from('callcenter_phone_numbers').update({inbound_destination:mode,inbound_forward_number:mode==='forward'?forward:null,updated_at:new Date().toISOString()}).eq('id',card.dataset.phoneId).select('id');
+        if(response.error)throw response.error;
+        if(response.data?.length!==1)throw Error('The incoming destination was not updated. Refresh and try again.');
+        result.textContent=mode==='app'?'Incoming calls will ring in Outreach.':'Incoming calls will ring '+forward+'. Press 1 on that phone to answer.';
+      }catch(error){result.textContent=error.message||'Could not save incoming destination.';}
+      finally{button.disabled=false;}
+    }));
 
     main.querySelectorAll('[data-phone-assignment]').forEach(select => {
       select.addEventListener('change', async () => {
