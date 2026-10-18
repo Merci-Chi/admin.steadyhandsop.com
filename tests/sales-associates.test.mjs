@@ -41,9 +41,15 @@ test('outcome filters distinguish agreement requests and start-date changes',asy
 });
 test('assignment sends the selected user and actual agreement/date to the protected RPC',async()=>{
  const h=outcomes();await h.settle();h.node('oa-user').value='c';h.node('oa-basis').value='hourly';h.node('oa-date').value='2026-11-02';await h.node('oa-form').listeners.submit({preventDefault(){}});
- const call=h.calls.find(x=>x.name==='outreach_admin_assign_action');assert.equal(call.args.p_user_id,'c');assert.equal(call.args.p_current_basis,'hourly');assert.equal(call.args.p_start_date,'2026-11-02');assert.match(h.node('oa-message').textContent,/Popup questionnaire assigned/);
+ const call=h.calls.find(x=>x.name==='outreach_admin_assign_action_v2');assert.equal(call.args.p_user_id,'c');assert.equal(call.args.p_current_basis,'hourly');assert.equal(call.args.p_start_date,'2026-11-02');assert.match(h.node('oa-message').textContent,/Popup questionnaire assigned/);
 });
 test('failed assignment and missing schema never display success or an empty result as valid data',async()=>{
  const h=outcomes({failAssign:true});await h.settle();h.node('oa-user').value='c';h.node('oa-basis').value='commission';await h.node('oa-form').listeners.submit({preventDefault(){}});assert.match(h.node('oa-message').textContent,/not confirmed.*Permission revoked/);assert.doesNotMatch(h.node('oa-message').textContent,/Popup questionnaire assigned/);
  const missing=outcomes({failLoad:true});await missing.settle();assert.match(missing.node('oa-notice').textContent,/Could not load actions/);assert(missing.node('oa-assign').disabled);assert.equal(missing.node('oa-results').innerHTML,'');
 });
+
+for(const basis of ['hourly','commission'])test(`no start date ${basis} clears stale dates and asks associate to choose`,async()=>{
+ const h=outcomes();await h.settle();h.node('oa-user').value='c';h.node('oa-date').value='2026-11-02';h.node('oa-basis').value=basis+'_no_start';h.node('oa-basis').listeners.change();assert.equal(h.node('oa-date').value,'');assert.equal(h.node('oa-date').disabled,true);assert.equal(h.node('oa-date').required,false);
+ await h.node('oa-form').listeners.submit({preventDefault(){}});const call=h.calls.find(x=>x.name==='outreach_admin_assign_action_v2');assert.equal(call.args.p_current_basis,basis);assert.equal(call.args.p_start_date,null);assert.equal(call.args.p_choose_start_date,true);
+});
+test('admin selected date includes weekday before date',async()=>{const h=outcomes();await h.settle();h.node('oa-date').value='2026-11-02';h.node('oa-date').listeners.change();assert.equal(h.node('oa-date-label').textContent,'Monday, November 2, 2026');});
