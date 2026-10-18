@@ -15,6 +15,7 @@ test('PostgreSQL enforces questionnaire assignment, ownership, dates and atomic 
    insert into auth.users values('${admin}','admin@example.invalid'),('${associate}','associate@example.invalid'),('${other}','other@example.invalid');
    insert into public.team_permissions values('${admin}','ADMIN',true),('${associate}','SALES',true),('${other}','SALES',true);`);
   await db.exec(await readFile(new URL('../sql/assigned-action-questionnaires.sql',import.meta.url),'utf8'));
+  await db.exec(await readFile(new URL('../sql/questionnaire-phone-setup.sql',import.meta.url),'utf8'));
   const actor=id=>db.exec(`reset role;set role authenticated;select set_config('request.jwt.claim.sub','${id}',false);`);
   const first=async(sql,args=[])=> (await db.query(sql,args)).rows[0];
   await actor(admin);
@@ -35,11 +36,15 @@ test('PostgreSQL enforces questionnaire assignment, ownership, dates and atomic 
   await extend(assignment,date,later);
   assert.equal((await db.query('select * from public.outreach_start_date_history')).rows.length,1);
   await assert.rejects(()=>extend(assignment,date,later),/start date changed/);
-  const submit=(id,path,ack,confirmed,start=540)=>db.query('select public.outreach_action_submit($1,$2,$3,$4,$5,$6,$7,$8)',[id,path,'America/New_York','America/Chicago',start,20,ack,confirmed]);
+  const submit=(id,path,ack,confirmed,start=540)=>db.query('select public.outreach_action_submit_v2($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',[id,path,'America/New_York','America/Chicago',start,20,ack,confirmed,'needs_number',null]);
   await assert.rejects(()=>submit(assignment,'hourly',true,later,960),/two-hour window/);
   await assert.rejects(()=>submit(assignment,'hourly',false,later),/Acknowledge/);
   await assert.rejects(()=>submit(assignment,'hourly',true,date),/Confirm your current/);
-  await submit(assignment,'hourly',true,later);
+  await assert.rejects(()=>db.query('select public.outreach_action_submit_v2($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',[assignment,'hourly','America/New_York','America/Chicago',540,20,true,later,'google_voice',null]),/valid 10-digit/);
+  await assert.rejects(()=>db.query('select public.outreach_action_submit($1,$2,$3,$4,$5,$6,$7,$8)',[assignment,'hourly','America/New_York','America/Chicago',540,20,true,later]),/permission denied/);
+  await db.query('select public.outreach_action_submit_v2($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',[assignment,'hourly','America/New_York','America/Chicago',540,20,true,later,'google_voice','(202) 555-0101']);
+  assert.equal((await first('select us_phone_number from public.outreach_action_preferences')).us_phone_number,'+12025550101');
+  assert.equal((await first('select phone_setup from public.outreach_action_preferences')).phone_setup,'google_voice');
   assert.equal((await first('select status from public.outreach_action_assignments')).status,'completed');
   await assert.rejects(()=>submit(assignment,'hourly',true,later),/already closed/);
   await actor(admin);

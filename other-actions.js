@@ -17,6 +17,7 @@
       'Preferred window':p.shift_start_minutes==null?undefined:`${time(p.shift_start_minutes)} – ${time(p.shift_start_minutes+120)}`,
       'Preferred weekly hours':p.preferred_weekly_hours,'Quota acknowledged at':p.trial_quota_acknowledged_at,
       'Confirmed start date':p.confirmed_start_date,'Commission agreement requested':p.commission_agreement_requested,
+      'US number setup':({needs_number:'Needs a US number',has_number:'Already has a US number',google_voice:'Has Google Voice'})[p.phone_setup],'US calling number':p.us_phone_number,
       'First response saved':p.created_at,'Latest response saved':p.updated_at};
   }
   function render(){
@@ -26,10 +27,10 @@
       const matchesFilter=filter==='all'||row.assignment?.status===filter||
         (filter==='completed'&&!row.assignment&&row.response)||
         (filter==='commission-request'&&row.response?.commission_agreement_requested===true)||
-        (filter==='date-changed'&&row.changes.length);
+        (filter==='date-changed'&&row.changes.length)||(filter==='needs-number'&&row.response?.phone_setup==='needs_number');
       return matchesSearch&&matchesFilter;
     });
-    $('oa-totals').innerHTML=[['Assigned',assignments.filter(x=>x.status==='assigned').length],['Submitted',preferences.length],['Agreement requests',preferences.filter(x=>x.commission_agreement_requested).length],['Start-date changes',history.length]].map(([label,n])=>`<span><strong>${n}</strong> ${label}</span>`).join('');
+    $('oa-totals').innerHTML=[['Assigned',assignments.filter(x=>x.status==='assigned').length],['Submitted',preferences.length],['Agreement requests',preferences.filter(x=>x.commission_agreement_requested).length],['Start-date changes',history.length],['US number requests',preferences.filter(x=>x.phone_setup==='needs_number').length]].map(([label,n])=>`<span><strong>${n}</strong> ${label}</span>`).join('');
     $('oa-notice').textContent=`${matched.length} of ${all.length} associate outcomes`;
     $('oa-results').innerHTML=matched.map(row=>{
       const {userId,user,associate,assignment,response,changes}=row;
