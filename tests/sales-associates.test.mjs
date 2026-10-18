@@ -30,7 +30,8 @@ function outcomes({failLoad=false,failAssign=false,verified=true}={}){
  const window={SalesAssociateData:utilities(),addEventListener(type,fn){listeners[type]=fn},steadyHandsCRMClient:{from(table){return {select(){return this},order(){return this},async range(a,b){return failLoad?{error:{message:'relation does not exist'}}:{data:tables[table].slice(a,b+1)};}}},async rpc(name,args){calls.push({name,args});if(name==='sh_admin_agreement_actions')return {data:{users:[{id:'c',name:'Cam',email:'cam@example.com'}]}};return failAssign?{error:{message:'Permission revoked'}}:{data:'new-assignment'};}}};
  if(verified)window.steadyHandsAdminSession={};
  vm.runInNewContext(read('other-actions.js'),{document:{getElementById:node},window,location:{search:''},URLSearchParams,Date,confirm:()=>true});
- return {node,calls,listeners,settle:()=>new Promise(resolve=>setImmediate(resolve))};
+ tables.outreach_action_assignments[1].response=tables.outreach_action_preferences[0];
+ return {node,calls,listeners,tables,settle:()=>new Promise(resolve=>setImmediate(resolve))};
 }
 test('outcomes wait for verified admin access and then show every recorded outcome',async()=>{
  const h=outcomes({verified:false});await h.settle();assert.equal(h.calls.length,0);await h.listeners['steadyhands:admin-ready']();await h.settle();assert.match(h.node('oa-results').innerHTML,/Ada/);assert.match(h.node('oa-results').innerHTML,/Bea/);assert.match(h.node('oa-results').innerHTML,/Commission agreement requested/i);assert.match(h.node('oa-results').innerHTML,/2026-10-26/);assert.match(h.node('oa-results').innerHTML,/Has Google Voice/);assert.match(h.node('oa-results').innerHTML,/\+12025550101/);
@@ -53,3 +54,14 @@ for(const basis of ['hourly','commission'])test(`no start date ${basis} clears s
  await h.node('oa-form').listeners.submit({preventDefault(){}});const call=h.calls.find(x=>x.name==='outreach_admin_assign_action_v2');assert.equal(call.args.p_current_basis,basis);assert.equal(call.args.p_start_date,null);assert.equal(call.args.p_choose_start_date,true);
 });
 test('admin selected date includes weekday before date',async()=>{const h=outcomes();await h.settle();h.node('oa-date').value='2026-11-02';h.node('oa-date').listeners.change();assert.equal(h.node('oa-date-label').textContent,'Monday, November 2, 2026');});
+
+test('multiple outcomes for one associate keep their own responses and cancellation IDs',async()=>{
+ const h=outcomes();await h.settle();
+ h.tables.outreach_action_assignments.push({id:'second-a',user_id:'a',status:'completed',assigned_at:'2026-10-19T10:00:00Z',completed_at:'2026-10-19T12:00:00Z',response:{selected_path:'commission',preferred_weekly_hours:7}});
+ await h.node('oa-refresh').listeners.click();
+ const html=h.node('oa-results').innerHTML;
+ assert.equal((html.match(/Ada ·/g)||[]).length,2);assert.match(html,/data-cancel="assignment-a"/);assert.doesNotMatch(html,/data-cancel="second-a"/);
+ assert.match(html,/Assigned/);assert.match(html,/Completed/);assert.match(html,/>7</);
+ await h.node('oa-results').listeners.click({target:{closest:()=>({dataset:{cancel:'assignment-a'}})}});
+ const call=h.calls.find(x=>x.name==='outreach_admin_cancel_action_v2');assert.equal(call.args.p_assignment_id,'assignment-a');
+});
