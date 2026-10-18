@@ -47,4 +47,38 @@ in-memory cache. Scanning transfers all filtered leads to the authorized browser
 so broad searches on a large CRM can take time. Concurrent edits can change counts
 and results during the scan; this is not a database snapshot.
 
-Run checks with `node --test tests/*.test.mjs`.
+Run checks with `npm ci && npm test`. The SQL regression tests use an isolated
+PostgreSQL engine (PGlite), with a fixture schema and no production connection.
+
+
+## Phone management deployment
+
+Apply `sql/admin-phone-assignment.sql` in the Supabase SQL Editor as the project
+administrator **before deploying the updated phones page**. It requires the
+existing caller-ID tables; it does not provision Twilio numbers or the voice
+backend. The transaction adds one-number-per-user and one-user-per-number unique
+indexes and an authenticated, active-ADMIN-only assignment RPC. If existing
+assignments contain duplicates, the migration rolls back; review those records
+before retrying. Existing table RLS policies remain necessary for direct writes.
+
+The selector now uses that RPC rather than separate browser deletes and inserts.
+A failed insert rolls back both previous assignments. A stale phone owner causes
+a refresh error rather than overwriting another admin's change. Without the RPC,
+the page reports setup required and leaves assignments untouched. Assigning a
+person who already has a number moves their default to the selected number.
+Choosing Unassigned clears only the selected number's owner.
+
+Twilio readiness is a manual administrative flag. Changing it never assigns the
+number to its original requester; use the selector explicitly. Disabled and
+pending numbers show their status instead of claiming that calls use them.
+Readiness, disable, remove, and approval updates must return a changed row before
+the page reports success; rejected writes leave controls available for retry.
+
+Before production sign-off, use test accounts and a dedicated Twilio number to
+check adding, assigning/reassigning/unassigning, readiness, disable/enable,
+removal (including the deployed foreign-key behavior), and approvals under the
+actual RLS policies. Verify that `twilio-voice-outbound` selects only the signed-in
+user's assigned, active, ready number, rejects disabled/pending/unassigned numbers,
+and that a real test call displays that number. The calling Edge Functions and
+Twilio account configuration are outside this repository; local tests do not
+verify those integrations or the live database schema.
