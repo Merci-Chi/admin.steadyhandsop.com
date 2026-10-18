@@ -5,6 +5,7 @@
     'index.html': { title:'Overview', active:'overview' },
     'admin.html': { title:'Sales Associates', active:'salespeople' },
     'users.html': { title:'Users', active:'users' },
+    'status.html': { title:'Status', active:'salespeople' },
     'onboarding.html': { title:'Onboarding', active:'onboarding' },
     'agreement-actions.html': { title:'Agreement Actions', active:'agreement-actions' },
     'other-actions.html': { title:'Other Actions', active:'other-actions' },
@@ -77,6 +78,7 @@
 
   const associateItems = [
     ['admin.html','users','Overview'],
+    ['status.html','list-checks','Status'],
     ['onboarding.html','clipboard-check','Onboarding'],
     ['agreement-actions.html','file-signature','Agreement Actions'],
     ['other-actions.html','list-checks','Other Actions']

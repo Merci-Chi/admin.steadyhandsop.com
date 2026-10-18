@@ -76,3 +76,19 @@ Existing answers remain readable. The new protected submission RPC requires
 a phone choice for new responses and saves it atomically with completion.
 The earlier submission RPC is revoked from browser callers, so open older
 questionnaire tabs must reload. No live migration is executed by this commit.
+
+## Status
+
+Run `sql/associate-status.sql` in the Supabase SQL editor, then open
+Sales Associates → Status. This standalone migration uses the existing
+`team_permissions` columns (`role`, `active`, `sales_enabled`, `listed`).
+Only active administrators can read or change these private checklists.
+The directory follows the existing SALES/sales_enabled/listed rules.
+
+Click an associate to open their checklist, or their + button to focus the
+single-item textbox. Add items individually, check off completed steps, and
+expand History to see dated additions, completions, and reopenings. Unchecking
+a completed step reopens it without erasing its earlier completion history.
+History and checkbox state are saved together in a database transaction.
+Concurrent changes from a stale browser are rejected; refresh before retrying.
+No live SQL is executed by the GitHub change.
