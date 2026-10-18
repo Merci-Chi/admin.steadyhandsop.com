@@ -121,7 +121,7 @@
     const callerIdSchemaMissing =
       phoneNumbersError?.code === '42P01' ||
       assignmentsError?.code === '42P01' ||
-      /callcenter_phone_(numbers|assignments)/i.test(phoneNumbersError?.message || assignmentsError?.message || '');
+      phoneNumbersError?.code === 'PGRST205' || assignmentsError?.code === 'PGRST205';
 
     if (pendingError || profilesError || (!callerIdSchemaMissing && (phoneNumbersError || assignmentsError))) {
       errorState(main, (pendingError || profilesError || phoneNumbersError || assignmentsError)?.message);
@@ -156,7 +156,7 @@
           <div class="admin-section-head">
             <div>
               <h2>Outbound Phone Numbers</h2>
-              <p>Add Twilio-owned numbers and assign one default caller ID to each active sales associate or admin.</p>
+              <p>Add Twilio-owned numbers and assign one default caller ID to each active sales associate or admin. Twilio readiness is confirmed manually.</p>
             </div>
             <span class="admin-count admin-phone-count">${phoneNumbers.length}</span>
           </div>
@@ -199,7 +199,7 @@
                       <span>${esc(row.label || 'Outbound caller ID')}</span>
                       ${requestedProfile ? '<small>Requested by ' + esc(requestedProfile.display_name || requestedProfile.email || 'Account') + '</small>' : ''}
                     </div>
-                    <span class="admin-phone-active">${row.twilio_status === 'ready' ? 'Twilio Ready' : 'Pending Twilio'}</span>
+                    <span class="admin-phone-active">${!row.active ? 'Disabled' : row.twilio_status === 'ready' ? 'Twilio Ready' : 'Pending Twilio'}</span>
                   </div>
 
                   <label class="admin-phone-assign">
@@ -207,7 +207,7 @@
                     <select data-phone-assignment>
                       ${options}
                     </select>
-                    <small>${assignedProfile ? 'Calls from ' + esc(assignedProfile.display_name || assignedProfile.email || 'this account') + ' use this number.' : 'This number is not assigned to an account.'}</small>
+                    <small>${assignedUserId ? 'Assigned to ' + esc(assignedProfile?.display_name || assignedProfile?.email || 'an unavailable account') + '. ' + (!row.active ? 'Disabled in phone management.' : row.twilio_status !== 'ready' ? 'Confirm Twilio setup and mark ready before calling.' : 'Configured as this account’s default caller ID.') : 'This number is not assigned to an account.'}</small>
                   </label>
 
                   <div class="admin-phone-actions">
@@ -286,6 +286,12 @@
       </section>
     `;
 
+    // Supabase may return success with zero affected rows after RLS filtering.
+    const requireChangedRow = result => {
+      if (result.error) throw result.error;
+      if (!result.data?.length) throw new Error('No changes were saved. The record changed or access was denied. Refresh and try again.');
+    };
+
     const updateCount = () => {
       const remaining = main.querySelectorAll('.admin-approval-card').length;
       const count = document.getElementById('pendingApprovalCount');
@@ -324,14 +330,17 @@
               phone_approved_by:session.user.id
             };
 
-        const { error:updateError } = await c
-          .from('callcenter_profiles')
-          .update(payload)
-          .eq('user_id',userId)
-          .eq('phone_approval_status','pending');
-
-        if (updateError) {
-          alert(updateError.message || 'Unable to update this approval.');
+        try {
+          const result = await c
+            .from('callcenter_profiles')
+            .update(payload)
+            .eq('user_id',userId)
+            .eq('phone_approval_status','pending')
+            .not('phone_verified_at','is',null)
+            .select('user_id');
+          requireChangedRow(result);
+        } catch (error) {
+          alert(error.message || 'Unable to update this approval.');
           buttons.forEach(item => item.disabled = false);
           return;
         }
@@ -365,26 +374,31 @@
         return;
       }
 
-      const submit = form.querySelector('button[type="submit"]');
-      submit.disabled = true;
-
-      const { error } = await c
-        .from('callcenter_phone_numbers')
-        .insert({
-          phone_number:number,
-          label,
-          active:true,
-          twilio_status:'pending',
-          updated_at:new Date().toISOString()
-        });
-
-      if (error) {
-        submit.disabled = false;
-        alert(error.message || 'Unable to add this number.');
+      if (phoneNumbers.some(row => normalizeE164(row.phone_number) === number)) {
+        alert('This outbound number has already been added.');
         return;
       }
 
-      location.reload();
+      const submit = form.querySelector('button[type="submit"]');
+      submit.disabled = true;
+
+      try {
+        const { error } = await c
+          .from('callcenter_phone_numbers')
+          .insert({
+            phone_number:number,
+            label,
+            active:true,
+            twilio_status:'pending',
+            updated_at:new Date().toISOString()
+          });
+
+        if (error) throw error;
+        location.reload();
+      } catch (error) {
+        submit.disabled = false;
+        alert(error.message || 'Unable to add this number.');
+      }
     });
 
     main.querySelectorAll('[data-phone-assignment]').forEach(select => {
@@ -401,28 +415,16 @@
           if (userId && !(await eligibleSalespeople(c)).some(p => String(p.user_id) === String(userId))) {
             throw new Error('This account is not an active, listed sales associate or admin. Refresh and choose another account.');
           }
-          const { error:clearPhoneError } = await c
-            .from('callcenter_phone_assignments')
-            .delete()
-            .eq('phone_number_id',phoneNumberId);
-          if (clearPhoneError) throw clearPhoneError;
-
-          if (userId) {
-            const { error:clearUserError } = await c
-              .from('callcenter_phone_assignments')
-              .delete()
-              .eq('user_id',userId);
-            if (clearUserError) throw clearUserError;
-
-            const { error:insertError } = await c
-              .from('callcenter_phone_assignments')
-              .insert({
-                user_id:userId,
-                phone_number_id:phoneNumberId,
-                updated_at:new Date().toISOString()
-              });
-            if (insertError) throw insertError;
+          // The server applies the entire reassignment in one transaction.
+          const { error } = await c.rpc('admin_assign_outbound_phone', {
+            p_phone_number_id:String(phoneNumberId),
+            p_user_id:userId || null,
+            p_expected_user_id:previousUserId || null
+          });
+          if (error?.code === 'PGRST202') {
+            throw new Error('Phone assignment setup required. Apply sql/admin-phone-assignment.sql, then refresh. No assignments were changed.');
           }
+          if (error) throw error;
 
           location.reload();
         } catch (error) {
@@ -449,39 +451,14 @@
         button.disabled = true;
 
         try {
-          const { error } = await c
+          const result = await c
             .from('callcenter_phone_numbers')
             .update({ twilio_status:nextStatus, updated_at:new Date().toISOString() })
-            .eq('id',phoneNumberId);
+            .eq('id',phoneNumberId)
+            .select('id');
+          requireChangedRow(result);
 
-          if (error) throw error;
-
-          // A number submitted by an account is automatically assigned to that
-          // account when an admin marks it ready.
-          if (nextStatus === 'ready' && phone.requested_by_user_id) {
-            const requestedUserId = String(phone.requested_by_user_id);
-
-            const { error:clearUserError } = await c
-              .from('callcenter_phone_assignments')
-              .delete()
-              .eq('user_id',requestedUserId);
-            if (clearUserError) throw clearUserError;
-
-            const { error:clearPhoneError } = await c
-              .from('callcenter_phone_assignments')
-              .delete()
-              .eq('phone_number_id',phoneNumberId);
-            if (clearPhoneError) throw clearPhoneError;
-
-            const { error:assignError } = await c
-              .from('callcenter_phone_assignments')
-              .insert({
-                user_id:requestedUserId,
-                phone_number_id:phoneNumberId,
-                updated_at:new Date().toISOString()
-              });
-            if (assignError) throw assignError;
-          }
+          // Readiness never changes ownership. Use the assignment selector explicitly.
 
           location.reload();
         } catch (error) {
@@ -499,18 +476,19 @@
         if (!phone) return;
 
         button.disabled = true;
-        const { error } = await c
-          .from('callcenter_phone_numbers')
-          .update({ active:!phone.active, updated_at:new Date().toISOString() })
-          .eq('id',phoneNumberId);
-
-        if (error) {
+        try {
+          const result = await c
+            .from('callcenter_phone_numbers')
+            .update({ active:!phone.active, updated_at:new Date().toISOString() })
+            .eq('id',phoneNumberId)
+            .select('id');
+          requireChangedRow(result);
+          location.reload();
+        } catch (error) {
           button.disabled = false;
           alert(error.message || 'Unable to update this number.');
           return;
         }
-
-        location.reload();
       });
     });
 
@@ -522,18 +500,19 @@
         if (!confirm('Remove this outbound phone number from the system?')) return;
 
         button.disabled = true;
-        const { error } = await c
-          .from('callcenter_phone_numbers')
-          .delete()
-          .eq('id',phoneNumberId);
-
-        if (error) {
+        try {
+          const result = await c
+            .from('callcenter_phone_numbers')
+            .delete()
+            .eq('id',phoneNumberId)
+            .select('id');
+          requireChangedRow(result);
+          location.reload();
+        } catch (error) {
           button.disabled = false;
           alert(error.message || 'Unable to remove this number.');
           return;
         }
-
-        location.reload();
       });
     });
 
@@ -544,13 +523,17 @@
     const main = document.getElementById('adminSettingsContent');
     if (!main) return;
 
-    const { session, isAdmin } = await getAdminSession();
-    if (!session) return;
-    if (!isAdmin) {
-      denied(main);
-      return;
-    }
+    try {
+      const { session, isAdmin } = await getAdminSession();
+      if (!session) { denied(main); return; }
+      if (!isAdmin) {
+        denied(main);
+        return;
+      }
 
-    await loadApprovals(main, session);
+      await loadApprovals(main, session);
+    } catch (error) {
+      errorState(main, error?.message);
+    }
   });
 })();
