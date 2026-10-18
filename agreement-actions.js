@@ -6,7 +6,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const url=code=>base+encodeURIComponent(code);
 const associateName=a=>a.signature_name||(a.associate_name==='Awaiting associate entry'?'':a.associate_name)||'';
 async function rpc(name,args={}){const {data,error}=await window.steadyHandsCRMClient.rpc(name,args);if(error)throw error;return data;}
-async function load(){const result=await rpc('sh_admin_agreement_actions');records=result.actions||[];users=result.users||[];const sel=$('aa-user'),value=sel.value;sel.innerHTML='<option value="">Select an associate</option>'+users.map(u=>'<option value="'+esc(u.id)+'">'+esc(u.email)+(u.name?' — '+esc(u.name):'')+'</option>').join('');sel.value=value;draw();drawSigned();}
+async function load(){const result=await rpc('sh_admin_agreement_actions');records=result.actions||[];users=result.users||[];const sel=$('aa-user'),value=sel.value||(typeof location==='undefined'?'':new URLSearchParams(location.search).get('user'))||'';sel.innerHTML='<option value="">Select an associate</option>'+users.map(u=>'<option value="'+esc(u.id)+'">'+esc(u.email)+(u.name?' — '+esc(u.name):'')+'</option>').join('');sel.value=value;draw();drawSigned();}
 function signedAt(a){return a.signed_at||a.completed_at||a.agreed_at||a.signature_at||null;}
 function isSigned(a){return Boolean(signedAt(a)||['signed','completed','accepted','acknowledged'].includes(String(a.status||'').toLowerCase()));}
 function secureDocumentUrl(a){const v=a.signed_document_url||a.agreement_url||a.document_url||a.signed_pdf_url||'';return typeof v==='string'&&/^https:\/\//i.test(v)?v:null;}
@@ -25,3 +25,4 @@ $('aa-search').addEventListener('input',draw);$('aa-signed-search')?.addEventLis
 const init=()=>load().catch(e=>message('Unable to load actions: '+e.message,true));
 if(window.steadyHandsAdminSession)init();else window.addEventListener('steadyhands:admin-ready',init,{once:true});
 })();
+

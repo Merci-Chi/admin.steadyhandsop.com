@@ -32,9 +32,9 @@
     const email=d.querySelector('.admin-user-drawer-head p')?.textContent||'';
     const heading=d.querySelector('.admin-user-drawer-head h2')?.textContent||'';
     const match=[...document.querySelectorAll('.admin-user-card[data-id]')].find(b=>b.textContent.includes(email));
-    const userId=match?.dataset.id||id;
+    const userId=d.dataset.userId||match?.dataset.id||id;
     const wrap=document.createElement('section');wrap.id='salespersonExtras';wrap.className='salesperson-extra';
-    wrap.innerHTML=`<h3>Salesperson management</h3><p>Use the same login account for activity and caller ID assignments. A Twilio number must be configured in Phone Numbers and the calling backend must honor that mapping.</p>
+    wrap.innerHTML=`<h3>Sales associate management</h3><p>Use the same login account for activity and caller ID assignments. A Twilio number must be configured in Phone Numbers and the calling backend must honor that mapping.</p>
       <div class="salesperson-tool-grid">
         <a href="salesperson-progress.html?user=${encodeURIComponent(userId)}">Progress dashboard</a><a href="activity.html?user=${encodeURIComponent(userId)}">Call activity</a>
         <a href="deals.html?user=${encodeURIComponent(userId)}">Customer progress / deals</a>
@@ -42,7 +42,7 @@
         <a href="call-management.html">Assign leads and follow-ups</a>
         <a href="phones.html">Assign Twilio caller ID</a>
         <a href="login-activity.html?user=${encodeURIComponent(userId)}">Login activity</a>
-        <a href="onboarding.html?user=${encodeURIComponent(userId)}">Onboarding answers & agreements</a>
+        <a href="onboarding.html?user=${encodeURIComponent(userId)}">Onboarding</a><a href="agreement-actions.html?user=${encodeURIComponent(userId)}">Agreement Actions</a><a href="other-actions.html?user=${encodeURIComponent(userId)}">Other Actions & outcomes</a>
       </div>
       <h3>Demo link</h3><label class="salesperson-label">Demo URL <input type="url" id="salespersonDemoUrl" placeholder="https://your-demo-domain.example" /></label>
       <button type="button" id="salespersonCopyDemo">Copy demo invitation</button><small id="salespersonDemoMsg" role="status"></small>
@@ -82,3 +82,4 @@
   new MutationObserver(()=>enhanceDrawer()).observe($('adminUserDrawer'),{childList:true});
   setupCreate();enhanceDrawer();
 })();
+

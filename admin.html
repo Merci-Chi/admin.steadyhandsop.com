@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-title" content="Steady Hands Admin" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png" />
-  <title>Salespeople • Steady Hands Admin</title>
+  <title>Sales Associates • Steady Hands Admin</title>
   <link rel="stylesheet" href="styles.css?v=20261009-dark-text-popup-v8" />
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="theme.js?v=20261005-account-theme"></script>
@@ -21,18 +21,18 @@
     <div class="topbar-row">
       <div>
         <span class="admin-kicker">STEADY HANDS ADMIN</span>
-        <h1>Salespeople</h1>
+        <h1>Sales Associates</h1>
       </div>
     </div>
   </header>
 
   <main class="content admin-users-content">
-    <section class="salesperson-create-head"><div><h2>Team accounts</h2><p>Create a salesperson login with a @steadyhandsop.com email. Account creation requires the secure server function.</p></div><button type="button" id="salespersonCreateToggle">+ New salesperson</button></section>
+    <section class="salesperson-create-head"><div><h2>Team accounts</h2><p>Create a sales associate login with a @steadyhandsop.com email. Account creation requires the secure server function.</p></div><button type="button" id="salespersonCreateToggle">+ New associate</button></section>
     <section id="salespersonCreatePanel" class="salesperson-create-panel" hidden><form id="salespersonCreateForm">
       <label>Display name<input id="newSalespersonName" required maxlength="100" autocomplete="off"></label>
       <label>Username<input id="newSalespersonUsername" required placeholder="firstname.lastname" autocomplete="off"><small>@steadyhandsop.com</small></label>
       <label>Temporary password<input id="newSalespersonPassword" type="password" required autocomplete="new-password"></label>
-      <button type="submit">Create salesperson account</button><p id="salespersonCreateResult" role="status"></p>
+      <button type="submit">Create associate account</button><p id="salespersonCreateResult" role="status"></p>
     </form></section>
     <section class="admin-user-toolbar">
       <div class="admin-user-search">
@@ -50,7 +50,7 @@
     </section>
 
     <section class="admin-user-summary" id="adminUserSummary"></section>
-    <section class="admin-user-list" id="adminUserList"><div class="cc-empty">Loading salespeople…</div></section>
+    <section class="admin-user-list" id="adminUserList"><div class="cc-empty">Loading sales associates…</div></section>
   </main>
 
   <nav class="bottom-nav"></nav>
@@ -62,8 +62,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="auth-guard.js?v=20261005-admin-only"></script>
-<script src="admin-shell.js?v=20261009-independent-scroll-v3"></script>
-<script src="admin-users.js?v=20261012-remove-salesperson"></script>
-<script src="admin-salespeople-tools.js?v=20261011-error-details"></script>
+<script src="admin-shell.js?v=20261018-associates"></script>
+<script src="sales-associate-data.js?v=20261018"></script>
+<script src="associate-overview.js?v=20261018"></script>
+<script src="admin-users.js?v=20261018-associate-overview"></script>
+<script src="admin-salespeople-tools.js?v=20261018-associate-links"></script>
 </body>
 </html>
+

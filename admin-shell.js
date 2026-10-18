@@ -3,10 +3,11 @@
 
   const pageMeta = {
     'index.html': { title:'Overview', active:'overview' },
-    'admin.html': { title:'Salespeople', active:'salespeople' },
+    'admin.html': { title:'Sales Associates', active:'salespeople' },
     'users.html': { title:'Users', active:'users' },
     'onboarding.html': { title:'Onboarding', active:'onboarding' },
     'agreement-actions.html': { title:'Agreement Actions', active:'agreement-actions' },
+    'other-actions.html': { title:'Other Actions', active:'other-actions' },
     'training.html': { title:'Training', active:'training' },
     'clients.html': { title:'Clients', active:'clients' },
     'preview-access.html': { title:'Preview Access', active:'preview-access' },
@@ -32,14 +33,12 @@
   function nav(active) {
     const items = [
       ['overview','index.html','layout-dashboard','Overview'],
+      ['salespeople','admin.html','users','Sales Associates'],
       ['analytics','company-analytics.html','chart-no-axes-combined','Analytics'],
       ['requests','requests.html','inbox','Requests'],
       ['leads','leads.html','contact-round','All Leads'],
       ['users','users.html','users','Users'],
-      ['onboarding','onboarding.html','clipboard-check','Onboarding'],
-      ['agreement-actions','agreement-actions.html','file-signature','Agreement Actions'],
       ['training','training.html','graduation-cap','Training'],
-      ['salespeople','admin.html','headset','Salespeople'],
       ['clients','clients.html','briefcase-business','Clients'],
       ['preview-access','preview-access.html','link-2','Preview Access'],
       ['activity','activity.html','history','Activity'],
@@ -60,10 +59,7 @@
     ['requests.html','inbox','Requests'],
     ['leads.html','contact-round','All Leads'],
     ['users.html','users','Users'],
-    ['onboarding.html','clipboard-check','Onboarding'],
-    ['agreement-actions.html','file-signature','Agreement Actions'],
     ['training.html','graduation-cap','Training'],
-    ['admin.html','headset','Salespeople'],
     ['call-management.html','phone-call','Call Management'],
     ['clients.html','briefcase-business','Clients'],
     ['preview-access.html','link-2','Preview Access'],
@@ -79,9 +75,19 @@
     ['terms.html','file-text','Terms & Conditions']
   ];
 
+  const associateItems = [
+    ['admin.html','users','Overview'],
+    ['onboarding.html','clipboard-check','Onboarding'],
+    ['agreement-actions.html','file-signature','Agreement Actions'],
+    ['other-actions.html','list-checks','Other Actions']
+  ];
+  function associateNav(){
+    const active=associateItems.some(([href])=>href===page);
+    return `<details class="admin-associates-group" ${active?'open':''}><summary><i data-lucide="users"></i><span>Sales Associates</span></summary><div>${associateItems.map(([href,icon,label])=>`<a class="admin-side-link ${page===href?'active':''}" href="${href}" ${page===href?'aria-current="page"':''}><i data-lucide="${icon}"></i><span>${label}</span></a>`).join('')}</div></details>`;
+  }
   function sideNav() {
-    return sideItems.map(([href,icon,label]) => `
-      <a class="admin-side-link ${page === href ? 'active' : ''}" href="${href}">
+    return associateNav()+sideItems.map(([href,icon,label]) => `
+      <a class="admin-side-link ${page === href ? 'active' : ''}" href="${href}" ${page===href?'aria-current="page"':''}>
         <i data-lucide="${icon}"></i><span>${label}</span>
       </a>
     `).join('');
@@ -139,6 +145,9 @@
   }
 
   function applyAdminShell() {
+    if(!document.getElementById('associatePagesStyles')){
+      const style=document.createElement('link');style.id='associatePagesStyles';style.rel='stylesheet';style.href='associate-pages.css?v=20261018';document.head.appendChild(style);
+    }
     const meta = pageMeta[page] || { title:'Admin', active:'more' };
 
     document.querySelectorAll('meta[name="apple-mobile-web-app-title"]').forEach(el => {
@@ -179,3 +188,4 @@
     applyAdminShell();
   }
 })();
+

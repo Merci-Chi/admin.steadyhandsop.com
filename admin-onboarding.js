@@ -1,11 +1,18 @@
-(()=>{"use strict";const client=()=>window.steadyHandsCRMClient;const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let users=[],q='';const notice=document.getElementById('onboardingNotice');const list=document.getElementById('onboardingList');async function api(body){const {data,error}=await client().functions.invoke('admin-onboarding',{body});if(error){let message=error.message;try{const body=await error.context?.json?.();message=body?.error||message}catch{}throw Error(message)}if(data?.error)throw Error(data.error);return data}function render(){let matches=users.filter(u=>[u.name,u.email,u.role].some(x=>String(x||'').toLowerCase().includes(q)));list.innerHTML=matches.map(u=>'<article class="admin-user-card" style="cursor:default;display:flex;align-items:center;gap:12px;padding:16px;margin-bottom:10px"><span class="admin-user-avatar">'+esc((u.name||u.email||'U').slice(0,1).toUpperCase())+'</span><span class="admin-user-card-main" style="flex:1;min-width:0"><strong>'+esc(u.name||'Unnamed employee')+'</strong><small style="display:block">'+esc(u.email||'')+'</small><small style="display:block">'+esc(u.role||'')+' · '+(u.complete?'Completed':u.step==null?'Not started':'Step '+(u.step+1)+' of 5')+' · '+esc(u.trainingCompleted||0)+' training lessons</small></span><button type="button" data-view="'+esc(u.id)+'" style="padding:10px;border:1px solid #8ba9c4;border-radius:8px;background:transparent;color:inherit">View details</button><button type="button" data-reset="'+esc(u.id)+'" style="padding:10px;border:1px solid #b95c5c;border-radius:8px;color:#b94343;background:transparent">Reset onboarding</button></article>').join('')||'<div class="cc-empty">No onboarding records found.</div>';list.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>view(b.dataset.view));list.querySelectorAll('[data-reset]').forEach(b=>b.onclick=()=>reset(b.dataset.reset));window.lucide?.createIcons()}const label=k=>String(k).replace(/([a-z])([A-Z])/g,'$1 $2').replace(/[_-]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-const readable=v=>v===null||v===undefined||v===''?'Not provided':typeof v==='boolean'?(v?'Yes':'No'):Array.isArray(v)?(v.length?v.map(readable).join(', '):'Not provided'):typeof v==='object'?JSON.stringify(v,null,2):String(v);
-function rowsFor(obj){return Object.entries(obj||{}).map(([k,v])=>'<div class="onboard-detail-row"><dt>'+esc(label(k))+'</dt><dd>'+esc(readable(v))+'</dd></div>').join('')||'<p class="onboard-muted">Not provided yet.</p>';}
+(()=>{"use strict";const client=()=>window.steadyHandsCRMClient;const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let users=[],q='';const notice=document.getElementById('onboardingNotice');const list=document.getElementById('onboardingList');async function api(body){const {data,error}=await client().functions.invoke('admin-onboarding',{body});if(error){let message=error.message;try{const body=await error.context?.json?.();message=body?.error||message}catch{}throw Error(message)}if(data?.error)throw Error(data.error);return data}function render(){
+ const matches=users.filter(u=>[u.name,u.email,u.role].some(x=>String(x||'').toLowerCase().includes(q)));
+ list.innerHTML=matches.map(u=>{
+  const available=[u.role,u.complete===true?'Completed':Number.isInteger(u.step)?'Step '+(u.step+1)+' of 5':undefined,u.trainingCompleted==null?undefined:u.trainingCompleted+' training lessons'].filter(x=>x!==undefined&&x!==null&&String(x).trim()!=='').join(' · ');
+  return '<article class="admin-user-card" style="cursor:default;display:flex;align-items:center;gap:12px;padding:16px;margin-bottom:10px"><span class="admin-user-avatar">'+esc((u.name||u.email||'U').slice(0,1).toUpperCase())+'</span><span class="admin-user-card-main" style="flex:1;min-width:0"><strong>'+esc(u.name||u.email||'')+'</strong>'+(u.email?'<small style="display:block">'+esc(u.email)+'</small>':'')+(available?'<small style="display:block">'+esc(available)+'</small>':'')+'</span><button type="button" data-view="'+esc(u.id)+'" style="padding:10px;border:1px solid #8ba9c4;border-radius:8px;background:transparent;color:inherit">View details</button><button type="button" data-reset="'+esc(u.id)+'" style="padding:10px;border:1px solid #b95c5c;border-radius:8px;color:#b94343;background:transparent">Reset onboarding</button></article>';
+ }).join('')||'<div class="cc-empty">No onboarding records found.</div>';
+ list.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>view(b.dataset.view));list.querySelectorAll('[data-reset]').forEach(b=>b.onclick=()=>reset(b.dataset.reset));window.lucide?.createIcons();
+}const label=k=>String(k).replace(/([a-z])([A-Z])/g,'$1 $2').replace(/[_-]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+const readable=v=>typeof v==='boolean'?(v?'Yes':'No'):Array.isArray(v)?v.map(readable).join(', '):typeof v==='object'?JSON.stringify(v,null,2):String(v);
+function rowsFor(obj){return Object.entries(window.SalesAssociateData.clean(obj)||{}).map(([k,v])=>'<div class="onboard-detail-row"><dt>'+esc(label(k))+'</dt><dd>'+esc(readable(v))+'</dd></div>').join('');}
 async function view(id){
  const u=users.find(x=>x.id===id);if(!u)return;
  const overlay=document.getElementById('onboardingDetailOverlay'),content=document.getElementById('onboardingDetailBody');
  overlay.hidden=false;content.innerHTML='<p>Loading submitted information…</p>';
- document.getElementById('onboardingDetailTitle').textContent=u.name||u.email||'Employee';
+ document.getElementById('onboardingDetailTitle').textContent=u.name||u.email||'';
  document.getElementById('onboardingDetailSubtitle').textContent=u.email||'';
  try{
 
@@ -18,20 +25,20 @@ async function view(id){
   ]);
   if(pause.error&&actions.error)throw new Error('Onboarding service: '+detailError.message+'; agreement access: '+pause.error.message+'; '+actions.error.message);
   const signed=(actions.data||[]).map(a=>({Document:a.document_key||a.action_code||'Agreement',Status:a.status||'Unknown',Signed:a.signed_at||a.completed_at||null}));
-  data={record:{},onboarding:{},progress:{status:'not_started'},agreement:{signatureName:pause.data?.signature_name,agreedAt:pause.data?.signed_at,track:pause.data?.selected_track},personalInformation:{Email:u.email,'Employee name':u.name},workPreferences:{},paymentPreferences:{},training:{},fallbackAgreements:signed,secureNotice:'Full onboarding details are currently unavailable: '+detailError.message};
+  data={record:{},onboarding:{},progress:{},agreement:{signatureName:pause.data?.signature_name,agreedAt:pause.data?.signed_at,track:pause.data?.selected_track},personalInformation:{Email:u.email,'Employee name':u.name},workPreferences:{},paymentPreferences:{},training:{},fallbackAgreements:signed,secureNotice:'Full onboarding details are currently unavailable: '+detailError.message};
  }
  const r=data.record||{};
  const onboarding=data.onboarding||{};
  const progress=data.progress||{};
  const training=data.training||{};
- const section=(title,body)=>'<section class="onboard-detail-section"><h3>'+esc(title)+'</h3><dl>'+body+'</dl></section>';
+ const section=(title,body)=>body?'<section class="onboard-detail-section"><h3>'+esc(title)+'</h3><dl>'+body+'</dl></section>':'';
  const isSubmitted=Boolean(onboarding.complete);
  const info=data.personalInformation||{};
  const work=data.workPreferences||{};
  const agreement=data.agreement||{};
  const payment=data.paymentPreferences||{};
- const total=progress.trainingTotal||4;
- const done=progress.trainingCompleted??(Array.isArray(training.completedLessons)?training.completedLessons.length:0);
+ const total=progress.trainingTotal;
+ const done=progress.trainingCompleted??(Array.isArray(training.completedLessons)?training.completedLessons.length:undefined);
  const signed=agreement.signature;
  const signatureMarkup=typeof signed==='string'&&['data:image/png;base64,','data:image/jpeg;base64,','data:image/webp;base64,'].some(prefix=>signed.startsWith(prefix))
   ?'<div class="onboard-detail-row"><dt>Drawn signature</dt><dd><img alt="Employee signature" src="'+esc(signed)+'" style="max-width:100%;max-height:160px;object-fit:contain;background:white;border:1px solid #ddd;border-radius:8px;padding:8px"></dd></div>'
@@ -40,7 +47,7 @@ async function view(id){
  const safeLink=typeof r.agreement_url==='string'&&/^https:\/\//i.test(r.agreement_url)?'<p><a href="'+esc(r.agreement_url)+'" target="_blank" rel="noopener noreferrer">View agreement document ↗</a></p>':'';
  const remaining=Object.fromEntries(Object.entries(onboarding).filter(([k])=>!['name','dob','phone','email','address','city','country','region','zip','role','weeklyHours','agreementRead','agreementName','agreementSignature','agreementAt','agreementTrack','agreementRole','paymentMethod','paymentDetail','paymentConsent','complete','step','updatedAt','onboardingVersion','trainingDone'].includes(k)));
  content.innerHTML=
- section('Progress',rowsFor({'Onboarding':isSubmitted?'Completed':progress.status==='not_started'?'Not started':'In progress','Current step':progress.step==null?'Not started':progress.step+1,'Training lessons completed':done+' of '+total,'Onboarding last saved':progress.onboardingUpdatedAt,'Training last saved':progress.trainingUpdatedAt}))+
+ section('Progress',rowsFor({'Onboarding':isSubmitted?'Completed':progress.status?label(progress.status):undefined,'Current step':progress.step==null?undefined:progress.step+1,'Training lessons completed':done==null?undefined:total==null?done:done+' of '+total,'Onboarding last saved':progress.onboardingUpdatedAt,'Training last saved':progress.trainingUpdatedAt}))+
  section('Employee information',rowsFor(info))+
  section('Hours and work preferences',rowsFor(work))+
  section('Agreement',rowsFor(agreementFields)+signatureMarkup+safeLink)+
@@ -48,9 +55,7 @@ async function view(id){
  (data.fallbackAgreements?.length?section('Individual agreement actions',data.fallbackAgreements.map(x=>rowsFor(x)).join('')):'')+
  section('Preferred payment',rowsFor(payment))+
  (Object.keys(remaining).length?section('Additional onboarding answers',rowsFor(remaining)):'');
- if(!data.secureNotice&&!Object.keys(onboarding).length&&!Object.keys(r).length){
- content.innerHTML='<p class="onboard-muted">This employee has not submitted onboarding information yet.</p>'+section('Training progress',rowsFor({'Completed lessons':done+' of '+total}));
- }
+
  }catch(err){content.innerHTML='<p role="alert">Could not load onboarding details: '+esc(err.message||String(err))+'</p>';}
 }
 document.getElementById('onboardingDetailClose').onclick=()=>document.getElementById('onboardingDetailOverlay').hidden=true;
@@ -67,7 +72,7 @@ async function fallbackList(){
  const pm=new Map((permissions.data||[]).map(p=>[String(p.user_id),p.role]));
  const am=new Map();
  if(!actions.error)for(const a of actions.data?.actions||[]){const email=String(a.email||'').toLowerCase();if(email)am.set(email,(am.get(email)||0)+1);}
- return (profiles.data||[]).map(p=>({id:String(p.user_id),name:p.display_name||'',email:p.email||'',role:pm.get(String(p.user_id))||'',agreementCount:am.get(String(p.email||'').toLowerCase())||0,complete:false,step:null}));
+ return (profiles.data||[]).map(p=>({id:String(p.user_id),name:p.display_name||'',email:p.email||'',role:pm.get(String(p.user_id))||'',agreementCount:am.get(String(p.email||'').toLowerCase())||0}));
 }
 async function load(){
  if(!client())return;
@@ -75,12 +80,12 @@ async function load(){
  try{
   const data=await api({action:'list'});
   users=(data.users||[]).map(u=>({...u,id:String(u.id)}));
-  notice.textContent=users.length+' onboarding records';render();
+  notice.textContent=users.length+' onboarding records';render();const selected=new URLSearchParams(location.search).get('user');if(selected)view(selected);
  }catch(error){
   try{
    users=await fallbackList();
    notice.textContent='Showing available employee and agreement records. Full onboarding details require the secure admin-onboarding function. Error: '+(error.message||error);
-   render();
+   render();const selected=new URLSearchParams(location.search).get('user');if(selected)view(selected);
   }catch(fallbackError){
    notice.textContent='Unable to load onboarding. Admin function: '+(error.message||error)+'; secure database: '+(fallbackError.message||fallbackError);
    list.innerHTML='<p class="cc-empty">No accessible onboarding records. Check admin-onboarding deployment and administrator RLS permissions.</p>';
