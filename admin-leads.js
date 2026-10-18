@@ -98,6 +98,7 @@ async function loadPageRows(signal){
 function renderSearchProgress(scan){
  const panel=$('alSearchProgress');if(!panel)return;
  panel.hidden=false;
+ if(scan.indexed){$('alSearchProgressText').textContent=`${fmtNum(scan.matches.length)} matches found · Complete`;$('alSearchProgressBar').value=100;return;}
  const denominator=scan.done?scan.scanned:scan.total;
  $('alSearchProgressText').textContent=`${fmtNum(scan.scanned)} of ${denominator===null?'…':fmtNum(Math.max(scan.scanned,denominator))} leads searched · ${fmtNum(scan.matches.length)} matches${scan.done?' · Complete':scan.retrying?' · Retrying smaller batch…':''}`;
  const bar=$('alSearchProgressBar');
@@ -136,7 +137,7 @@ async function scanSearch(seq,signal){
  void (async()=>{
   try{
    const result=await query(client().from('crm').select('id',{head:true,count:'exact'}),{skipSearch:true,noSort:true}).abortSignal(countController.signal);
-   if(seq!==state.seq||scan.done||result.error||!Number.isFinite(result.count))return;
+   if(signal.aborted||seq!==state.seq||scan.done||result.error||!Number.isFinite(result.count))return;
    scan.total=result.count;renderSearchProgress(scan);
   }catch(error){console.warn('Search total unavailable:',error)}
  })();
@@ -163,6 +164,30 @@ async function scanSearch(seq,signal){
   cursor=batch.at(-1).id;
  }
 }
+// Race a small, unsorted indexed lookup against the resumable scan. Exact count
+// must prove the entire result fits before this path may replace the scan/cache.
+async function searchRows(seq,signal){
+ if(searchCache?.key===searchKey())return scanSearch(seq,signal);
+ const key=searchKey(),fast=new AbortController(),scan=new AbortController();
+ const cancel=()=>{fast.abort();scan.abort()};
+ signal.addEventListener('abort',cancel,{once:true});
+ if(signal.aborted)cancel();
+ const lookup=(async()=>{
+  try{
+   const result=await query(client().from('crm').select(fields,{count:'exact'}),{noSort:true}).range(0,499).abortSignal(fast.signal);
+   if(signal.aborted||fast.signal.aborted||seq!==state.seq||result.error||!Array.isArray(result.data)||!Number.isFinite(result.count)||result.count!==result.data.length)return;
+   // No ORDER BY means the database can use its search indexes without a
+   // newest-first LIMIT plan. Sort the small complete result only in the browser.
+   scan.abort();countController.abort();
+   const complete={matches:result.data,done:true,indexed:true};
+   searchCache={key,scan:complete};showSearchPage(complete.matches,true);renderSearchProgress(complete);
+  }catch(error){console.warn('Indexed lookup unavailable; continuing progress search:',error)}
+ })();
+ try{await scanSearch(seq,scan.signal);}
+ catch(error){if(!scan.signal.aborted)throw error;}
+ finally{fast.abort();scan.abort();signal.removeEventListener('abort',cancel);}
+ void lookup;
+}
 async function loadRows(reuseSearch=false){
  if(reuseSearch!==true)searchCache=null;
  const seq=++state.seq;
@@ -171,7 +196,7 @@ async function loadRows(reuseSearch=false){
  const el=$('adminLeadList');el.innerHTML='<tr><td colspan="10" class="al-empty">Loading leads…</td></tr>';
  $('alPageStatus').textContent='Loading leads…';$('alPageButtons').innerHTML='';
  try{
-  if(searchTerm()){await scanSearch(seq,rowsController.signal);return;}
+  if(searchTerm()){await searchRows(seq,rowsController.signal);return;}
   $('alSearchProgress').hidden=true;
   // One extra row gives reliable Next-page navigation without waiting for COUNT(*).
   const result=await loadPageRows(rowsController.signal);

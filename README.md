@@ -22,7 +22,14 @@ Sensitive database access must remain protected by Supabase Row Level Security. 
 
 ## Search progress
 
-Text search checks the filtered CRM in 250-row primary-key batches and matches
+Text search races an unsorted database lookup against a progressive scan. If an
+exact count proves that the lookup contains every match (up to 500), it cancels
+the scan and caches those results immediately. A failed, slow, or truncated lookup
+never blocks or replaces the scan. No database sort is requested for this lookup,
+so the planner can use the existing trigram search indexes. Actual latency still
+needs verification against the live CRM.
+
+The fallback checks the filtered CRM in 250-row primary-key batches and matches
 company, contact, both phone fields, email, website, notes, state, and timezone in
 the browser. The progress bar reports leads checked and matches found; an optional
 exact count supplies the denominator. If that count is unavailable, the bar stays
