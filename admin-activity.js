@@ -88,8 +88,38 @@
     const rows=owned.filter(r=>[r.company,r.name,r.phone,personLabel(r.callback_owner_id)].join(' ').toLowerCase().includes(state.fq));
     const shown=rows.slice(0,state.followupsShown);
     document.getElementById('performanceFollowupCount').textContent=shown.length+' of '+rows.length;
-    document.getElementById('performanceFollowups').innerHTML=state.followupError?`<p role="alert">Unable to load follow-ups: ${esc(state.followupError)}. Refresh to retry.</p>`:shown.map(r=>`<article class="performance-followup"><span class="admin-activity-icon"><i data-lucide="calendar-clock"></i></span><div><small>${esc(personLabel(r.callback_owner_id))}</small><strong>${esc(r.company||r.name||'Unnamed business')}</strong><p>${esc(r.follow_up_at?fmtDate(r.follow_up_at):r.callbackdate||'Date not set')}${!r.follow_up_at&&r.callbackat?' · '+esc(r.callbackat):''}</p><small>${esc(r.phone||'No phone number')}</small>${r.follow_up_category?'<small>'+esc(r.follow_up_category)+'</small>':''}</div></article>`).join('')||'<p class="performance-empty">'+(state.fq?'No follow-ups match your search.':'No follow-ups scheduled.')+'</p>';
+    document.getElementById('performanceFollowups').innerHTML=state.followupError?`<p role="alert">Unable to load follow-ups: ${esc(state.followupError)}. Refresh to retry.</p>`:shown.map(lead=>{
+      const call=state.rows.find(r=>String(r.id)===String(lead.call?.id))||lead.call;
+      return `<article class="performance-followup-card">${renderCallRow(call||{user_id:lead.callback_owner_id,crm_id:lead.id,outcome:'Follow-up'},lead)}${window.PerformanceFollowupActions.buttons(lead)}</article>`;
+    }).join('')||'<p class="performance-empty">'+(state.fq?'No follow-ups match your search.':'No follow-ups scheduled.')+'</p>';
     document.getElementById('performanceMoreFollowups').hidden=shown.length>=rows.length||Boolean(state.followupError);
+  }
+
+  function renderCallRow(row,followup){
+      const user=state.users.find(u=>String(u.user_id)===String(row.user_id));
+      const lead=followup||state.leads.get(String(row.crm_id));
+      const transcript=state.transcripts.get(String(row.id));
+      const label=lead?.company||lead?.name||lead?.phone||'Unknown lead';
+      const oc=outcomeClass(row);
+      return `
+        <div class="admin-activity-entry" style="display:flex;align-items:stretch;gap:8px;">
+        <a class="admin-activity-row" style="flex:1;min-width:0;" ${row.id?`href="call.html?id=${encodeURIComponent(row.id)}"`: 'aria-disabled="true"'}>
+          <span class="admin-activity-icon"><i data-lucide="${(Number(row.duration_seconds)||0)>0?'phone-call':'phone-off'}"></i></span>
+          <span class="admin-activity-main">
+            <strong>${esc(user?.display_name||user?.email||'Unknown user')}</strong>
+            <b>${esc(label)}</b>
+            <small>${row.id?esc(fmtDate(row.created_at))+' · '+esc(fmtDuration(row.duration_seconds)):'No linked call'}${lead?.phone?' · '+esc(lead.phone):''}</small>
+            ${followup?`<small>Follow-up: ${esc(followup.follow_up_at?fmtDate(followup.follow_up_at):followup.callbackdate||'Date not set')}${!followup.follow_up_at&&followup.callbackat?' · '+esc(followup.callbackat):''}${followup.follow_up_category?' · '+esc(followup.follow_up_category):''}</small>`:''}
+          </span>
+          <span class="admin-activity-side">
+            <span class="admin-activity-outcome ${oc}">${esc(row.outcome||'No outcome')}</span>
+            ${transcript?'<span class="admin-transcript-available"><i data-lucide="file-text"></i>Transcript</span>':''}
+          </span>
+          ${row.id?'<i data-lucide="chevron-right"></i>':''}
+        </a>
+        ${row.id?`<button type="button" class="admin-activity-delete" data-delete-call-id="${esc(row.id)}" aria-label="Delete activity for ${esc(label)}" title="Delete call activity" style="align-self:center;flex:none;padding:10px;border:1px solid var(--border-color, #dbe3ed);border-radius:11px;background:transparent;color:#b33b48;cursor:pointer;"><i data-lucide="trash-2"></i></button>`:''}
+        </div>`;
+
   }
 
   function renderList() {
@@ -98,28 +128,7 @@
     document.getElementById('adminActivityCount').textContent=Math.min(rows.length,state.callsShown)+' of '+rows.length;
     document.getElementById('performanceMoreCalls').hidden=state.callsShown>=rows.length;
     list.innerHTML=rows.length?rows.slice(0,state.callsShown).map(row=>{
-      const user=state.users.find(u=>String(u.user_id)===String(row.user_id));
-      const lead=state.leads.get(String(row.crm_id));
-      const transcript=state.transcripts.get(String(row.id));
-      const label=lead?.company||lead?.name||lead?.phone||'Unknown lead';
-      const oc=outcomeClass(row);
-      return `
-        <div class="admin-activity-entry" style="display:flex;align-items:stretch;gap:8px;">
-        <a class="admin-activity-row" style="flex:1;min-width:0;" href="call.html?id=${encodeURIComponent(row.id)}">
-          <span class="admin-activity-icon"><i data-lucide="${(Number(row.duration_seconds)||0)>0?'phone-call':'phone-off'}"></i></span>
-          <span class="admin-activity-main">
-            <strong>${esc(user?.display_name||user?.email||'Unknown user')}</strong>
-            <b>${esc(label)}</b>
-            <small>${esc(fmtDate(row.created_at))} · ${esc(fmtDuration(row.duration_seconds))}${lead?.phone?' · '+esc(lead.phone):''}</small>
-          </span>
-          <span class="admin-activity-side">
-            <span class="admin-activity-outcome ${oc}">${esc(row.outcome||'No outcome')}</span>
-            ${transcript?'<span class="admin-transcript-available"><i data-lucide="file-text"></i>Transcript</span>':''}
-          </span>
-          <i data-lucide="chevron-right"></i>
-        </a>
-        <button type="button" class="admin-activity-delete" data-delete-call-id="${esc(row.id)}" aria-label="Delete activity for ${esc(label)}" title="Delete activity" style="align-self:center;flex:none;padding:10px;border:1px solid var(--border-color, #dbe3ed);border-radius:11px;background:transparent;color:#b33b48;cursor:pointer;"><i data-lucide="trash-2"></i></button>
-        </div>`;
+      return renderCallRow(row);
     }).join(''):'<div class="cc-empty">No calls match these filters.</div>';
     window.lucide?.createIcons();
   }
@@ -140,6 +149,8 @@
       if(data!==true) throw new Error('Activity was not found or could not be deleted.');
       state.rows=state.rows.filter(item=>String(item.id)!==String(id));
       state.transcripts.delete(String(id));
+      try{state.followups=await window.steadyHandsLoadPerformanceFollowups({client:c,activities:state.rows});state.followupError='';}
+      catch(error){state.followupError=error?.message||'Please refresh and try again.';}
       render();
     } catch(error) {
       window.alert('Unable to delete activity: '+(error?.message||'Unknown error')+'\\nIf this is a new feature, run the provided Supabase SQL first.');
@@ -149,7 +160,7 @@
 
   function render(){renderSummary();renderFollowups();renderList();}
 
-  document.getElementById('adminActivityList')?.addEventListener('click',event=>{
+  for(const id of ['adminActivityList','performanceFollowups'])document.getElementById(id)?.addEventListener('click',event=>{
     const button=event.target.closest('[data-delete-call-id]');
     if(button) { event.preventDefault(); event.stopPropagation(); void deleteActivity(button.dataset.deleteCallId); }
   });
@@ -219,6 +230,13 @@
   document.getElementById('adminActivityDateFilter')?.addEventListener('change',e=>{state.date=e.target.value||'all';state.callsShown=100;render();});
   document.getElementById('adminActivityRefresh')?.addEventListener('click',()=>location.reload());
 
+  document.getElementById('performanceFollowups')?.addEventListener('click',event=>{
+    const button=event.target.closest('[data-followup-action]');if(!button)return;
+    const lead=state.followups.find(r=>String(r.id)===button.dataset.followupId&&String(r.callback_owner_id||'')===button.dataset.followupOwner);
+    if(lead)window.PerformanceFollowupActions.open({client:window.steadyHandsCRMClient,lead,userId:lead.callback_owner_id,mode:button.dataset.followupAction,admin:true,trigger:button});
+  });
+
+  window.addEventListener?.('steadyhands:followup-saved',()=>render());
   document.getElementById('performanceFollowupSearch')?.addEventListener('input',e=>{state.fq=String(e.target.value||'').toLowerCase().trim();state.followupsShown=100;render();});
   document.getElementById('performanceMoreCalls')?.addEventListener('click',()=>{state.callsShown+=100;renderList();});
   document.getElementById('performanceMoreFollowups')?.addEventListener('click',()=>{state.followupsShown+=100;render();});

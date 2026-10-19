@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
+const actionSource=await readFile(new URL('../performance-followup-actions.js',import.meta.url),'utf8');
 const followupSource=await readFile(new URL('../performance-followups.js',import.meta.url),'utf8');
 const original=await readFile(new URL('../admin-activity.js',import.meta.url),'utf8');
 const source=original.slice(0,original.indexOf('  if(window.steadyHandsAdminSession)'))+'window.api={load,render,state,filtered};})();';
@@ -15,7 +16,7 @@ function setup({failFollowups=false,failCalls=false,requested=''}={}){
  const window={steadyHandsCRMClient:client};
  const location={search:requested?'?user='+requested:'',href:'https://example.test/activity.html',reload(){}};
  const history={replaceState(_a,_b,url){location.search=url.search;location.href=url.href}};
- vm.runInNewContext(followupSource,{window});
+ vm.runInNewContext(actionSource,{window});vm.runInNewContext(followupSource,{window});
  vm.runInNewContext(source,{window,document:{getElementById:node,querySelector:()=>node('h1')},location,history,URL,URLSearchParams,console});
  return {api:window.api,node,requests,location};
 }
@@ -50,4 +51,8 @@ test('weekly metrics exclude old calls and did-not-call outcomes; chart counts a
  const s=setup();await s.api.load();const today=new Date().toISOString();
  s.api.state.rows=[{id:1,user_id:'kiara',created_at:today,outcome:"Didn't Call",duration_seconds:0},{id:2,user_id:'kiara',created_at:today,outcome:'Not interested',duration_seconds:60},{id:3,user_id:'kiara',created_at:today,outcome:'Requested email',duration_seconds:120},{id:4,user_id:'kiara',created_at:'2020-01-01',outcome:'Sold',duration_seconds:999}];
  s.api.render();assert.match(s.node('adminActivitySummary').innerHTML,/<strong>2<\/strong>/);assert.match(s.node('adminActivitySummary').innerHTML,/<strong>1<\/strong>/);assert.match(s.node('adminActivitySummary').innerHTML,/<strong>50%<\/strong>/);assert.match(s.node('adminActivitySummary').innerHTML,/<strong>1m 30s<\/strong>/);assert.match(s.node('performanceChart').innerHTML,/<span>2<\/span>/);assert.equal(s.node('adminActivityCount').textContent,'4 of 4');
+});
+test('follow-up cards reuse call details, transcript and delete controls and add calendar/task actions',async()=>{
+ const s=setup();await s.api.load();s.api.state.followups=[{id:'lead',company:'Spiderwash',callback_owner_id:'kiara',call:s.api.state.rows.find(r=>r.id===1)}];s.api.render();
+ const html=s.node('performanceFollowups').innerHTML;assert.match(html,/class="admin-activity-row"/);assert.match(html,/href="call.html\?id=1"/);assert.match(html,/Transcript/);assert.match(html,/data-delete-call-id="1"/);assert.match(html,/Add to calendar/);assert.match(html,/Add to tasks/);
 });
