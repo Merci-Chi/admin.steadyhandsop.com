@@ -22,7 +22,7 @@
     'deals.html': { title:'Deals', active:'more' },
     'pipeline.html': { title:'Sales Pipeline', active:'more' },
     'payouts.html': { title:'Payouts', active:'more' },
-    'phones.html': { title:'Phone Numbers', active:'more' },
+    'phones.html': { title:'Phone Numbers', active:'salespeople' },
     'login-activity.html': { title:'Login Activity', active:'more' },
     'audit.html': { title:'Audit Log', active:'more' },
     'system.html': { title:'System', active:'more' },
@@ -69,7 +69,6 @@
     ['deals.html','handshake','Deals'],
     ['pipeline.html','workflow','Sales Pipeline'],
     ['payouts.html','circle-dollar-sign','Payouts'],
-    ['phones.html','phone-forwarded','Phone Numbers'],
     ['login-activity.html','log-in','Login Activity'],
     ['audit.html','scroll-text','Audit Log'],
     ['system.html','activity','System'],
@@ -79,6 +78,7 @@
   const associateItems = [
     ['admin.html','users','Overview'],
     ['status.html','list-checks','Status'],
+    ['phones.html','phone-forwarded','Phone Numbers'],
     ['onboarding.html','clipboard-check','Onboarding'],
     ['agreement-actions.html','file-signature','Agreement Actions'],
     ['other-actions.html','list-checks','Other Actions']
