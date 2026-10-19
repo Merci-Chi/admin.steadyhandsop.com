@@ -279,34 +279,36 @@ async function openAssignedFilter(){
 async function openAssignment(){
  if(!state.allMatching&&!state.selected.size){alert('Select at least one lead first.');return}
  const count=state.allMatching?state.total:state.selected.size;
- modal('Assign Selected Leads',`Choose an active salesperson for ${fmtNum(count)} selected lead(s).`,'<p class="al-status-note">Loading active salespeople…</p>','<button type="button" id="alCancelAssign">Cancel</button>');
+ modal('Assign Selected Leads',`Choose an active salesperson or Unassigned for ${fmtNum(count)} selected lead(s).`,'<p class="al-status-note">Loading active salespeople…</p>','<button type="button" id="alCancelAssign">Cancel</button>');
  $('alCancelAssign').onclick=closeModal;
  try{
   const people=await activeSalespeople();
   if($('alModalTitle').textContent!=='Assign Selected Leads'||$('alModalWrap').hidden)return;
-  if(!people.length){$('alModalBody').innerHTML='<p class="al-status-note">No active salespeople are currently available.</p>';return}
-  $('alModalBody').innerHTML=`<input type="search" id="alAssignSearch" class="al-modal-search" placeholder="Search active salespeople…"><p class="al-status-note">Only active salespeople and kiara@steadyhandsop.com are shown. Existing assignments will be replaced.</p><div id="alAssignOptions" class="al-assignee-options"></div><p id="alAssignStatus" class="al-status-note" role="status"></p>`;
+  const choices=[{user_id:'',display_name:'Unassigned',email:'Remove current assignment'},...people];
+  $('alModalBody').innerHTML=`<input type="search" id="alAssignSearch" class="al-modal-search" placeholder="Search assignment options…"><p class="al-status-note">Choose Unassigned to remove the current owner, or choose an active salesperson to replace the assignment.</p><div id="alAssignOptions" class="al-assignee-options"></div><p id="alAssignStatus" class="al-status-note" role="status"></p>`;
   $('alModalFooter').innerHTML='<button type="button" id="alCancelAssign">Cancel</button><button type="button" id="alConfirmAssign" class="al-apply" disabled>Assign Leads</button>';
   $('alCancelAssign').onclick=closeModal;
-  let chosen=null;
-  const render=()=>{const term=$('alAssignSearch').value.trim().toLowerCase();const visible=people.filter(u=>(u.display_name||'').toLowerCase().includes(term)||(u.email||'').toLowerCase().includes(term));$('alAssignOptions').innerHTML=visible.map(u=>`<button type="button" class="al-assignee-option ${chosen===u.user_id?'selected':''}" data-person="${esc(u.user_id)}"><span class="al-assignee-avatar">${esc((u.display_name||u.email||'?').charAt(0).toUpperCase())}</span><span><strong>${esc(u.display_name||u.email||'Salesperson')}</strong><small>${esc(u.email||'')}</small></span><span class="al-active-marker">Active</span></button>`).join('')||'<p>No active salespeople match your search.</p>';$('alAssignOptions').querySelectorAll('[data-person]').forEach(b=>b.onclick=()=>{chosen=b.dataset.person;$('alConfirmAssign').disabled=false;render()})};
+  let chosen=null,saving=false;
+  const render=()=>{const term=$('alAssignSearch').value.trim().toLowerCase();const visible=choices.filter(u=>(u.display_name||'').toLowerCase().includes(term)||(u.email||'').toLowerCase().includes(term));$('alAssignOptions').innerHTML=visible.map(u=>`<button type="button" class="al-assignee-option ${chosen===u.user_id?'selected':''}" data-person="${esc(u.user_id)}"><span class="al-assignee-avatar">${esc((u.display_name||u.email||'?').charAt(0).toUpperCase())}</span><span><strong>${esc(u.display_name||u.email||'Salesperson')}</strong><small>${esc(u.email||'')}</small></span>${u.user_id?'<span class="al-active-marker">Active</span>':''}</button>`).join('')||'<p>No assignment options match your search.</p>';$('alAssignOptions').querySelectorAll('[data-person]').forEach(b=>b.onclick=()=>{if(saving)return;chosen=b.dataset.person;$('alConfirmAssign').disabled=false;$('alConfirmAssign').textContent=chosen===''?'Unassign Leads':'Assign Leads';render()})};
   $('alAssignSearch').oninput=render;render();
   $('alConfirmAssign').onclick=async()=>{
-   if(!chosen)return;
+   if(chosen===null||saving)return;
+   saving=true;
+   const unassign=chosen==='';
    const button=$('alConfirmAssign');button.disabled=true;$('alCancelAssign').disabled=true;
-   $('alAssignStatus').textContent='Assigning selected leads…';
+   $('alAssignStatus').textContent=unassign?'Unassigning selected leads…':'Assigning selected leads…';
    try{
     // Recheck current account status just before making changes.
-    const valid=(await activeSalespeople()).find(u=>u.user_id===chosen);
-    if(!valid)throw Error('This salesperson is no longer active. No leads were assigned.');
+    const valid=unassign?null:(await activeSalespeople()).find(u=>u.user_id===chosen);
+    if(!unassign&&!valid)throw Error('This salesperson is no longer active. No leads were assigned.');
     const ids=await targetIds();
     for(let i=0;i<ids.length;i+=250){
-     const res=await client().from('crm').update({assigned_user_id:chosen,assigned:valid.display_name||valid.email||'Salesperson'}).in('id',ids.slice(i,i+250)).select('id');
+     const res=await client().from('crm').update({assigned_user_id:unassign?null:chosen,assigned:unassign?'':valid.display_name||valid.email||'Salesperson'}).in('id',ids.slice(i,i+250)).select('id');
      if(res.error)throw res.error;
      if((res.data||[]).length!==Math.min(250,ids.length-i))throw Error('Not every selected lead was updated. Check permissions and refresh.');
     }
-    closeModal();clearSelection();await loadRows();alert(`Assigned ${fmtNum(ids.length)} leads to ${valid.display_name||valid.email}.`);
-   }catch(e){$('alAssignStatus').textContent=e.message;console.error('Lead assignment:',e);await loadRows()}finally{button.disabled=false;$('alCancelAssign').disabled=false}
+    closeModal();clearSelection();await loadRows();alert(unassign?`Unassigned ${fmtNum(ids.length)} leads.`:`Assigned ${fmtNum(ids.length)} leads to ${valid.display_name||valid.email}.`);
+   }catch(e){$('alAssignStatus').textContent=e.message;console.error('Lead assignment:',e);await loadRows()}finally{saving=false;button.disabled=false;$('alCancelAssign').disabled=false}
   };
  }catch(e){$('alModalBody').innerHTML=`<p class="al-status-note">Unable to load active salespeople: ${esc(e.message)}</p>`}
 }
