@@ -34,3 +34,17 @@ References:
 - https://www.postgresql.org/docs/current/indexes-multicolumn.html
 - https://www.postgresql.org/docs/current/sql-createindex.html
 - https://postgrest.org/en/stable/references/api/pagination_count.html
+
+## Area code filter
+
+Use the separate **Area code** field next to search, for example `970`. It matches
+three-digit NANP area codes in either `phone` or `altphone`, allowing punctuation,
+a leading `1` / `+1`, and trailing extensions. A number containing `970` only in
+its middle or suffix does not match. Clear the field to remove this filter.
+Text search and existing assignment, archive, tag, source, and advanced filters
+still apply together.
+
+No additional database migration is required. Area-code filtering uses the existing
+bounded primary-key scan and progress indicator because the raw phone columns have
+inconsistent formatting. Large lead lists may take time to scan; pagination and
+select-all-matching use the completed normalized result cache.

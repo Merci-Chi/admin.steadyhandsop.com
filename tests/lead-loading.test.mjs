@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
 const original=await readFile(new URL('../admin-leads.js',import.meta.url),'utf8');
-const source=original.slice(0,original.indexOf("$('adminLeadSearch').addEventListener"))+`window.api={state,query,loadRows,initialize,renderSelection,targetIds};})();`;
+const source=original.slice(0,original.indexOf("$('alAreaCode').addEventListener"))+`window.api={state,query,loadRows,initialize,renderSelection,targetIds};})();`;
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};};
 function setup({indexed=()=>({error:{message:'Indexed lookup unavailable'}}),rows=()=>({data:[{id:'grandma',company:'Grandma',phone:'+17024802338',assigned_user_id:'agent'}]}),count=()=>({count:1}),total=()=>({count:100})}={}){
@@ -157,4 +157,52 @@ test('a late quick lookup cannot overwrite a newer completed search',async()=>{
  s.api.state.query='old';await s.api.loadRows();s.api.state.query='new';await s.api.loadRows();
  old.resolve({data:[{id:'old',company:'Old result'}],count:1});await tick();
  assert.match(s.node('adminLeadList').innerHTML,/New result/);assert.doesNotMatch(s.node('adminLeadList').innerHTML,/Old result/);
+});
+
+test('area code matches normalized primary/alternate phones, never arbitrary digits',async()=>{
+ const data=[
+  {id:'plain',phone:'9703286093'},
+  {id:'formatted',phone:'(970) 867-2131'},
+  {id:'country',phone:'+1 (970) 856-9440'},
+  {id:'countryPlain',phone:'19705241074'},
+  {id:'extension',phone:'970-327-0555 ext. 42'},
+  {id:'alternate',phone:'6158597090',altphone:'+1 970 875 8606'},
+  {id:'suffix',phone:'9126017970'},
+  {id:'middle',phone:'6158597090'},
+  {id:'notes',phone:null,notes:'970'},
+  {id:'short',phone:'9701234'},
+  {id:'foreign',phone:'+44 970 123 4567'},
+ ];
+ const s=setup({rows:()=>({data})});s.api.state.areaCode='970';await s.api.loadRows();
+ assert.deepEqual(Array.from(s.api.state.rows,r=>r.id).sort(),['alternate','country','countryPlain','extension','formatted','plain']);
+ assert(!s.requests.some(r=>r.options?.count==='exact'&&!r.options.head));
+ assert.match(s.node('alActiveFilters').innerHTML,/Area code: 970/);
+ s.api.state.allMatching=true;
+ assert.deepEqual(Array.from(await s.api.targetIds()).sort(),['alternate','country','countryPlain','extension','formatted','plain']);
+});
+test('area code combines with text search, facets, assignment and archive filters',async()=>{
+ const data=[{id:'yes',company:'Plumbing',phone:'9703286093'},{id:'wrong-area',company:'Plumbing',phone:'6158597090'},{id:'wrong-name',company:'Painting',phone:'9708672131'}];
+ const s=setup({rows:()=>({data})});Object.assign(s.api.state,{areaCode:'970',query:'plumb',assignee:'agent',tags:['Interested'],filter:'archived'});
+ await s.api.loadRows();assert.deepEqual(Array.from(s.api.state.rows,r=>r.id),['yes']);
+ const batch=s.requests.find(r=>r.limit),count=s.requests.find(r=>r.options?.head);
+ assert.deepEqual(batch.filters,count.filters);
+ assert(batch.filters.some(f=>f[0]==='eq'&&f[1]==='assigned_user_id'&&f[2]==='agent'));
+ assert(batch.filters.some(f=>f[0]==='eq'&&f[1]==='admin_archived'&&f[2]===true));
+ assert(batch.filters.some(f=>String(f[1]).includes('tags.cs.')));
+});
+test('changing area code invalidates cached matches and clearing restores normal paging',async()=>{
+ const s=setup({rows:()=>({data:[{id:'970',phone:'9703286093'},{id:'615',phone:'6158597090'}]})});
+ s.api.state.areaCode='970';await s.api.loadRows();
+ const before=s.requests.length;await s.api.loadRows(true);assert.equal(s.requests.length,before);
+ s.api.state.areaCode='615';await s.api.loadRows(true);assert(s.requests.length>before);
+ assert.deepEqual(Array.from(s.api.state.rows,r=>r.id),['615']);
+ s.api.state.areaCode='';await s.api.loadRows();assert(s.requests.some(r=>r.range));assert.equal(s.api.state.rows.length,2);
+});
+test('incomplete or invalid area codes prompt for three digits without querying leads',async()=>{
+ for(const areaCode of ['9','97','abc','097','9700']){
+  const s=setup();s.api.state.areaCode=areaCode;await s.api.loadRows();
+  assert.equal(s.requests.length,0);assert.equal(s.api.state.rows.length,0);
+  assert.match(s.node('adminLeadList').innerHTML,/Enter a 3-digit area code/);
+  assert.equal(s.api.state.countPending,false);
+ }
 });

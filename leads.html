@@ -6,13 +6,14 @@
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png">
 <title>All Leads • Steady Hands Admin</title>
 <link rel="stylesheet" href="styles.css?v=20261009-dark-text-popup-v8">
-<link rel="stylesheet" href="admin-leads-v2.css?v=20261018-search-progress">
+<link rel="stylesheet" href="admin-leads-v2.css?v=20261019-area-code">
 <script src="https://unpkg.com/lucide@latest"></script><script src="theme.js?v=20261005-account-theme"></script>
 </head>
 <body class="page-admin-leads"><div class="app">
 <header class="topbar"><div class="topbar-row"><div><span class="admin-kicker">STEADY HANDS ADMIN</span><h1>All Leads</h1></div></div></header>
 <main class="content admin-leads-content">
 <section class="al-toolbar"><label class="al-search"><i data-lucide="search"></i><input id="adminLeadSearch" type="search" placeholder="Search company, name, phone, email, location…" autocomplete="off"></label>
+<label class="al-area-code"><span>Area code</span><input id="alAreaCode" type="search" inputmode="numeric" maxlength="3" pattern="[2-9][0-9]{2}" placeholder="e.g. 970" autocomplete="off" aria-label="Filter by 3-digit area code" title="Match primary or alternate phone area code"></label>
 <button id="alAdvanced" class="al-btn al-white" type="button"><i data-lucide="sliders-horizontal"></i> Filters</button>
 <button id="alTags" class="al-btn al-white" type="button"><i data-lucide="tags"></i> Tags</button>
 <button id="alSources" class="al-btn al-white" type="button"><i data-lucide="globe"></i> Sources</button>
@@ -30,4 +31,4 @@
 <div class="admin-lead-drawer-overlay" id="adminLeadDrawerOverlay" hidden><aside class="admin-lead-drawer" id="adminLeadDrawer"></aside></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="auth-guard.js?v=20261005-admin-only"></script><script src="admin-shell.js?v=20261009-independent-scroll-v3"></script>
-<script src="admin-leads.js?v=20261018-indexed-search"></script></body></html>
+<script src="admin-leads.js?v=20261019-area-code"></script></body></html>
