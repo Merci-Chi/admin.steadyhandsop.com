@@ -16,9 +16,9 @@
   let state = { rows:[], users:[], leads:new Map(), transcripts:new Map(), q:'', user:'', outcome:'', date:'all', followups:[], followupError:'', fq:'', callsShown:100, followupsShown:100 };
 
   function outcomeClass(row) {
-    const text=String(row.outcome||'').toLowerCase();
+    const text=String(row.outcome||'').toLowerCase().replace(/[_-]+/g,' ');
     if (/sale|sold|closed/.test(text)) return 'sale';
-    if (/call back|callback|follow up|requested text|requested email/.test(text)) return 'callback';
+    if (/call.?back|follow.?up|requested text|requested email/.test(text)) return 'callback';
     if (/not interested/.test(text)) return 'notinterested';
     if (/didn.t call/.test(text)) return 'didntcall';
     if (/no answer|voicemail|didn.t answer/.test(text)) return 'noanswer';
@@ -88,7 +88,7 @@
     const rows=owned.filter(r=>[r.company,r.name,r.phone,personLabel(r.callback_owner_id)].join(' ').toLowerCase().includes(state.fq));
     const shown=rows.slice(0,state.followupsShown);
     document.getElementById('performanceFollowupCount').textContent=shown.length+' of '+rows.length;
-    document.getElementById('performanceFollowups').innerHTML=state.followupError?`<p role="alert">Unable to load follow-ups: ${esc(state.followupError)}. Refresh to retry.</p>`:shown.map(r=>`<article class="performance-followup"><span class="admin-activity-icon"><i data-lucide="calendar-clock"></i></span><div><small>${esc(personLabel(r.callback_owner_id))}</small><strong>${esc(r.company||r.name||'Unnamed business')}</strong><p>${esc(r.callbackdate||'Date not set')}${r.callbackat?' · '+esc(r.callbackat):''}</p><small>${esc(r.phone||'No phone number')}</small></div></article>`).join('')||'<p class="performance-empty">'+(state.fq?'No follow-ups match your search.':'No follow-ups scheduled.')+'</p>';
+    document.getElementById('performanceFollowups').innerHTML=state.followupError?`<p role="alert">Unable to load follow-ups: ${esc(state.followupError)}. Refresh to retry.</p>`:shown.map(r=>`<article class="performance-followup"><span class="admin-activity-icon"><i data-lucide="calendar-clock"></i></span><div><small>${esc(personLabel(r.callback_owner_id))}</small><strong>${esc(r.company||r.name||'Unnamed business')}</strong><p>${esc(r.follow_up_at?fmtDate(r.follow_up_at):r.callbackdate||'Date not set')}${!r.follow_up_at&&r.callbackat?' · '+esc(r.callbackat):''}</p><small>${esc(r.phone||'No phone number')}</small>${r.follow_up_category?'<small>'+esc(r.follow_up_category)+'</small>':''}</div></article>`).join('')||'<p class="performance-empty">'+(state.fq?'No follow-ups match your search.':'No follow-ups scheduled.')+'</p>';
     document.getElementById('performanceMoreFollowups').hidden=shown.length>=rows.length||Boolean(state.followupError);
   }
 
@@ -168,11 +168,12 @@
           rows.push(...data);offset+=data.length;
         }
       };
+      const callsPromise=readAll('callcenter_call_activity','id,user_id,crm_id,duration_seconds,outcome,created_at');
       const [calls,users,transcripts,followups]=await Promise.all([
-        readAll('callcenter_call_activity','id,user_id,crm_id,duration_seconds,outcome,created_at'),
+        callsPromise,
         readAll('callcenter_profiles','user_id,display_name,email','user_id'),
         readAll('callcenter_transcripts','id,call_activity_id'),
-        readAll('crm','id,company,name,phone,callbackdate,callbackat,callback_owner_id,stage','id',q=>q.eq('stage','callback'))
+        window.steadyHandsLoadPerformanceFollowups({client:c,activities:callsPromise})
           .then(data=>({data})).catch(error=>({error}))
       ]);
       state.rows=calls.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
@@ -182,7 +183,7 @@
         if(!state.users.some(u=>String(u.user_id)===String(id)))state.users.push({user_id:id});
       }
       state.users.sort((a,b)=>personLabel(a.user_id).localeCompare(personLabel(b.user_id)));
-      state.followups=(followups.data||[]).sort((a,b)=>String(a.callbackdate||'9999').localeCompare(String(b.callbackdate||'9999')));
+      state.followups=followups.data||[];
       state.followupError=followups.error?.message||'';
       state.transcripts.clear();state.leads.clear();
       for(const t of transcripts)if(t.call_activity_id)state.transcripts.set(String(t.call_activity_id),t);

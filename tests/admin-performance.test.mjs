@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
+const followupSource=await readFile(new URL('../performance-followups.js',import.meta.url),'utf8');
 const original=await readFile(new URL('../admin-activity.js',import.meta.url),'utf8');
 const source=original.slice(0,original.indexOf('  if(window.steadyHandsAdminSession)'))+'window.api={load,render,state,filtered};})();';
 function setup({failFollowups=false,failCalls=false,requested=''}={}){
@@ -14,6 +15,7 @@ function setup({failFollowups=false,failCalls=false,requested=''}={}){
  const window={steadyHandsCRMClient:client};
  const location={search:requested?'?user='+requested:'',href:'https://example.test/activity.html',reload(){}};
  const history={replaceState(_a,_b,url){location.search=url.search;location.href=url.href}};
+ vm.runInNewContext(followupSource,{window});
  vm.runInNewContext(source,{window,document:{getElementById:node,querySelector:()=>node('h1')},location,history,URL,URLSearchParams,console});
  return {api:window.api,node,requests,location};
 }
