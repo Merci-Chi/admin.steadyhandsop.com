@@ -3,7 +3,7 @@
 const $=id=>document.getElementById(id);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const client=()=>window.steadyHandsCRMClient;
-const state={rows:[],users:[],page:1,size:10,total:0,totalKnown:false,countPending:false,hasMore:false,totalAll:null,filter:'active',query:'',areaCode:'',assignee:'',timezone:'',stateCode:'',preview:'',stage:'',sort:'created_desc',tags:[],sources:[],tagMode:'OR',sourceMode:'OR',selected:new Set(),allMatching:false,availableTags:[],availableSources:[],loaded:false,seq:0};
+const state={rows:[],users:[],page:1,size:10,total:0,totalKnown:false,countPending:false,hasMore:false,totalAll:null,filter:'active',query:'',areaCode:'',assignee:'unassigned',timezone:'',stateCode:'',preview:'',stage:'',sort:'created_desc',tags:[],sources:[],tagMode:'OR',sourceMode:'OR',selected:new Set(),allMatching:false,availableTags:[],availableSources:[],loaded:false,seq:0};
 const fields='id,company,name,phone,altphone,email,website,domain,notes,issue,concerns,origin,assigned,assigned_user_id,tags,sources,stage,outcome,do_not_call,callbackdate,callbackat,lastcalled,timezone,state_code,leadpotential,tier,previewurl,sitekey,has_site_preview,admin_archived,admin_archived_at,created';
 const isArchived=x=>x.admin_archived===true;
 const label=id=>{const u=state.users.find(x=>String(x.user_id)===String(id));return u?(u.display_name||u.email||'Salesperson'):'Unassigned'};

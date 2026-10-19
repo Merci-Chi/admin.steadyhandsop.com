@@ -59,8 +59,19 @@ test('complete indexed results exclude DNC before caching, counting and paginati
  s.api.state.allMatching=true;
  assert.deepEqual(Array.from(await s.api.targetIds()).sort(),['false','missing','null']);
 });
+test('initial lead load defaults to Assigned: None and queries unassigned leads',async()=>{
+ const s=setup();await s.api.initialize();await tick();
+ assert.equal(s.node('alAssignedLabel').textContent,'Assigned: None');
+ const requests=s.requests.filter(r=>r.table==='crm'&&(r.range||r.options?.head&&r.filters.length));
+ assert(requests.length>=2);
+ assert(requests.every(r=>r.filters.some(f=>f[0]==='is'&&f[1]==='assigned_user_id'&&f[2]===null)));
+ assert.match(await readFile(new URL('../leads.html',import.meta.url),'utf8'),/id="alAssignedLabel">Assigned: None<\/span>/);
+ s.api.state.query='grandma';await s.api.loadRows();
+ assert(s.requests.filter(r=>r.limit||r.options?.count==='exact'&&!r.options.head)
+  .every(r=>r.filters.some(f=>f[0]==='is'&&f[1]==='assigned_user_id'&&f[2]===null)));
+});
 test('Grandma renders before slow matching or global counts finish; All includes assigned leads',async()=>{
- const pending=deferred(),s=setup({count:()=>pending.promise,total:()=>pending.promise});let initialized=false;
+ const pending=deferred(),s=setup({count:()=>pending.promise,total:()=>pending.promise});s.api.state.assignee='';let initialized=false;
  s.api.initialize().then(()=>initialized=true);await tick();assert(initialized);
  assert.match(s.node('adminLeadList').innerHTML,/Grandma/);assert.equal(s.node('alAssignedLabel').textContent,'Assigned: All');
  const page=s.requests.find(r=>r.table==='crm'&&r.range);assert.equal(page.options,undefined);assert.deepEqual(page.range,[0,10]);
