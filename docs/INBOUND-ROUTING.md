@@ -26,7 +26,21 @@ voicemail. Phone forwarding uses the Admin-saved destination directly, with
 press-1 screening and business voicemail if unanswered/unaccepted.
 
 Save actions recheck Admin access and require one confirmed updated record.
-Invalid/managed forwarding numbers are rejected in the UI, and the signed inbound
-webhook rechecks forwarding validity before dialing. The database enforces format
-and self-forwarding constraints. No production SQL, deployments, or calls were
-performed by this change.
+Forwarding accepts external and managed Twilio numbers. Ten-digit US numbers
+are saved with +1; international destinations require their country code.
+The UI rejects invalid numbers and cycles; the signed webhook independently
+follows managed routes, rejects cycles and unavailable targets, and connects
+directly to the final Outreach identity or external phone. App destinations
+require an active eligible assigned user with Outreach open. External forwarding
+works without an assignment. External phones retain press-1 screening.
+
+Before deploying this update, apply `sql/unassigned-phone-forwarding.sql` (or
+the paired Outreach `20261019000000_unassigned_phone_forwarding.sql` migration),
+then deploy the updated Outreach `twilio-inbound` function, then publish Admin.
+The migration allows private unattributed call records for unassigned external
+routes; existing RLS and grants remain unchanged. Managed forwarding needs the
+backend update as well as the frontend. Existing active calls keep their resolved
+destination and recipient; later edits apply to new calls.
+
+No production SQL, deployments, or calls were performed by this change.
+
