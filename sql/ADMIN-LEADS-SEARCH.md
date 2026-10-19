@@ -4,7 +4,8 @@ The page now fetches the requested rows without an exact count, then loads count
 in the background. A slow or failed count no longer replaces visible results with
 an error. Previous/Next pagination works without counts, and selecting all matching
 records requires an actual exact count. Superseded row/count requests are aborted.
-All Leads defaults to all assignments; the None filter remains available explicitly.
+All Leads defaults to Assigned: None (unassigned leads). Choose All salespeople or a
+specific salesperson from the assignment filter to include assigned leads.
 
 For the database search itself, run `admin-leads-search-performance.sql` in the
 Supabase SQL Editor for the CRM project:
