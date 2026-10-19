@@ -14,18 +14,20 @@ test('all-page reader continues past server response caps without truncation',as
  const client={from:()=>({select(){return this},order(){return this},async range(a,b){ranges.push([a,b]);return {data:rows.slice(a,Math.min(b+1,a+100))};}})};
  const result=await d.readAll(client,'example');assert.equal(result.length,1251);assert.equal(new Set(result.map(x=>x.id)).size,1251);assert.equal(ranges.at(-1)[0],1251);
 });
-test('Phone Numbers belongs to the Sales Associates navigation group',()=>{
- for(const page of ['other-actions.html','phones.html']){
+test('Phone Numbers and Performance belong to the Sales Associates navigation group',()=>{
+ for(const page of ['other-actions.html','phones.html','activity.html']){
   const elements=[],bottom={innerHTML:''};const document={readyState:'complete',head:{appendChild(el){elements.push(el)}},body:{firstChild:null,classList:{add(){}},insertBefore(el){elements.push(el)}},title:'',getElementById:()=>null,
    querySelector(selector){return selector==='.admin-mobile-menu'?{}:null},querySelectorAll:selector=>selector==='.bottom-nav'?[bottom]:[],createElement(tag){return {tag,setAttribute(){},innerHTML:''};}};
   vm.runInNewContext(read('admin-shell.js'),{document,location:{pathname:'/'+page},window:{}});
   const html=elements.find(x=>x.className==='admin-desktop-sidebar').innerHTML;
   assert(html.indexOf('Sales Associates')<html.indexOf('href="index.html"'));
   const group=html.match(/<details class="admin-associates-group" open>[\s\S]*?<\/details>/)[0];
-  for(const href of ['admin.html','status.html','phones.html','onboarding.html','agreement-actions.html','other-actions.html'])assert(group.includes('href="'+href+'"'));
+  for(const href of ['admin.html','status.html','activity.html','phones.html','onboarding.html','agreement-actions.html','other-actions.html'])assert(group.includes('href="'+href+'"'));
   assert.equal((html.match(/href="phones.html"/g)||[]).length,1);
   assert(html.includes('href="'+page+'" aria-current="page"'));
-  if(page==='phones.html')assert.match(bottom.innerHTML,/nav-item active" href="admin.html"/);
+  assert.equal((html.match(/href="activity.html"/g)||[]).length,1);
+  assert(group.includes('Performance'));
+  if(page==='phones.html'||page==='activity.html')assert.match(bottom.innerHTML,/nav-item active" href="admin.html"/);
  }
 });
 
