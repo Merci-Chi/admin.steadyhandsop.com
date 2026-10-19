@@ -32,6 +32,7 @@
       if(event.key==='ArrowLeft'){event.preventDefault();change(-1);}
       if(event.key==='ArrowRight'){event.preventDefault();change(1);}
     };
+    frame.addEventListener('load',()=>{try{frame.contentDocument?.addEventListener('keydown',onKey,true);}catch(_error){/* iframe remains navigable via visible arrows */}});
     const close=()=>{
       document.removeEventListener('keydown',onKey,true);
       overlay.remove();
