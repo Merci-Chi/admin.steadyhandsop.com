@@ -69,10 +69,11 @@
 
       // Query RLS-protected permissions with the authenticated session token.
       // An abortable network request avoids a stalled Supabase query hanging the app.
-      const controller = new AbortController();
-      const permissionTimer = setTimeout(() => controller.abort(), 8000);
       let permission;
-      try {
+      for (let retry = 0; retry < 3; retry++) {
+       const controller = new AbortController();
+       const permissionTimer = setTimeout(() => controller.abort(), 15000);
+       try {
         const params = new URLSearchParams({
           select: 'role,active',
           user_id: 'eq.' + session.user.id,
@@ -92,15 +93,21 @@
         );
         if (!response.ok) {
           const details = await response.text();
-          throw new Error('Permission request failed (' + response.status + '): ' + details.slice(0, 240));
+          const error = new Error('Permission request failed (' + response.status + '): ' + details.slice(0, 240));
+          error.retryable = response.status === 408 || response.status === 429 || response.status >= 500;
+          throw error;
         }
         const rows = await response.json();
         permission = Array.isArray(rows) ? rows[0] : null;
-      } catch (error) {
-        if (error?.name === 'AbortError') throw new Error('Permission check timed out. Try again.');
+        break;
+       } catch (error) {
+        const transient = error?.name === 'AbortError' || error instanceof TypeError || error?.retryable;
+        if (transient && retry < 2) continue;
+        if (error?.name === 'AbortError') throw new Error('Permission check is still unavailable after three attempts. Please try again shortly.');
         throw error;
-      } finally {
+       } finally {
         clearTimeout(permissionTimer);
+       }
       }
 
       if (currentAttempt !== attempt) return;
