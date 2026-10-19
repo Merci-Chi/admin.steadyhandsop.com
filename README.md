@@ -47,6 +47,13 @@ in-memory cache. Scanning transfers all filtered leads to the authorized browser
 so broad searches on a large CRM can take time. Concurrent edits can change counts
 and results during the scan; this is not a database snapshot.
 
+Text and area-code searches exclude leads with `do_not_call = true`, plus legacy
+Do Not Call / Do Not Contact / DNC dispositions in stage, outcome, or tags. Both
+search paths apply this rule before caching results, so matching totals, pagination,
+and select-all-matching exclude those leads too. Unmarked (`NULL` or false) leads
+remain searchable. This uses the existing CRM `do_not_call` column; no migration
+is required. Browsing without a search retains the existing archive filters.
+
 Run checks with `npm ci && npm test`. The SQL regression tests use an isolated
 PostgreSQL engine (PGlite), with a fixture schema and no production connection.
 
