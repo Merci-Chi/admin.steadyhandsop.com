@@ -14,8 +14,8 @@ function setup(kind,responses){
  let start,calls=0;const events=[],redirects=[],durations=[],timers=new Set();
  const window={steadyHandsCRMClient:{auth:{getSession:async()=>({data:{session:{user:{id:'user'},access_token:'test-token'}}})}},
   supabase:{},dispatchEvent:event=>events.push(event)};
- const document={readyState:'loading',documentElement:{classList:{add(){},remove(){}}},body:{innerHTML:''},
-  createElement(){return {textContent:'',get innerHTML(){return this.textContent}}},
+ const document={readyState:'loading',documentElement:{classList:{add(){},remove(){}}},body:{innerHTML:'',appendChild(element){this.loading=element}},
+  createElement(){let html;return {style:{},textContent:'',get innerHTML(){return html??this.textContent},set innerHTML(value){html=value},remove(){this.removed=true}}},
   getElementById(){return {addEventListener(){}}},addEventListener(name,handler){start=handler}};
  const context={window,document,location:{pathname:'/phones.html',replace:path=>redirects.push(path)},
   URLSearchParams,AbortController,TypeError,CustomEvent:class {constructor(type){this.type=type}},
@@ -33,6 +33,14 @@ function setup(kind,responses){
  return {window,document,events,redirects,durations,timers,get calls(){return calls},
   run:()=>kind==='guard'?start():window.verify({id:'user'},'test-token')};
 }
+test('guard displays loading status while checking access and removes it only after verification',async()=>{
+ const s=setup('guard',[ok([admin])]);let resolve;
+ s.window.steadyHandsCRMClient.auth.getSession=()=>new Promise(r=>resolve=r);
+ const pending=s.run();assert.match(s.document.body.loading.innerHTML,/Checking administrator access/);
+ assert.equal(s.events.length,0);assert.equal(s.document.body.loading.removed,undefined);
+ resolve({data:{session:{user:{id:'user'},access_token:'test-token'}}});await pending;
+ assert.equal(s.document.body.loading.removed,true);assert.equal(s.events[0]?.type,'steadyhands:admin-ready');
+});
 for(const kind of ['guard','login']){
  for(const failure of [timeout(),new TypeError('Failed to fetch'),http(503),http(429)])test(`${kind} recovers a transient permission failure without changing credentials`,async()=>{
   const s=setup(kind,[failure,ok([admin])]);const allowed=await s.run();
