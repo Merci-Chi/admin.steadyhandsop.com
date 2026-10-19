@@ -6,6 +6,17 @@ const original=await readFile(new URL('../admin-leads.js',import.meta.url),'utf8
 const source=original.slice(0,original.indexOf("$('alAreaCode').addEventListener"))+`window.api={state,query,loadRows,initialize,renderSelection,targetIds};})();`;
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};};
+const dispositionRows=()=>[
+ {id:'flagged',company:'Grandma flagged',phone:'9703286093',do_not_call:true},
+ {id:'stage',company:'Grandma stage',phone:'9703286093',stage:'donotcall'},
+ {id:'outcome',company:'Grandma outcome',phone:'9703286093',outcome:' DO NOT CALL '},
+ {id:'tag',company:'Grandma tag',phone:'9703286093',tags:['Interested','Do Not Call']},
+ {id:'contact',company:'Grandma contact',phone:'9703286093',stage:'do_not_contact'},
+ {id:'dnc',company:'Grandma dnc',phone:'9703286093',outcome:'DNC'},
+ {id:'null',company:'Grandma unmarked',phone:'9703286093',do_not_call:null},
+ {id:'false',company:'Grandma callable',phone:'9703286093',do_not_call:false,stage:'notinterested'},
+ {id:'missing',company:'Grandma missing flag',phone:'9703286093',outcome:null,tags:null},
+];
 function setup({indexed=()=>({error:{message:'Indexed lookup unavailable'}}),rows=()=>({data:[{id:'grandma',company:'Grandma',phone:'+17024802338',assigned_user_id:'agent'}]}),count=()=>({count:1}),total=()=>({count:100})}={}){
  const nodes=new Map(),requests=[];
  const node=id=>{if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',hidden:false,disabled:false,removeAttribute(key){delete this[key]},querySelectorAll(){return []},classList:{toggle(){}}});return nodes.get(id);};
@@ -20,6 +31,34 @@ function setup({indexed=()=>({error:{message:'Indexed lookup unavailable'}}),row
  const window={steadyHandsCRMClient:client};vm.runInNewContext(source,{window,document:{getElementById:node},AbortController,console:{error(){},warn(){}},setTimeout,clearTimeout,alert(){}});
  return {api:window.api,node,requests};
 }
+test('text and area code scans exclude DNC dispositions from rows, totals, and bulk selection',async()=>{
+ for(const filter of ['active','archived','all'])for(const search of [{query:'grandma'},{areaCode:'970'}]){
+  const s=setup({rows:()=>({data:dispositionRows()})});Object.assign(s.api.state,{filter,...search});
+  await s.api.loadRows();
+  assert.deepEqual(Array.from(s.api.state.rows,r=>r.id).sort(),['false','missing','null']);
+  assert.equal(s.api.state.total,3);assert.equal(s.api.state.totalKnown,true);
+  s.api.state.allMatching=true;
+  assert.deepEqual(Array.from(await s.api.targetIds()).sort(),['false','missing','null']);
+  const scan=s.requests.find(r=>r.limit),count=s.requests.find(r=>r.options?.head);
+  assert.deepEqual(scan.filters,count.filters);
+  assert(scan.filters.some(f=>f[0]==='or'&&f[1]==='do_not_call.eq.false,do_not_call.is.null'));
+  assert(scan.fields.split(',').includes('do_not_call'));
+ }
+});
+test('complete indexed results exclude DNC before caching, counting and pagination',async()=>{
+ const pending=deferred(),data=dispositionRows();
+ const s=setup({rows:()=>pending.promise,indexed:()=>({data,count:data.length})});
+ Object.assign(s.api.state,{query:'grandma',size:2});
+ const run=s.api.loadRows();await tick();
+ assert.equal(s.api.state.total,3);assert.equal(s.api.state.rows.length,2);
+ const fast=s.requests.find(r=>r.options?.count==='exact'&&!r.options.head);
+ assert(fast.filters.some(f=>f[1]==='do_not_call.eq.false,do_not_call.is.null'));
+ pending.resolve({data:[]});await run;
+ const before=s.requests.length;s.api.state.page=2;await s.api.loadRows(true);
+ assert.equal(s.api.state.rows.length,1);assert.equal(s.requests.length,before);
+ s.api.state.allMatching=true;
+ assert.deepEqual(Array.from(await s.api.targetIds()).sort(),['false','missing','null']);
+});
 test('Grandma renders before slow matching or global counts finish; All includes assigned leads',async()=>{
  const pending=deferred(),s=setup({count:()=>pending.promise,total:()=>pending.promise});let initialized=false;
  s.api.initialize().then(()=>initialized=true);await tick();assert(initialized);

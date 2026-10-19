@@ -4,7 +4,7 @@ const $=id=>document.getElementById(id);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const client=()=>window.steadyHandsCRMClient;
 const state={rows:[],users:[],page:1,size:10,total:0,totalKnown:false,countPending:false,hasMore:false,totalAll:null,filter:'active',query:'',areaCode:'',assignee:'',timezone:'',stateCode:'',preview:'',stage:'',sort:'created_desc',tags:[],sources:[],tagMode:'OR',sourceMode:'OR',selected:new Set(),allMatching:false,availableTags:[],availableSources:[],loaded:false,seq:0};
-const fields='id,company,name,phone,altphone,email,website,domain,notes,issue,concerns,origin,assigned,assigned_user_id,tags,sources,stage,outcome,callbackdate,callbackat,lastcalled,timezone,state_code,leadpotential,tier,previewurl,sitekey,has_site_preview,admin_archived,admin_archived_at,created';
+const fields='id,company,name,phone,altphone,email,website,domain,notes,issue,concerns,origin,assigned,assigned_user_id,tags,sources,stage,outcome,do_not_call,callbackdate,callbackat,lastcalled,timezone,state_code,leadpotential,tier,previewurl,sitekey,has_site_preview,admin_archived,admin_archived_at,created';
 const isArchived=x=>x.admin_archived===true;
 const label=id=>{const u=state.users.find(x=>String(x.user_id)===String(id));return u?(u.display_name||u.email||'Salesperson'):'Unassigned'};
 const text=x=>typeof x==='string'?x:'';
@@ -17,6 +17,9 @@ const showError=e=>{console.error('All Leads:',e);alert(errorMessage(e))};
 let rowsController=null,countController=null,searchCache=null;
 const searchColumns=['company','name','phone','altphone','email','website','notes','state_code','timezone'];
 const searchTerm=()=>state.query.replace(/[(),.%_*\\]/g,' ').trim().toLowerCase();
+// Keep legacy disposition markers consistent with the outreach app.
+const isDoNotCall=row=>row.do_not_call===true||[row.stage,row.outcome,...normalizeList(row.tags)]
+ .some(value=>['donotcall','donotcontact','dnc'].includes(String(value??'').toLowerCase().replace(/[^a-z]/g,'')));
 // Normalize NANP phone numbers, allowing a country code and a trailing extension.
 function phoneAreaCode(value){
  const main=String(value??'').split(/(?:extension|ext\.?|x|#|;ext=)/i)[0];
@@ -25,11 +28,13 @@ function phoneAreaCode(value){
  return /^[2-9]\d{9}$/.test(digits)?digits.slice(0,3):'';
 }
 function matchesSearch(row,term){
- return (!state.areaCode||[row.phone,row.altphone].some(phone=>phoneAreaCode(phone)===state.areaCode))
+ return !isDoNotCall(row)&&(!state.areaCode||[row.phone,row.altphone].some(phone=>phoneAreaCode(phone)===state.areaCode))
   &&(!term||searchColumns.some(column=>String(row[column]??'').toLowerCase().includes(term)));
 }
 function query(base=client().from('crm').select(fields),opts={}){
  let q=base;
+ // Preserve NULL (unmarked) leads. Apply to lookup, scan and scan count alike.
+ if(searchTerm()||state.areaCode)q=q.or('do_not_call.eq.false,do_not_call.is.null');
  if(state.filter==='active')q=q.or('admin_archived.eq.false,admin_archived.is.null');
  if(state.filter==='archived')q=q.eq('admin_archived',true);
  if(state.assignee==='unassigned')q=q.is('assigned_user_id',null);
@@ -191,7 +196,7 @@ async function searchRows(seq,signal){
    // No ORDER BY means the database can use its search indexes without a
    // newest-first LIMIT plan. Sort the small complete result only in the browser.
    scan.abort();countController.abort();
-   const complete={matches:result.data,done:true,indexed:true};
+   const complete={matches:result.data.filter(row=>matchesSearch(row,searchTerm())),done:true,indexed:true};
    searchCache={key,scan:complete};showSearchPage(complete.matches,true);renderSearchProgress(complete);
   }catch(error){console.warn('Indexed lookup unavailable; continuing progress search:',error)}
  })();
