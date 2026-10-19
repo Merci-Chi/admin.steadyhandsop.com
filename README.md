@@ -57,6 +57,11 @@ is required. Browsing without a search retains the existing archive filters.
 Run checks with `npm ci && npm test`. The SQL regression tests use an isolated
 PostgreSQL engine (PGlite), with a fixture schema and no production connection.
 
+To remove lead assignments in bulk, select leads (or all matching leads), open
+**Assign**, choose **Unassigned**, and click **Unassign Leads**. This clears
+both the owner ID and assignment label, including assignments to inactive users.
+Unassigned remains available even if there are no active salespeople.
+
 
 ## Phone management deployment
 
