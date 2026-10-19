@@ -36,7 +36,7 @@
     const wrap=document.createElement('section');wrap.id='salespersonExtras';wrap.className='salesperson-extra';
     wrap.innerHTML=`<h3>Sales associate management</h3><p>Use the same login account for activity and caller ID assignments. A Twilio number must be configured in Phone Numbers and the calling backend must honor that mapping.</p>
       <div class="salesperson-tool-grid">
-        <a href="salesperson-progress.html?user=${encodeURIComponent(userId)}">Progress dashboard</a><a href="activity.html?user=${encodeURIComponent(userId)}">Call activity</a>
+        <a href="salesperson-progress.html?user=${encodeURIComponent(userId)}">Progress dashboard</a><a href="activity.html?user=${encodeURIComponent(userId)}">Performance</a>
         <a href="deals.html?user=${encodeURIComponent(userId)}">Customer progress / deals</a>
         <a href="earnings.html?user=${encodeURIComponent(userId)}">Sales / earnings</a>
         <a href="call-management.html">Assign leads and follow-ups</a>

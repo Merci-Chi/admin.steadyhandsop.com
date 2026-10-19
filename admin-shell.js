@@ -14,7 +14,7 @@
     'preview-access.html': { title:'Preview Access', active:'preview-access' },
     'leads.html': { title:'All Leads', active:'leads' },
     'requests.html': { title:'Requests', active:'requests' },
-    'activity.html': { title:'Activity', active:'activity' },
+    'activity.html': { title:'Performance', active:'salespeople' },
     'call-management.html': { title:'Call Management', active:'salespeople' },
     'skills.html': { title:'Skills', active:'skills' },
     'earnings.html': { title:'Finance', active:'more' },
@@ -27,7 +27,7 @@
     'audit.html': { title:'Audit Log', active:'more' },
     'system.html': { title:'System', active:'more' },
     'account.html': { title:'More', active:'more' },
-    'call.html': { title:'Call Details', active:'activity' },
+    'call.html': { title:'Call Details', active:'salespeople' },
     'terms.html': { title:'Terms', active:'more' }
   };
 
@@ -42,7 +42,6 @@
       ['training','training.html','graduation-cap','Training'],
       ['clients','clients.html','briefcase-business','Clients'],
       ['preview-access','preview-access.html','link-2','Preview Access'],
-      ['activity','activity.html','history','Activity'],
       ['skills','skills.html','chart-no-axes-column-increasing','Skills'],
       ['more','account.html','menu','More']
     ];
@@ -64,7 +63,6 @@
     ['call-management.html','phone-call','Call Management'],
     ['clients.html','briefcase-business','Clients'],
     ['preview-access.html','link-2','Preview Access'],
-    ['activity.html','history','Activity'],
     ['skills.html','chart-no-axes-column-increasing','Skills'],
     ['deals.html','handshake','Deals'],
     ['pipeline.html','workflow','Sales Pipeline'],
@@ -78,13 +76,14 @@
   const associateItems = [
     ['admin.html','users','Overview'],
     ['status.html','list-checks','Status'],
+    ['activity.html','chart-no-axes-combined','Performance'],
     ['phones.html','phone-forwarded','Phone Numbers'],
     ['onboarding.html','clipboard-check','Onboarding'],
     ['agreement-actions.html','file-signature','Agreement Actions'],
     ['other-actions.html','list-checks','Other Actions']
   ];
   function associateNav(){
-    const active=associateItems.some(([href])=>href===page);
+    const active=associateItems.some(([href])=>href===page)||page==='call.html';
     return `<details class="admin-associates-group" ${active?'open':''}><summary><i data-lucide="users"></i><span>Sales Associates</span></summary><div>${associateItems.map(([href,icon,label])=>`<a class="admin-side-link ${page===href?'active':''}" href="${href}" ${page===href?'aria-current="page"':''}><i data-lucide="${icon}"></i><span>${label}</span></a>`).join('')}</div></details>`;
   }
   function sideNav() {

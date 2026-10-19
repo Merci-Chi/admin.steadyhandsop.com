@@ -10,8 +10,9 @@
   <meta name="apple-mobile-web-app-title" content="Steady Hands Admin" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png" />
-  <title>Activity • Steady Hands Admin</title>
+  <title>Performance • Steady Hands Admin</title>
   <link rel="stylesheet" href="styles.css?v=20261009-dark-text-popup-v8" />
+  <link rel="stylesheet" href="admin-performance.css?v=20261019" />
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="theme.js?v=20261005-account-theme"></script>
 </head>
@@ -21,23 +22,30 @@
     <div class="topbar-row">
       <div>
         <span class="admin-kicker">STEADY HANDS ADMIN</span>
-        <h1>Activity</h1>
+        <h1>Team Performance</h1>
       </div>
     </div>
   </header>
 
   <main class="content admin-activity-content">
-    <section class="admin-user-toolbar">
-      <div class="admin-user-search">
-        <i data-lucide="search"></i>
-        <input id="adminActivitySearch" type="search" placeholder="Search user, lead, phone, outcome…" autocomplete="off" />
-      </div>
-      <button type="button" id="adminActivityRefresh" aria-label="Refresh activity"><i data-lucide="refresh-cw"></i></button>
+    <section class="performance-selector">
+      <label for="adminActivityUserFilter">View performance
+        <select id="adminActivityUserFilter"><option value="">Team Performance</option></select>
+      </label>
+      <button type="button" id="adminActivityRefresh" aria-label="Refresh performance"><i data-lucide="refresh-cw"></i></button>
     </section>
-
+    <section class="performance-panel" aria-labelledby="performanceTitle">
+      <div class="performance-heading"><div><h2 id="performanceTitle">Team Performance</h2><p>Last 7 days · Recorded call activity</p></div><a href="company-analytics.html">Sales Analytics ↗</a></div>
+      <div id="adminActivitySummary" class="performance-metrics" aria-live="polite"></div>
+      <div class="performance-chart"><div class="performance-chart-heading"><strong>Call Activity</strong><span>Last 7 days</span></div><div id="performanceChart" class="performance-bars"></div></div>
+      <p class="performance-note">Stats include all available logged records from the last 7 days. Regular-phone outcomes are self-reported; confirmed sales and commissions remain in Analytics and Finance.</p>
+    </section>
+    <div class="performance-history">
+    <section class="performance-panel" aria-labelledby="performanceCallsTitle">
+      <div class="performance-heading"><h2 id="performanceCallsTitle">Recent Calls</h2><span id="adminActivityCount" aria-live="polite"></span></div>
+      <label class="performance-search" for="adminActivitySearch">Search calls<input id="adminActivitySearch" type="search" placeholder="Associate, business, phone or outcome" autocomplete="off"></label>
     <section class="admin-activity-filterbar">
-      <select id="adminActivityUserFilter"><option value="">All users</option></select>
-      <select id="adminActivityOutcomeFilter">
+      <select id="adminActivityOutcomeFilter" aria-label="Filter calls by outcome">
         <option value="">All outcomes</option>
         <option value="connected">Connected</option>
         <option value="callback">Callbacks</option>
@@ -46,7 +54,7 @@
         <option value="noanswer">No Answer / Voicemail</option>
         <option value="didntcall">Didn't Call</option>
       </select>
-      <select id="adminActivityDateFilter">
+      <select id="adminActivityDateFilter" aria-label="Filter calls by date">
         <option value="all">All time</option>
         <option value="today">Today</option>
         <option value="7">Last 7 days</option>
@@ -54,15 +62,16 @@
       </select>
     </section>
 
-    <section class="admin-activity-summary" id="adminActivitySummary"></section>
-
-    <section class="admin-dashboard-section">
-      <div class="admin-dashboard-head">
-        <div><span class="admin-kicker">TEAM ACTIVITY</span><h2>All Calls</h2></div>
-        <span id="adminActivityCount" class="admin-list-count">0</span>
-      </div>
       <div class="admin-activity-list" id="adminActivityList"><div class="cc-empty">Loading calls…</div></div>
+      <button type="button" id="performanceMoreCalls" class="performance-more" hidden>Show more calls</button>
     </section>
+    <section class="performance-panel" aria-labelledby="performanceFollowupsTitle">
+      <div class="performance-heading"><h2 id="performanceFollowupsTitle">Follow-ups</h2><span id="performanceFollowupCount" aria-live="polite"></span></div>
+      <label class="performance-search" for="performanceFollowupSearch">Search follow-ups<input id="performanceFollowupSearch" type="search" placeholder="Associate, business or phone"></label>
+      <div id="performanceFollowups"><p>Loading follow-ups…</p></div>
+      <button type="button" id="performanceMoreFollowups" class="performance-more" hidden>Show more follow-ups</button>
+    </section>
+    </div>
   </main>
 
   <nav class="bottom-nav"></nav>
@@ -70,7 +79,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="auth-guard.js?v=20261005-admin-only"></script>
-<script src="admin-shell.js?v=20261019-associate-phones"></script>
-<script src="admin-activity.js?v=20261009-delete-activity-v1"></script>
+<script src="admin-shell.js?v=20261019-performance"></script>
+<script src="admin-activity.js?v=20261019-performance"></script>
 </body>
 </html>

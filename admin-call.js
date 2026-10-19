@@ -102,7 +102,7 @@
 
       window.lucide?.createIcons();
     }catch(error){
-      root.innerHTML=`<section class="admin-dashboard-error"><strong>Unable to load call details.</strong><p>${esc(error?.message||'Please go back and try again.')}</p><a href="activity.html">Back to Activity</a></section>`;
+      root.innerHTML=`<section class="admin-dashboard-error"><strong>Unable to load call details.</strong><p>${esc(error?.message||'Please go back and try again.')}</p><a href="activity.html">Back to Performance</a></section>`;
     }
   }
 
