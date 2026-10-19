@@ -47,6 +47,11 @@
 
   async function runAdminAccessCheck() {
     const currentAttempt = ++attempt;
+    const loading = document.createElement('main');
+    loading.className = 'admin-access-screen';
+    loading.style.cssText = 'position:fixed;inset:0;z-index:9999';
+    loading.innerHTML = '<section class="admin-access-card" role="status" aria-live="polite"><h1>Checking administrator access…</h1><p id="adminAccessProgress">Connecting to your workspace. Please stay on this page.</p></section>';
+    document.body.appendChild(loading);
     try {
       if (!window.supabase) throw new Error('Sign-in library unavailable. Reload the page.');
       const client = window.steadyHandsCRMClient || window.supabase.createClient(
@@ -102,7 +107,10 @@
         break;
        } catch (error) {
         const transient = error?.name === 'AbortError' || error instanceof TypeError || error?.retryable;
-        if (transient && retry < 2) continue;
+        if (transient && retry < 2) {
+          document.getElementById('adminAccessProgress').textContent = 'The connection is slow. Retrying access check (' + (retry + 2) + ' of 3)…';
+          continue;
+        }
         if (error?.name === 'AbortError') throw new Error('Permission check is still unavailable after three attempts. Please try again shortly.');
         throw error;
        } finally {
@@ -119,6 +127,7 @@
       }
 
       window.steadyHandsAdminSession = { user: session.user, permission };
+      loading.remove();
       document.documentElement.classList.remove('auth-checking');
       window.dispatchEvent(new CustomEvent('steadyhands:admin-ready', {
         detail: window.steadyHandsAdminSession
