@@ -161,6 +161,16 @@
   function render(){renderSummary();renderFollowups();renderList();}
 
   for(const id of ['adminActivityList','performanceFollowups'])document.getElementById(id)?.addEventListener('click',event=>{
+    const callLink=event.target.closest('a.admin-activity-row[href]');
+    if(callLink){
+      const callId=new URL(callLink.href,location.href).searchParams.get('id');
+      if(callId){
+        event.preventDefault();
+        const ids=id==='adminActivityList' ? filtered().slice(0,state.callsShown).map(r=>r.id).filter(Boolean) : state.followups.filter(r=>(!state.user||String(r.callback_owner_id)===state.user)&&[r.company,r.name,r.phone,personLabel(r.callback_owner_id)].join(' ').toLowerCase().includes(state.fq)).slice(0,state.followupsShown).map(lead=>lead.call?.id).filter(Boolean);
+        window.steadyHandsOpenAdminCall?.({ids,activityId:callId,trigger:callLink});
+      }
+      return;
+    }
     const button=event.target.closest('[data-delete-call-id]');
     if(button) { event.preventDefault(); event.stopPropagation(); void deleteActivity(button.dataset.deleteCallId); }
   });
