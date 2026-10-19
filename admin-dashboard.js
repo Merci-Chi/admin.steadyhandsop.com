@@ -9,7 +9,7 @@ async function load(){
    c.from('callcenter_profiles').select('user_id,display_name,email,last_call_at,created_at,disabled_at'),
    c.from('team_permissions').select('user_id,role,active'),
    c.from('callcenter_call_activity').select('id,user_id,crm_id,duration_seconds,outcome,created_at').order('created_at',{ascending:false}).limit(5000),
-   c.from('crm').select('id,name,company,phone',{count:'exact'}),
+   Promise.resolve({data:[]}), // CRM totals are loaded only on request below.
    c.from('callcenter_commissions').select('user_id,status,commission_amount_cents').limit(5000),
    c.from('callcenter_phone_numbers').select('id,twilio_status,active').limit(5000)
   ]);
@@ -24,12 +24,37 @@ async function load(){
   const active=profiles.filter(x=>!x.disabled_at&&pmap.get(String(x.user_id))?.active!==false).length;
   const pending=comm.filter(x=>['pending','waiting_client_payment'].includes(String(x.status||''))).reduce((n,x)=>n+(Number(x.commission_amount_cents)||0),0);
   const pendingPhones=phones.filter(x=>x.twilio_status!=='ready').length;
-  const card=(i,l,v,n)=>'<article class="admin-metric-card"><span class="admin-metric-icon"><i data-lucide="'+i+'"></i></span><strong>'+e(v)+'</strong><b>'+e(l)+'</b><small>'+e(n||'')+'</small></article>';
-  grid.innerHTML=[card('users','Active users',active,profiles.length+' total'),card('phone-call','Calls today',todayCalls.length,todayCalls.filter(x=>(Number(x.duration_seconds)||0)>0).length+' connected'),card('calendar-days','Calls this week',weekCalls.length,'Monday through today'),card('contact','Leads',r[3].count??leads.length,'CRM records'),card('circle-dollar-sign','Pending payouts','$'+(pending/100).toFixed(2),'Commission pipeline'),card('phone-forwarded','Pending numbers',pendingPhones,'Need admin setup')].join('');
+  const card=(i,l,v,n,action='')=>'<article class="admin-metric-card"><span class="admin-metric-icon"><i data-lucide="'+i+'"></i></span><strong>'+e(v)+'</strong><b>'+e(l)+'</b><small>'+e(n||'')+'</small>'+action+'</article>';
+  grid.innerHTML=[card('users','Active users',active,profiles.length+' total'),card('phone-call','Calls today',todayCalls.length,todayCalls.filter(x=>(Number(x.duration_seconds)||0)>0).length+' connected'),card('calendar-days','Calls this week',weekCalls.length,'Monday through today'),card('contact','Leads','—','CRM records','<button type="button" id="adminLoadLeadTotal">Load total</button>'),card('circle-dollar-sign','Pending payouts','$'+(pending/100).toFixed(2),'Commission pipeline'),card('phone-forwarded','Pending numbers',pendingPhones,'Need admin setup')].join('');
   usersEl.innerHTML=profiles.slice().sort((a,b)=>new Date(b.last_call_at||b.created_at)-new Date(a.last_call_at||a.created_at)).slice(0,5).map(x=>{const p=pmap.get(String(x.user_id))||{};const dis=!!x.disabled_at||p.active===false;return '<a class="admin-dash-row" href="admin.html?user='+encodeURIComponent(x.user_id)+'"><span class="admin-dash-avatar">'+e((x.display_name||x.email||'U').slice(0,1).toUpperCase())+'</span><span class="admin-dash-main"><strong>'+e(x.display_name||x.email||'Unnamed user')+'</strong><small>'+e(x.email||'')+' · Last call '+e(f(x.last_call_at))+'</small></span><span class="admin-dash-status '+(dis?'disabled':'active')+'">'+(dis?'Disabled':e(p.role||'USER'))+'</span></a>';}).join('')||'<div class="cc-empty">No users found.</div>';
-  callsEl.innerHTML=calls.slice(0,7).map(x=>{const p=profmap.get(String(x.user_id));const l=leadmap.get(String(x.crm_id));const name=l?.company||l?.name||l?.phone||'Unknown lead';return '<a class="admin-dash-row" href="activity.html?user='+encodeURIComponent(x.user_id||'')+'"><span class="admin-dash-icon"><i data-lucide="phone-call"></i></span><span class="admin-dash-main"><strong>'+e(p?.display_name||p?.email||'Unknown user')+' → '+e(name)+'</strong><small>'+e(f(x.created_at))+'</small></span><span class="admin-dash-outcome">'+e(x.outcome||'No outcome')+'</span></a>';}).join('')||'<div class="cc-empty">No calls yet.</div>';
+  const renderCalls=()=>{callsEl.innerHTML=calls.slice(0,7).map(x=>{const p=profmap.get(String(x.user_id));const l=leadmap.get(String(x.crm_id));const name=l?.company||l?.name||l?.phone||'Unknown lead';return '<a class="admin-dash-row" href="activity.html?user='+encodeURIComponent(x.user_id||'')+'"><span class="admin-dash-icon"><i data-lucide="phone-call"></i></span><span class="admin-dash-main"><strong>'+e(p?.display_name||p?.email||'Unknown user')+' → '+e(name)+'</strong><small>'+e(f(x.created_at))+'</small></span><span class="admin-dash-outcome">'+e(x.outcome||'No outcome')+'</span></a>';}).join('')||'<div class="cc-empty">No calls yet.</div>';};renderCalls();
   const disabled=profiles.filter(x=>!!x.disabled_at||pmap.get(String(x.user_id))?.active===false).length;const nocalls=profiles.filter(x=>!x.last_call_at).length;
   att.innerHTML='<a class="admin-attention-card" href="account.html"><span><i data-lucide="phone-forwarded"></i></span><strong>'+pendingPhones+'</strong><b>Pending phone numbers</b><small>Waiting for administrator setup</small></a><a class="admin-attention-card" href="admin.html?filter=disabled"><span><i data-lucide="user-x"></i></span><strong>'+disabled+'</strong><b>Disabled accounts</b><small>Review user access</small></a><a class="admin-attention-card" href="admin.html"><span><i data-lucide="phone-off"></i></span><strong>'+nocalls+'</strong><b>Users with no calls</b><small>No completed calls yet</small></a>';
+  const totalButton=document.getElementById('adminLoadLeadTotal');
+  totalButton.onclick=async()=>{
+   if(totalButton.disabled)return;
+   totalButton.disabled=true;totalButton.textContent='Loading total…';
+   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
+   try{
+    const result=await c.from('crm').select('id',{head:true,count:'exact'}).abortSignal(controller.signal);
+    if(result.error)throw result.error;
+    if(!Number.isFinite(result.count))throw Error('No total returned.');
+    totalButton.closest('article').querySelector('strong').textContent=result.count.toLocaleString();
+    totalButton.textContent='Refresh total';
+   }catch(error){totalButton.textContent='Retry total';totalButton.title=error.message||'Total unavailable';}
+   finally{clearTimeout(timer);totalButton.disabled=false;}
+  };
+  const recentIds=[...new Set(calls.slice(0,7).map(x=>x.crm_id).filter(Boolean))];
+  if(recentIds.length)void (async()=>{
+   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
+   try{
+    const result=await c.from('crm').select('id,name,company,phone').in('id',recentIds).abortSignal(controller.signal);
+    if(result.error)throw result.error;
+    for(const lead of result.data||[])leadmap.set(String(lead.id),lead);
+    renderCalls();window.lucide?.createIcons();
+   }catch(error){console.warn('Recent lead details unavailable:',error);}
+   finally{clearTimeout(timer);}
+  })();
   document.querySelector('.admin-overview-hero h2').textContent='Your operation at a glance';window.lucide?.createIcons();
  }catch(err){console.error(err);grid.innerHTML='<section class="admin-dashboard-error"><strong>Unable to load overview.</strong><p>'+e(err.message||'Please refresh and try again.')+'</p><button onclick="location.reload()">Retry</button></section>';}
 }
