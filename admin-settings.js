@@ -443,7 +443,19 @@
       const digits=raw.replace(/\D/g,'');
       const forward=raw.startsWith('+')?'+'+digits:digits.length===10?'+1'+digits:digits.length===11&&digits.startsWith('1')?'+'+digits:'';
       if(!['app','forward'].includes(mode)){result.textContent='Choose a valid incoming destination.';return;}
-      if(mode==='forward'&&(!/^\+?[\d\s().-]+$/.test(raw)||!/^\+[1-9]\d{7,14}$/.test(forward)||phoneNumbers.some(p=>normalizeE164(p.phone_number)===forward))){result.textContent='Enter a phone number with country code outside your managed Twilio numbers.';return;}
+      if(mode==='forward'&&(!/^\+?[\d\s().-]+$/.test(raw)||!/^\+[1-9]\d{7,14}$/.test(forward))){result.textContent='Enter a valid phone number, for example +17025550101.';return;}
+      const sourcePhone=phoneNumbers.find(p=>String(p.id)===String(card.dataset.phoneId));
+      if(mode==='forward'){
+        const visited=new Set([normalizeE164(sourcePhone?.phone_number)]);
+        let next=forward;
+        while(next){
+          if(visited.has(next)){result.textContent='This destination creates a forwarding loop. Choose another number.';return;}
+          visited.add(next);
+          const target=phoneNumbers.find(p=>normalizeE164(p.phone_number)===next);
+          if(!target||target.inbound_destination!=='forward')break;
+          next=normalizeE164(target.inbound_forward_number);
+        }
+      }
       const destinationInput=card.querySelector('[data-inbound-destination]');
       const forwardInput=card.querySelector('[data-inbound-forward]');
       destinationInput.disabled=true;forwardInput.disabled=true;
@@ -453,7 +465,9 @@
         const response=await c.from('callcenter_phone_numbers').update({inbound_destination:mode,inbound_forward_number:mode==='forward'?forward:null,updated_at:new Date().toISOString()}).eq('id',card.dataset.phoneId).select('id');
         if(response.error)throw response.error;
         if(response.data?.length!==1)throw Error('The incoming destination was not updated. Refresh and try again.');
-        result.textContent=mode==='app'?'Incoming calls will ring in Outreach.':'Incoming calls will ring '+forward+'. Press 1 on that phone to answer.';
+        if(sourcePhone)Object.assign(sourcePhone,{inbound_destination:mode,inbound_forward_number:mode==='forward'?forward:null});
+        forwardInput.value=mode==='forward'?forward:'';
+        result.textContent=mode==='app'?'Incoming calls will ring in Outreach.':'Incoming calls will route to '+forward+'. Managed numbers follow their saved incoming destination; external phones press 1 to answer.';
       }catch(error){result.textContent=error.message||'Could not save incoming destination.';}
       finally{button.disabled=false;destinationInput.disabled=false;forwardInput.disabled=destinationInput.value!=='forward';}
     }));
@@ -594,3 +608,4 @@
     }
   });
 })();
+
