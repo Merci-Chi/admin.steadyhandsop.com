@@ -5783,7 +5783,9 @@ html[data-theme="dark"] body.admin-app-shell :is(
 /* Incoming destination controls share the active Admin theme. */
 .admin-phone-route{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px}
 .admin-phone-route [hidden]{display:none!important}
-.admin-phone-route input,.admin-phone-route select{width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text)}
+.admin-phone-route input,.admin-phone-route select,.admin-phone-route textarea{width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text)}
 .admin-phone-route p,.admin-phone-route[role=status]{font-size:12px;color:var(--muted)}
 .admin-phone-route button{min-height:44px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text);cursor:pointer}
 .admin-phone-route button:disabled{opacity:.6;cursor:wait}
+
+.admin-phone-route textarea{box-sizing:border-box;resize:vertical;min-height:120px;font:inherit;line-height:1.5}

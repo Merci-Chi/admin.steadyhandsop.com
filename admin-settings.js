@@ -2,6 +2,8 @@
   const SUPABASE_URL = 'https://glonbvrcudwuzjundrii.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_VZbed_uuOXSE744UrAfHXw_z2xDdYtr';
 
+  const DEFAULT_VOICEMAIL_GREETING = 'Thank you for calling Steady Hands. We are unavailable to take your call at the moment. Please try again or contact our support team at (702) 775-9756. You may also leave a message after the beep.';
+
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[ch]));
@@ -138,6 +140,15 @@
       return;
     }
 
+    // Load greetings separately so a staged migration leaves routing controls usable.
+    let voicemailError = null;
+    const greetingByPhone = new Map();
+    if (!callerIdSchemaMissing) {
+      const result = await c.from('callcenter_phone_numbers').select('id,voicemail_greeting');
+      voicemailError = result.error;
+      if (!voicemailError) for (const row of result.data || []) greetingByPhone.set(String(row.id), row.voicemail_greeting);
+    }
+
     const assignmentByPhone = new Map(
       (assignments || []).map(row => [String(row.phone_number_id), row])
     );
@@ -235,6 +246,15 @@
                     <button type="button" data-save-inbound>Save incoming destination</button>
                     <p data-inbound-status role="status" aria-live="polite"></p>
                   </section>`}
+                  <section class="admin-phone-route" aria-label="Business voicemail greeting">
+                    ${voicemailError ? `<p role="status">Voicemail settings unavailable. ${['42703','PGRST204'].includes(voicemailError.code) ? 'Apply sql/admin-phone-voicemail.sql, then refresh.' : esc(voicemailError.message)}</p>` : `
+                    <label class="admin-phone-assign"><span>Voicemail greeting</span>
+                      <textarea data-voicemail-greeting rows="5" maxlength="500" required>${esc(greetingByPhone.get(String(row.id)) || DEFAULT_VOICEMAIL_GREETING)}</textarea>
+                    </label>
+                    <p>Used when calls to this business number are unanswered. Changes apply to the next voicemail greeting. Callers can leave a message after the beep.</p>
+                    <button type="button" data-save-voicemail>Save voicemail greeting</button>
+                    <p data-voicemail-status role="status" aria-live="polite"></p>`}
+                  </section>
                   <div class="admin-phone-actions">
                     <button type="button" class="admin-phone-ready" data-phone-ready>
                       <i data-lucide="${row.twilio_status === 'ready' ? 'shield-check' : 'shield-alert'}"></i>
@@ -472,6 +492,27 @@
       finally{button.disabled=false;destinationInput.disabled=false;forwardInput.disabled=destinationInput.value!=='forward';}
     }));
 
+    main.querySelectorAll('[data-save-voicemail]').forEach(button => button.addEventListener('click', async () => {
+      if (button.disabled) return;
+      const card = button.closest('.admin-phone-card');
+      const input = card.querySelector('[data-voicemail-greeting]');
+      const status = card.querySelector('[data-voicemail-status]');
+      const greeting = input.value.trim();
+      if (!greeting || greeting.length > 500) {status.textContent='Enter a greeting between 1 and 500 characters.';return;}
+      button.disabled=true;input.disabled=true;status.textContent='Saving voicemail greeting…';
+      try {
+        const auth = await getAdminSession();
+        if (!auth.isAdmin) throw Error('Active Admin access is required.');
+        const {error} = await c.rpc('admin_set_phone_voicemail', {p_phone_number_id:String(card.dataset.phoneId),p_greeting:greeting});
+        if (error?.code === 'PGRST202') throw Error('Apply sql/admin-phone-voicemail.sql, then try again.');
+        if (error) throw error;
+        input.value=greeting;
+        greetingByPhone.set(String(card.dataset.phoneId),greeting);
+        status.textContent='Voicemail greeting saved.';
+      } catch (error) {status.textContent=error.message || 'Could not save voicemail greeting.';}
+      finally {button.disabled=false;input.disabled=false;}
+    }));
+
     main.querySelectorAll('[data-phone-assignment]').forEach(select => {
       select.addEventListener('change', async () => {
         const card = select.closest('.admin-phone-card');
@@ -608,4 +649,5 @@
     }
   });
 })();
+
 
