@@ -119,9 +119,10 @@
 
   async function verifyAdminAccess(signedInUser, accessToken) {
     if (!signedInUser?.id || !accessToken) throw new Error('Sign-in session incomplete. Please sign in again.');
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
-    try {
+    for (let retry = 0; retry < 3; retry++) {
+     const controller = new AbortController();
+     const timer = setTimeout(() => controller.abort(), 15000);
+     try {
       const params = new URLSearchParams({
         select: 'role,active',
         user_id: 'eq.' + signedInUser.id,
@@ -139,16 +140,21 @@
       });
       if (!response.ok) {
         const details = await response.text();
-        throw new Error('Permission request failed (' + response.status + '): ' + details.slice(0, 240));
+        const error = new Error('Permission request failed (' + response.status + '): ' + details.slice(0, 240));
+        error.retryable = response.status === 408 || response.status === 429 || response.status >= 500;
+        throw error;
       }
       const rows = await response.json();
       const permission = Array.isArray(rows) ? rows[0] : null;
       return permission?.active === true && String(permission?.role || '').toUpperCase() === 'ADMIN';
-    } catch (error) {
-      if (error?.name === 'AbortError') throw new Error('Permission request timed out after 8 seconds. Please retry.');
+     } catch (error) {
+      const transient = error?.name === 'AbortError' || error instanceof TypeError || error?.retryable;
+      if (transient && retry < 2) continue;
+      if (error?.name === 'AbortError') throw new Error('Permission check is still unavailable after three attempts. Please try again shortly.');
       throw error;
-    } finally {
+     } finally {
       clearTimeout(timer);
+     }
     }
   }
 
