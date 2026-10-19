@@ -3,7 +3,7 @@
 const $=id=>document.getElementById(id);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const client=()=>window.steadyHandsCRMClient;
-const state={rows:[],users:[],page:1,size:10,total:0,totalKnown:false,countPending:false,hasMore:false,totalAll:null,filter:'active',query:'',assignee:'',timezone:'',stateCode:'',preview:'',stage:'',sort:'created_desc',tags:[],sources:[],tagMode:'OR',sourceMode:'OR',selected:new Set(),allMatching:false,availableTags:[],availableSources:[],loaded:false,seq:0};
+const state={rows:[],users:[],page:1,size:10,total:0,totalKnown:false,countPending:false,hasMore:false,totalAll:null,filter:'active',query:'',areaCode:'',assignee:'',timezone:'',stateCode:'',preview:'',stage:'',sort:'created_desc',tags:[],sources:[],tagMode:'OR',sourceMode:'OR',selected:new Set(),allMatching:false,availableTags:[],availableSources:[],loaded:false,seq:0};
 const fields='id,company,name,phone,altphone,email,website,domain,notes,issue,concerns,origin,assigned,assigned_user_id,tags,sources,stage,outcome,callbackdate,callbackat,lastcalled,timezone,state_code,leadpotential,tier,previewurl,sitekey,has_site_preview,admin_archived,admin_archived_at,created';
 const isArchived=x=>x.admin_archived===true;
 const label=id=>{const u=state.users.find(x=>String(x.user_id)===String(id));return u?(u.display_name||u.email||'Salesperson'):'Unassigned'};
@@ -17,6 +17,17 @@ const showError=e=>{console.error('All Leads:',e);alert(errorMessage(e))};
 let rowsController=null,countController=null,searchCache=null;
 const searchColumns=['company','name','phone','altphone','email','website','notes','state_code','timezone'];
 const searchTerm=()=>state.query.replace(/[(),.%_*\\]/g,' ').trim().toLowerCase();
+// Normalize NANP phone numbers, allowing a country code and a trailing extension.
+function phoneAreaCode(value){
+ const main=String(value??'').split(/(?:extension|ext\.?|x|#|;ext=)/i)[0];
+ let digits=main.replace(/\D/g,'');
+ if(digits.length===11&&digits.startsWith('1'))digits=digits.slice(1);
+ return /^[2-9]\d{9}$/.test(digits)?digits.slice(0,3):'';
+}
+function matchesSearch(row,term){
+ return (!state.areaCode||[row.phone,row.altphone].some(phone=>phoneAreaCode(phone)===state.areaCode))
+  &&(!term||searchColumns.some(column=>String(row[column]??'').toLowerCase().includes(term)));
+}
 function query(base=client().from('crm').select(fields),opts={}){
  let q=base;
  if(state.filter==='active')q=q.or('admin_archived.eq.false,admin_archived.is.null');
@@ -46,7 +57,7 @@ function query(base=client().from('crm').select(fields),opts={}){
 function clearSelection(){state.selected.clear();state.allMatching=false;renderSelection()}
 function renderSelection(){const assignButton=$('alAssignSelected');if(assignButton)assignButton.disabled=!(state.allMatching||state.selected.size);const exportButton=$('alExportSelected');if(exportButton)exportButton.disabled=!(state.allMatching||state.selected.size);const checked=state.rows.length>0&&state.rows.every(r=>state.selected.has(r.id));$('alSelectPage').checked=checked;$('alSelectPage').indeterminate=!checked&&state.rows.some(r=>state.selected.has(r.id));const n=state.allMatching?state.total:state.selected.size;$('alSelectionText').textContent=`${fmtNum(n)} selected`;$('alSelectAllMatching').hidden=!state.totalKnown||!(state.total>state.rows.length&&!state.allMatching&&checked);$('alSelectAllMatching').textContent=`Select all ${fmtNum(state.total)} matching leads`}
 function renderSummary(){const activeCount=state.filter==='active'?state.total:'—';$('adminLeadSummary').innerHTML=[['users',state.totalAll??'—','Total leads'],['filter',state.totalKnown?state.total:'—','Matching filters'],['file-text',state.rows.length,'On this page'],['user-check',state.rows.filter(x=>x.assigned_user_id).length,'Assigned on page'],['archive',state.rows.filter(isArchived).length,'Archived on page']].map(([symbol,n,label])=>`<div><i data-lucide="${symbol}"></i><section><strong>${typeof n==='number'?fmtNum(n):n}</strong><span>${label}</span></section></div>`).join('');icon()}
-function renderPills(){const assignedLabel=$('alAssignedLabel');if(assignedLabel)assignedLabel.textContent=`Assigned: ${state.assignee==='unassigned'?'None':state.assignee?label(state.assignee):'All'}`;let p=[];if(state.tags.length)p.push(`Tags: ${state.tags.join(', ')} (${state.tagMode})`);if(state.sources.length)p.push(`Sources: ${state.sources.join(', ')} (${state.sourceMode})`);for(const [k,v] of [['Time zone',state.timezone],['State',state.stateCode],['Stage',state.stage],['Preview',state.preview]])if(v)p.push(`${k}: ${k==='Assigned'?label(v):v}`);$('alActiveFilters').innerHTML=p.map(s=>`<span class="al-pill">${esc(s)}</span>`).join('')}
+function renderPills(){const assignedLabel=$('alAssignedLabel');if(assignedLabel)assignedLabel.textContent=`Assigned: ${state.assignee==='unassigned'?'None':state.assignee?label(state.assignee):'All'}`;let p=[];if(state.tags.length)p.push(`Tags: ${state.tags.join(', ')} (${state.tagMode})`);if(state.sources.length)p.push(`Sources: ${state.sources.join(', ')} (${state.sourceMode})`);for(const [k,v] of [['Area code',state.areaCode],['Time zone',state.timezone],['State',state.stateCode],['Stage',state.stage],['Preview',state.preview]])if(v)p.push(`${k}: ${k==='Assigned'?label(v):v}`);$('alActiveFilters').innerHTML=p.map(s=>`<span class="al-pill">${esc(s)}</span>`).join('')}
 function renderRows(){const el=$('adminLeadList');if(!state.rows.length){el.innerHTML='<tr><td colspan="10" class="al-empty">No matching leads.</td></tr>';renderSelection();return}
  el.innerHTML=state.rows.map(r=>`<tr><td><input class="al-rowcheck" type="checkbox" data-check="${esc(r.id)}" aria-label="Select ${esc(r.company||r.name||'lead')}" ${state.selected.has(r.id)||state.allMatching?'checked':''}></td><td><button class="al-company-btn" data-open="${esc(r.id)}"><span class="al-company">${esc(r.company||r.name||'Unnamed lead')}</span><span class="al-sub">${esc(r.website||r.domain||'')}</span></button></td><td>${esc(r.name||'—')}</td><td>${esc(r.phone||'—')}<span class="al-sub">${esc(r.email||'')}</span></td><td>${esc(r.state_code||'—')}<span class="al-sub">${esc(r.timezone||'Time zone unknown')}</span></td><td>${normalizeList(r.tags).slice(0,4).map(x=>`<span class="al-chip">${esc(x)}</span>`).join('')||'—'}</td><td>${normalizeList(r.sources).slice(0,4).map(x=>`<span class="al-chip">${esc(x)}</span>`).join('')||'—'}</td><td><span class="al-chip stage">${esc(r.stage||'notstarted')}</span></td><td>${esc(label(r.assigned_user_id))}</td><td><button class="al-row-actions" data-open="${esc(r.id)}" aria-label="Open lead">⋯</button></td></tr>`).join('');
  el.querySelectorAll('[data-check]').forEach(x=>x.addEventListener('change',e=>{if(state.allMatching){state.selected=new Set(state.rows.map(row=>row.id));state.allMatching=false}if(e.target.checked)state.selected.add(x.dataset.check);else state.selected.delete(x.dataset.check);renderSelection()}));el.querySelectorAll('[data-open]').forEach(x=>x.addEventListener('click',()=>openLead(x.dataset.open)));renderSelection();}
@@ -106,7 +117,7 @@ function renderSearchProgress(scan){
  else if(denominator>0)bar.value=Math.min(99,scan.scanned/denominator*100);
  else bar.removeAttribute('value');
 }
-function searchKey(){return JSON.stringify([searchTerm(),state.filter,state.assignee,state.timezone,state.stateCode,state.stage,state.preview,state.tags,state.sources,state.tagMode,state.sourceMode])}
+function searchKey(){return JSON.stringify([searchTerm(),state.areaCode,state.filter,state.assignee,state.timezone,state.stateCode,state.stage,state.preview,state.tags,state.sources,state.tagMode,state.sourceMode])}
 function showSearchPage(matches,complete){
  const [key,dir]=state.sort.split('_'),sign=dir==='asc'?1:-1;
  // Keep NULLS LAST and a deterministic id tie-breaker.
@@ -156,7 +167,7 @@ async function scanSearch(seq,signal){
   const batch=result.data||[];
   scan.retrying=false;retries=0;
   if(batch.length&&cursor!==null&&(typeof cursor==='number'?batch.at(-1).id<=cursor:String(batch.at(-1).id)<=String(cursor)))throw Error('Search cursor did not advance. Retry the search.');
-  for(const row of batch)if(searchColumns.some(column=>String(row[column]??'').toLowerCase().includes(term)))scan.matches.push(row);
+  for(const row of batch)if(matchesSearch(row,term))scan.matches.push(row);
   scan.scanned+=batch.length;
   scan.done=batch.length<batchSize;
   showSearchPage(scan.matches,scan.done);renderSearchProgress(scan);
@@ -167,7 +178,8 @@ async function scanSearch(seq,signal){
 // Race a small, unsorted indexed lookup against the resumable scan. Exact count
 // must prove the entire result fits before this path may replace the scan/cache.
 async function searchRows(seq,signal){
- if(searchCache?.key===searchKey())return scanSearch(seq,signal);
+ // Area-code matching requires normalized phone digits, so use the complete scan.
+ if(state.areaCode||searchCache?.key===searchKey())return scanSearch(seq,signal);
  const key=searchKey(),fast=new AbortController(),scan=new AbortController();
  const cancel=()=>{fast.abort();scan.abort()};
  signal.addEventListener('abort',cancel,{once:true});
@@ -196,7 +208,12 @@ async function loadRows(reuseSearch=false){
  const el=$('adminLeadList');el.innerHTML='<tr><td colspan="10" class="al-empty">Loading leads…</td></tr>';
  $('alPageStatus').textContent='Loading leads…';$('alPageButtons').innerHTML='';
  try{
-  if(searchTerm()){await searchRows(seq,rowsController.signal);return;}
+  if(state.areaCode&&!/^[2-9]\d{2}$/.test(state.areaCode)){
+   state.total=0;state.countPending=false;$('alSearchProgress').hidden=true;
+   el.innerHTML='<tr><td colspan="10" class="al-empty">Enter a 3-digit area code (e.g. 970), or clear the area code field.</td></tr>';
+   $('alPageStatus').textContent='Enter a valid area code to search.';renderSummary();return;
+  }
+  if(searchTerm()||state.areaCode){await searchRows(seq,rowsController.signal);return;}
   $('alSearchProgress').hidden=true;
   // One extra row gives reliable Next-page navigation without waiting for COUNT(*).
   const result=await loadPageRows(rowsController.signal);
@@ -226,7 +243,7 @@ function openAdvanced(){const opts=(items,selected)=>items.map(([v,t])=>`<option
 function options(selected=''){return `<option value="">Unassigned</option>`+state.users.map(x=>`<option value="${esc(x.user_id)}" ${selected===x.user_id?'selected':''}>${esc(x.display_name||x.email)}</option>`).join('')}
 function openLead(id){const r=state.rows.find(x=>x.id===id);if(!r)return;const overlay=$('adminLeadDrawerOverlay'),drawer=$('adminLeadDrawer');drawer.innerHTML=`<div class="admin-user-drawer-head"><div><span class="admin-kicker">LEAD</span><h2>${esc(r.company||r.name||'Lead')}</h2><p>Created ${esc(fmtDate(r.created))}</p></div><button type="button" id="alCloseDrawer"><i data-lucide="x"></i></button></div><div class="admin-lead-form-grid"><label>Company<input id="leadCompany" value="${esc(r.company)}"></label><label>Contact<input id="leadName" value="${esc(r.name)}"></label><label>Phone<input id="leadPhone" value="${esc(r.phone)}"></label><label>Email<input id="leadEmail" value="${esc(r.email)}"></label><label>Stage<select id="leadStage">${['notstarted','staging','outreach','review','complete','notinterested','archived','callback'].map(x=>`<option ${x===r.stage?'selected':''}>${x}</option>`).join('')}</select></label><label>Outcome<input id="leadOutcome" value="${esc(r.outcome)}"></label><label class="full">Assigned to<select id="leadAssigned">${options(r.assigned_user_id)}</select></label><label class="full">Notes<textarea id="leadNotes">${esc(r.notes)}</textarea></label></div><div class="admin-lead-actions"><button class="primary" id="adminSharePreview"><i data-lucide="link"></i>Create Preview Signup Link</button><button class="primary" id="alSave"><i data-lucide="save"></i>Save Changes</button><button id="alArchive">${isArchived(r)?'Restore':'Archive'} Lead</button><button class="danger" id="alDelete">Delete Permanently</button></div><p id="alDrawerMessage"></p>`;overlay.hidden=false;const close=()=>overlay.hidden=true;drawer.querySelector('#alCloseDrawer').onclick=close;overlay.onclick=e=>{if(e.target===overlay)close()};const msg=()=>drawer.querySelector('#alDrawerMessage');drawer.querySelector('#alSave').onclick=async()=>{const assignee=drawer.querySelector('#leadAssigned').value;const payload={company:drawer.querySelector('#leadCompany').value.trim(),name:drawer.querySelector('#leadName').value.trim(),phone:drawer.querySelector('#leadPhone').value.trim(),email:drawer.querySelector('#leadEmail').value.trim(),stage:drawer.querySelector('#leadStage').value,outcome:drawer.querySelector('#leadOutcome').value.trim(),notes:drawer.querySelector('#leadNotes').value.trim(),assigned_user_id:assignee||null,assigned:assignee?label(assignee):''};msg().textContent='Saving…';const {error}=await client().from('crm').update(payload).eq('id',r.id);if(error){msg().textContent=error.message;return}close();loadRows()};drawer.querySelector('#alArchive').onclick=async()=>{if(!confirm(`${isArchived(r)?'Restore':'Archive'} this lead?`))return;const next=!isArchived(r);const {error}=await client().from('crm').update({admin_archived:next,admin_archived_at:next?new Date().toISOString():null}).eq('id',r.id);if(error){msg().textContent=error.message;return}close();loadRows()};drawer.querySelector('#alDelete').onclick=async()=>{if(!confirm('Permanently delete this lead? This cannot be undone.'))return;const {error}=await client().from('crm').delete().eq('id',r.id);if(error){msg().textContent=error.message;return}close();loadRows()};drawer.querySelector('#adminSharePreview').onclick=async()=>{if(!r.sitekey||!/^https:\/\//.test(r.previewurl||'')){msg().textContent='A site key and HTTPS preview URL are required.';return}const {data,error}=await client().rpc('create_portal_preview_invite',{p_site_key:r.sitekey,p_site_title:r.company||r.name||'Website Preview',p_preview_url:r.previewurl});if(error){msg().textContent=error.message;return}try{await navigator.clipboard.writeText(data);msg().textContent='Link copied.'}catch{msg().textContent=data}};icon()}
 function openNewLead(){const overlay=$('adminLeadDrawerOverlay'),drawer=$('adminLeadDrawer');drawer.innerHTML=`<div class="admin-user-drawer-head"><h2>Add Lead</h2><button id="alCloseDrawer" type="button">×</button></div><div class="admin-lead-form-grid"><label>Company<input id="leadCompany"></label><label>Contact<input id="leadName"></label><label>Phone<input id="leadPhone"></label><label>Email<input id="leadEmail"></label><label class="full">Assigned to<select id="leadAssigned">${options()}</select></label><label class="full">Notes<textarea id="leadNotes"></textarea></label></div><div class="admin-lead-actions"><button class="primary" id="alCreate">Create Lead</button></div><p id="alDrawerMessage"></p>`;overlay.hidden=false;drawer.querySelector('#alCloseDrawer').onclick=()=>overlay.hidden=true;overlay.onclick=e=>{if(e.target===overlay)overlay.hidden=true};drawer.querySelector('#alCreate').onclick=async()=>{const payload={company:drawer.querySelector('#leadCompany').value.trim(),name:drawer.querySelector('#leadName').value.trim(),phone:drawer.querySelector('#leadPhone').value.trim(),email:drawer.querySelector('#leadEmail').value.trim(),notes:drawer.querySelector('#leadNotes').value.trim(),assigned_user_id:drawer.querySelector('#leadAssigned').value||null,stage:'notstarted',admin_archived:false};payload.assigned=payload.assigned_user_id?label(payload.assigned_user_id):'';if(!payload.company&&!payload.name){drawer.querySelector('#alDrawerMessage').textContent='Enter a company or contact.';return}const {error}=await client().from('crm').insert(payload);if(error){drawer.querySelector('#alDrawerMessage').textContent=error.message;return}overlay.hidden=true;refresh()}}
-async function targetIds(){if(state.allMatching&&searchCache?.key===searchKey())return searchCache.scan.matches.map(row=>row.id);if(!state.allMatching)return [...state.selected];const ids=[];const batch=500;let index=0;while(true){const r=await query(client().from('crm').select('id'),{noSort:true}).order('id',{ascending:true}).range(index,index+batch-1);if(r.error)throw r.error;ids.push(...(r.data||[]).map(x=>x.id));if(!r.data||r.data.length<batch)break;index+=batch;if(index>250000)throw Error('The selection is too large for browser-side processing. Narrow the filters.')}return ids}
+async function targetIds(){if(state.allMatching&&searchCache?.key===searchKey())return searchCache.scan.matches.map(row=>row.id);if(!state.allMatching)return [...state.selected];if(state.areaCode)throw Error('Wait for the area code search to complete, then select matching leads again.');const ids=[];const batch=500;let index=0;while(true){const r=await query(client().from('crm').select('id'),{noSort:true}).order('id',{ascending:true}).range(index,index+batch-1);if(r.error)throw r.error;ids.push(...(r.data||[]).map(x=>x.id));if(!r.data||r.data.length<batch)break;index+=batch;if(index>250000)throw Error('The selection is too large for browser-side processing. Narrow the filters.')}return ids}
 async function activeSalespeople(){
  const [perms,profiles]=await Promise.all([
   client().from('team_permissions').select('user_id,role,active,listed').in('role',['SALES','ADMIN']).eq('active',true),
@@ -362,6 +379,7 @@ async function initialize(){
   await loadRows();void loadTotalCount();
  }catch(error){state.loaded=false;$('adminLeadList').innerHTML=`<tr><td colspan="10" class="al-empty">${esc(errorMessage(error))}</td></tr>`;}
 }
+$('alAreaCode').addEventListener('input',pause(e=>{state.areaCode=e.target.value.trim();refresh()},300));
 $('adminLeadSearch').addEventListener('input',pause(e=>{state.query=e.target.value;refresh()},300));$('adminAddLead').onclick=openNewLead;$('alAssignSelected').onclick=openAssignment;$('alExportSelected').onclick=openExport;$('alTags').onclick=()=>openFacet('tags');$('alSources').onclick=()=>openFacet('sources');$('alAdvanced').onclick=openAdvanced;$('alAssigned').onclick=openAssignedFilter;
 $('alPageSize').onchange=e=>{const v=e.target.value;if(v==='custom'){const requested=prompt('Number of leads per page (1–5000):','250');const n=Number(requested);if(!Number.isInteger(n)||n<1||n>5000){e.target.value=String(state.size);return}state.size=n;const custom=document.createElement('option');custom.value=String(n);custom.textContent=`${n} per page`;e.target.append(custom);e.target.value=String(n)}else state.size=Number(v);refresh()};
 $('alSort').onchange=e=>{state.sort=e.target.value;refresh()};$('alBulkAction').onchange=applyBulk;

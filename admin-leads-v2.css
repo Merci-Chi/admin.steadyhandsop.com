@@ -29,3 +29,6 @@
 .al-modal footer button:disabled{opacity:.5;cursor:not-allowed}
 
 .al-search-progress{padding:18px 22px;margin:16px 0;border:1px solid #dce6f2;border-radius:14px;background:#fff;color:#193b60}.al-search-progress[hidden]{display:none}.al-search-progress p{margin:0 0 10px;font-size:14px;font-weight:650}.al-search-progress progress{display:block;width:100%;height:14px;accent-color:#1382fb}
+
+.al-area-code{display:flex;align-items:center;gap:10px;max-width:100%;height:46px;padding:0 14px;border:1px solid #dce4ee;border-radius:14px;background:#fff;color:#163557;font-size:13px;font-weight:650;white-space:nowrap}
+.al-area-code input{width:100px;min-width:0;border:0;outline:none;background:none;color:#112d4d;font:inherit}
