@@ -14,6 +14,27 @@
   <link rel="stylesheet" href="styles.css?v=20261019-admin-voicemail" />
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="theme.js?v=20261005-account-theme"></script>
+<style>
+/* Compact phone directory: only number, name and assigned associate by default. */
+.page-admin-phones .admin-phone-list{display:grid;gap:8px}
+.page-admin-phones .admin-phone-card{padding:12px 14px!important;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px 14px}
+.page-admin-phones .admin-phone-card-head{margin:0!important;min-width:0;gap:10px}
+.page-admin-phones .admin-phone-card-icon{display:none!important}
+.page-admin-phones .admin-phone-card-copy{display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 12px;min-width:0}
+.page-admin-phones .admin-phone-card-copy strong{font-size:14px}
+.page-admin-phones .admin-phone-card-copy span,.page-admin-phones .admin-phone-card-copy small{font-size:12px;opacity:.86}
+.page-admin-phones .admin-phone-active[hidden],.page-admin-phones .admin-phone-more[hidden]{display:none!important}
+.page-admin-phones .admin-phone-compact-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.page-admin-phones .admin-phone-compact-actions button{padding:7px 9px;border-radius:8px;border:1px solid #54718e;background:#18334f;color:#edf5ff;font-size:12px;cursor:pointer}
+.page-admin-phones .admin-phone-compact-actions button[data-phone-delete]{color:#ffc7c7;border-color:#8e5260}
+.page-admin-phones .admin-phone-compact-actions button:disabled{opacity:.4;cursor:default}
+.page-admin-phones .admin-phone-more{grid-column:1/-1;padding-top:12px;border-top:1px solid #36506d}
+.page-admin-phones .admin-phone-rename{display:flex;align-items:flex-end;flex-wrap:wrap;gap:8px;margin:10px 0}
+.page-admin-phones .admin-phone-rename label{display:grid;gap:5px;flex:1;min-width:160px}
+.page-admin-phones .admin-phone-rename input{padding:9px;border-radius:8px;min-width:0}
+.page-admin-phones .admin-phone-rename button{padding:10px;border-radius:8px;cursor:pointer}
+@media(max-width:650px){.page-admin-phones .admin-phone-card{grid-template-columns:1fr}.page-admin-phones .admin-phone-compact-actions{justify-content:flex-start}}
+</style>
 </head>
 <body class="page-admin-phones">
 <div class="app">
