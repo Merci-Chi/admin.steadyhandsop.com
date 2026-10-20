@@ -218,19 +218,29 @@
                     <div class="admin-phone-card-copy">
                       <strong>${esc(formatPhone(row.phone_number))}</strong>
                       <span>${esc(row.label || 'Outbound caller ID')}</span>
-                      ${requestedProfile ? '<small>Requested by ' + esc(requestedProfile.display_name || requestedProfile.email || 'Account') + '</small>' : ''}
+                      <small>${esc(assignedProfile?.display_name || assignedProfile?.email || 'Unassigned')}</small>
                     </div>
-                    <span class="admin-phone-active">${!row.active ? 'Disabled' : row.twilio_status === 'ready' ? 'Twilio Ready' : 'Pending Twilio'}</span>
+                    <span class="admin-phone-active" hidden>${!row.active ? 'Disabled' : row.twilio_status === 'ready' ? 'Twilio Ready' : 'Pending Twilio'}</span>
                   </div>
 
+                  <div class="admin-phone-compact-actions">
+                    <button type="button" data-phone-unassign ${!assignedUserId?'disabled':''}>Unassign</button>
+                    <button type="button" data-phone-edit> Edit </button>
+                    <button type="button" data-phone-delete>Delete</button>
+                  </div>
+                  <div class="admin-phone-more" hidden>
                   <label class="admin-phone-assign">
-                    <span>Assigned sales associate or admin</span>
+                    <span>Assigned associate (choose Unassigned to clear)</span>
                     <select data-phone-assignment>
                       ${options}
                     </select>
-                    <small>${assignedUserId ? 'Assigned to ' + esc(assignedProfile?.display_name || assignedProfile?.email || 'an unavailable account') + '. ' + (!row.active ? 'Disabled in phone management.' : row.twilio_status !== 'ready' ? 'Confirm Twilio setup and mark ready before calling.' : 'Configured as this account’s default caller ID.') : 'This number is not assigned to an account.'}</small>
+ 
                   </label>
 
+                  <form data-phone-label-form class="admin-phone-rename">
+                    <label>Number name<input data-phone-label type="text" maxlength="60" value="${esc(row.label||'')}"></label>
+                    <button type="submit">Save name</button>
+                  </form>
                   ${routingSchemaMissing ? `<p class="admin-phone-route" role="status">Incoming routing setup required. Apply sql/admin-inbound-destinations.sql, then refresh. Existing phone controls remain available.</p>` : `
                   <section class="admin-phone-route" aria-label="Incoming call destination">
                     <label class="admin-phone-assign"><span>Incoming calls go to</span>
@@ -264,9 +274,8 @@
                       <i data-lucide="${row.active ? 'pause' : 'play'}"></i>
                       ${row.active ? 'Disable' : 'Enable'}
                     </button>
-                    <button type="button" class="admin-phone-delete" data-phone-delete>
-                      <i data-lucide="trash-2"></i>Remove
-                    </button>
+
+                  </div>
                   </div>
                 </article>`;
             }).join('') : `
@@ -512,6 +521,41 @@
       } catch (error) {status.textContent=error.message || 'Could not save voicemail greeting.';}
       finally {button.disabled=false;input.disabled=false;}
     }));
+
+    main.querySelectorAll('[data-phone-edit]').forEach(button=>{
+      button.addEventListener('click',()=>{
+        const more=button.closest('.admin-phone-card')?.querySelector('.admin-phone-more');
+        if(!more)return;
+        more.hidden=!more.hidden;
+        button.textContent=more.hidden?'Edit':'Close';
+      });
+    });
+    main.querySelectorAll('[data-phone-unassign]').forEach(button=>{
+      button.addEventListener('click',()=>{
+        const select=button.closest('.admin-phone-card')?.querySelector('[data-phone-assignment]');
+        if(!select||!select.value)return;
+        if(!confirm('Set this number to Unassigned?'))return;
+        select.value='';
+        select.dispatchEvent(new Event('change',{bubbles:true}));
+      });
+    });
+    main.querySelectorAll('[data-phone-label-form]').forEach(form=>{
+      form.addEventListener('submit',async event=>{
+        event.preventDefault();
+        const card=form.closest('.admin-phone-card');
+        const id=card?.dataset.phoneId;
+        const label=form.querySelector('[data-phone-label]').value.trim();
+        const button=form.querySelector('[type=submit]');
+        if(!id)return;
+        button.disabled=true;
+        try {
+          const result=await c.from('callcenter_phone_numbers')
+            .update({label,updated_at:new Date().toISOString()}).eq('id',id).select('id');
+          requireChangedRow(result);
+          location.reload();
+        } catch(error){alert(error.message||'Unable to save number name.');button.disabled=false;}
+      });
+    });
 
     main.querySelectorAll('[data-phone-assignment]').forEach(select => {
       select.addEventListener('change', async () => {
