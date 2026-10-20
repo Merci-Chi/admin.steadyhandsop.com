@@ -409,7 +409,7 @@ async function backfillLeadTimezones(){
     for(let i=0;i<ids.length;i+=100){
      const batch=ids.slice(i,i+100);
      // NULL-only updates protect existing values, including concurrent edits.
-     const result=await client().from('crm').update({timezone:zone}).in('id',batch).is('timezone',null).select('id');
+     const result=await client().from('crm').update({timezone:zone}).in('id',batch).or('timezone.is.null,timezone.eq.').select('id');
      if(result.error)throw result.error;
      updated+=(result.data||[]).length;
     }
