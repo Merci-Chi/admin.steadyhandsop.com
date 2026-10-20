@@ -8,7 +8,7 @@ const who=s=>({agent:'Sales Associate',customer:'Customer'}[String(s||'').toLowe
 function messageTime(s,t){
   const iso=s.timestamp||s.started_at||s.start_time||s.time_iso||s.absolute_time;
   if(iso&&typeof iso==='string'&&!/^\d+(?:\.\d+)?$/.test(iso)){const x=stamp(iso);if(x)return x;}
-  const raw=s.start_seconds??s.startSeconds??s.start_offset_seconds??s.offset_seconds??s.start??s.offset??s.time;
+  const raw=s.start_ms??s.offset_ms??s.start_seconds??s.startSeconds??s.start_offset_seconds??s.offset_seconds??s.start??s.offset??s.time;
   if(raw===null||raw===undefined||raw==='')return '';
   if(typeof raw==='string'&&raw.includes(':'))return raw;
   const n=Number(raw);if(!Number.isFinite(n)||n<0)return '';
@@ -32,14 +32,14 @@ function csv(calls,metadata){
  for(const c of calls){const ms=messages(c.transcript);for(const m of ms.length?ms:[{speaker:'',time:'',text:''}])rows.push([c.id,metadata?c.associate:'',metadata?c.lead:'',metadata?stamp(c.date):'',metadata?c.outcome:'',metadata?c.duration:'',m.speaker,m.time,m.text]);}
  return '\ufeff'+rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
 }
-function printPdf(calls,metadata){
- const win=window.open('','_blank');if(!win)throw Error('Allow popups to export a PDF.');
+function printPdf(calls,metadata,opened){
+ const win=opened||window.open('','_blank');if(!win)throw Error('Allow popups to export a PDF.');
  const doc='<!doctype html><html><head><meta charset="utf-8"><title>Steady Hands Transcripts</title><style>@page{margin:17mm}body{font:14px/1.5 Arial,sans-serif;color:#183047}header{border-bottom:2px solid #183047;padding-bottom:12px}header small{letter-spacing:2px;color:#596879}article{break-before:page}article:first-of-type{break-before:auto}h2{margin-bottom:4px}.meta{color:#576679;white-space:pre-wrap;margin-bottom:20px}.line{padding:8px 0;border-bottom:1px solid #e2e7ed;break-inside:avoid}.line b{color:#153f79}.line small{color:#687789;margin-left:8px}.line p{white-space:pre-wrap;overflow-wrap:anywhere;margin:4px 0}.empty{color:#79818d}@media print{button{display:none}}</style></head><body><header><strong>STEADY HANDS</strong><br><small>CALL TRANSCRIPT REPORT</small></header>'+calls.map(c=>'<article><h2>'+esc(c.lead||'Call')+'</h2>'+(metadata?'<div class="meta">Associate: '+esc(c.associate)+' | '+esc(stamp(c.date))+' | '+esc(c.outcome||'—')+' | '+esc(c.duration??'—')+' seconds</div>':'')+(messages(c.transcript).map(m=>'<section class="line"><b>'+esc(m.speaker)+'</b>'+(m.time?'<small>'+esc(m.time)+'</small>':'')+'<p>'+esc(m.text)+'</p></section>').join('')||'<p class="empty">No saved transcript.</p>')+'</article>').join('')+'<script>window.addEventListener("load",()=>setTimeout(()=>window.print(),300));<\/script></body></html>';
  win.document.open();win.document.write(doc);win.document.close();
 }
-function exportCalls(calls,format,metadata){
+function exportCalls(calls,format,metadata,opened){
  if(!calls.length)throw Error('No matching transcripts to export.');
- if(format==='pdf'){printPdf(calls,metadata);return;}
+ if(format==='pdf'){printPdf(calls,metadata,opened);return;}
  const basename='steady-hands-transcripts-'+new Date().toISOString().slice(0,10);
  if(format==='csv')file(new Blob([csv(calls,metadata)],{type:'text/csv;charset=utf-8'}),basename+'.csv');
  else file(new Blob([calls.map(c=>textCall(c,metadata)).join('\n\n'+ '='.repeat(60)+'\n\n')],{type:'text/plain;charset=utf-8'}),basename+'.txt');
@@ -64,7 +64,7 @@ function showBulk(rows){
  const refresh=()=>{count.textContent=choose().length+' calls match the selection; calls without saved transcripts are excluded by default.';};
  overlay.querySelector('[data-close]').onclick=close;overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
  overlay.querySelectorAll('select').forEach(el=>el.addEventListener('change',refresh));
- btn.onclick=async()=>{btn.disabled=true;count.textContent='Preparing transcript export…';try{let calls=await hydrate(choose());if(!overlay.querySelector('[data-empty]').checked)calls=calls.filter(c=>messages(c.transcript).length);exportCalls(calls,overlay.querySelector('[data-format]').value,overlay.querySelector('[data-meta]').checked);count.textContent='Prepared '+calls.length+' call(s).'+(overlay.querySelector('[data-format]').value==='pdf'?' Use Print → Save as PDF in the new window.':'');}catch(e){count.textContent='Export failed: '+(e.message||e);}finally{btn.disabled=false;}};
+ btn.onclick=async()=>{const format=overlay.querySelector('[data-format]').value;const opened=format==='pdf'?window.open('','_blank'):null;if(format==='pdf'&&!opened){count.textContent='Allow popups to export PDF.';return;}if(opened){opened.document.write('<p>Preparing transcript PDF…</p>');}btn.disabled=true;count.textContent='Preparing transcript export…';try{let calls=await hydrate(choose());if(!overlay.querySelector('[data-empty]').checked)calls=calls.filter(c=>messages(c.transcript).length);exportCalls(calls,format,overlay.querySelector('[data-meta]').checked,opened);count.textContent='Prepared '+calls.length+' call(s).'+(overlay.querySelector('[data-format]').value==='pdf'?' Use Print → Save as PDF in the new window.':'');}catch(e){if(opened&&!opened.closed)opened.close();count.textContent='Export failed: '+(e.message||e);}finally{btn.disabled=false;}};
  document.body.append(overlay);refresh();dlg.querySelector('[data-close]').focus();
 }
 window.SteadyHandsTranscriptExport={
