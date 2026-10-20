@@ -20,7 +20,7 @@ begin
   and (tp.role in ('ADMIN','SALES') or tp.sales_enabled=true)
   and (p_recipients is null or tp.user_id=any(p_recipients))
  ) x;
- if p_recipients is not null and (select count(distinct id) from unnest(p_recipients) as id)
+ if p_recipients is not null and (select count(distinct selected.user_id) from unnest(p_recipients) as selected(user_id))
  <>coalesce(array_length(recipients,1),0) then raise exception 'Some selected recipients are inactive or not eligible';end if;
  if array_length(recipients,1) is null then raise exception 'No active recipients available';end if;
  if p_kind='task' then
