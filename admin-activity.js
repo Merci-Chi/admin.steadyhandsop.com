@@ -238,6 +238,7 @@
   document.getElementById('adminActivityUserFilter')?.addEventListener('change',e=>{state.user=e.target.value||'';state.callsShown=100;state.followupsShown=100;const url=new URL(location.href);if(state.user)url.searchParams.set('user',state.user);else url.searchParams.delete('user');history.replaceState(null,'',url);render();});
   document.getElementById('adminActivityOutcomeFilter')?.addEventListener('change',e=>{state.outcome=e.target.value||'';state.callsShown=100;render();});
   document.getElementById('adminActivityDateFilter')?.addEventListener('change',e=>{state.date=e.target.value||'all';state.callsShown=100;render();});
+  document.getElementById('performanceExportTranscripts')?.addEventListener('click',()=>window.SteadyHandsTranscriptExport?.bulk(state.rows.map(r=>({id:r.id,associate:personLabel(r.user_id),lead:(state.leads.get(String(r.crm_id))?.company||state.leads.get(String(r.crm_id))?.name||'Unknown lead'),date:r.created_at,outcome:r.outcome,duration:r.duration_seconds,created_at:r.created_at})),filtered().map(r=>({id:r.id,associate:personLabel(r.user_id),lead:(state.leads.get(String(r.crm_id))?.company||state.leads.get(String(r.crm_id))?.name||'Unknown lead'),date:r.created_at,outcome:r.outcome,duration:r.duration_seconds,created_at:r.created_at}))));
   document.getElementById('adminActivityRefresh')?.addEventListener('click',()=>location.reload());
 
   document.getElementById('performanceFollowups')?.addEventListener('click',event=>{
