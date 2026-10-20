@@ -44,7 +44,7 @@
     </section>
     <div class="performance-history">
     <section class="performance-panel" aria-labelledby="performanceCallsTitle">
-      <div class="performance-heading"><h2 id="performanceCallsTitle">Recent Calls</h2><span id="adminActivityCount" aria-live="polite"></span></div>
+      <div class="performance-heading"><h2 id="performanceCallsTitle">Recent Calls</h2><div class="performance-export-actions"><span id="adminActivityCount" aria-live="polite"></span><button type="button" id="performanceExportTranscripts" class="performance-export-button"><i data-lucide="download"></i> Export Transcripts</button></div></div>
       <label class="performance-search" for="adminActivitySearch">Search calls<input id="adminActivitySearch" type="search" placeholder="Associate, business, phone or outcome" autocomplete="off"></label>
     <section class="admin-activity-filterbar">
       <select id="adminActivityOutcomeFilter" aria-label="Filter calls by outcome">
@@ -84,6 +84,7 @@
 <script src="admin-shell.js?v=20261019-performance"></script>
 <script src="performance-followup-actions.js?v=20261019-followup-cards"></script>
 <script src="performance-followups.js?v=20261019-followup-cards"></script>
+<script src="performance-transcript-export.js?v=20261020"></script>
 <script src="performance-detail-popup.js?v=20261019-native-v2"></script>
 <script src="admin-activity.js?v=20261019-followup-cards"></script>
 </body>
