@@ -20,15 +20,15 @@
   try {
    const [users,perms,policies]=await Promise.all([
     c.from('callcenter_profiles').select('user_id,display_name,email').order('display_name'),
-    c.from('team_permissions').select('user_id,role'),
+    c.from('team_permissions').select('user_id,role,active,listed,sales_enabled'),
     c.from('associate_calling_policies').select('user_id,mode,delay_min,delay_max,slow_bias')
    ]);
    for(const result of [users,perms,policies])if(result.error)throw result.error;
-   const sales=new Set((perms.data||[]).filter(p=>p.role==='SALES').map(p=>String(p.user_id)));
+   const eligible=new Map((perms.data||[]).filter(p=>p.active===true&&p.listed!==false&&(p.role==='ADMIN'||p.role==='SALES'||p.sales_enabled===true)).map(p=>[String(p.user_id),p]));
    const select=$('policyAssociate');
-   select.replaceChildren(new Option('Select a sales associate',''));
+   select.replaceChildren(new Option('Select an Outreach user',''));
    for(const user of users.data||[]){
-    if(sales.has(String(user.user_id)))select.add(new Option(user.display_name||user.email||'Associate',user.user_id));
+    if(eligible.has(String(user.user_id))){const p=eligible.get(String(user.user_id));select.add(new Option((user.display_name||user.email||'Outreach user')+' ('+(p.role==='ADMIN'?'Admin':p.role==='SALES'?'Sales':'Outreach')+')',user.user_id));}
    }
    policyByUser=new Map((policies.data||[]).map(p=>[String(p.user_id),p]));
    fillPolicy();
@@ -42,7 +42,7 @@
    min=Number($('policyMin').value),max=Number($('policyMax').value),bias=$('policyBias').value;
   if(!userId)return;
   if(!Number.isInteger(min)||!Number.isInteger(max)||min<7||max>45||min>max){msg.textContent='Choose a valid 7–45 second range.';return;}
-  if(!confirm('Apply '+mode+' calling policy to this associate?'))return;
+  if(!confirm('Apply '+mode+' calling policy to this user?'))return;
   const btn=box.querySelector('[type=submit]');btn.disabled=true;msg.textContent='Saving…';
   try {
    const {error}=await client().rpc('admin_set_calling_policy',{p_user_id:userId,p_mode:mode,p_min:min,p_max:max,p_bias:bias});

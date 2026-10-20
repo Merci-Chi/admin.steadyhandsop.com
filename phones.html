@@ -56,9 +56,9 @@
         <h2 style="margin:0;color:inherit">Associate Calling Controls</h2>
         <button type="button" id="closeCallingPolicies" aria-label="Close calling controls" style="background:transparent;color:inherit;border:1px solid #57718d;border-radius:9px;padding:8px 12px;cursor:pointer">Close</button>
       </div>
-      <p>Set a visible call preparation delay or restrict outbound calling for a sales associate.</p>
+      <p>Set a visible call preparation delay or restrict outbound calling for an Outreach user.</p>
       <form id="adminCallingForm" style="display:grid;gap:14px">
-        <label>Sales associate<select id="policyAssociate" required><option value="">Loading associates…</option></select></label>
+        <label>Outreach user<select id="policyAssociate" required><option value="">Loading associates…</option></select></label>
         <label>Calling mode<select id="policyMode"><option value="normal">Normal calling</option><option value="delayed">Assign Delay</option><option value="restricted">Restrict Calling</option></select></label>
         <div id="policyDelayFields" hidden style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
           <label>Minimum seconds<input id="policyMin" type="number" min="7" max="45" value="7" required></label>
@@ -90,7 +90,7 @@
 <script src="auth-guard.js?v=20261005-admin-only"></script>
 <script src="admin-shell.js?v=20261019-performance"></script>
 <script src="admin-settings.js?v=20261019-admin-voicemail"></script>
-<script src="admin-calling-policies.js?v=20261020-phone-delay-v1"></script>
+<script src="admin-calling-policies.js?v=20261020-all-outreach-v2"></script>
 <script>
 (() => {
   const overlay=document.getElementById('callingPoliciesOverlay');

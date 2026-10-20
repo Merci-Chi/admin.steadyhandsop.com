@@ -63,7 +63,7 @@
       <div class="admin-dashboard-head"><div><span class="admin-kicker">CALLING</span><h2>Calling Controls</h2></div></div>
       <p>Configure each associate's outbound calling access and preparation time. Delays are disclosed to associates.</p>
       <form id="adminCallingForm" style="display:grid;gap:12px;max-width:580px">
-        <label>Sales associate<select id="policyAssociate" required><option value="">Loading associates…</option></select></label>
+        <label>Outreach user<select id="policyAssociate" required><option value="">Loading associates…</option></select></label>
         <label>Calling mode<select id="policyMode"><option value="normal">Normal calling</option><option value="delayed">Assign Delay</option><option value="restricted">Restrict Calling</option></select></label>
         <div id="policyDelayFields" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px" hidden>
           <label>Minimum delay (seconds)<input id="policyMin" type="number" min="7" max="45" value="7" required></label>
@@ -105,7 +105,7 @@
 <script src="auth-guard.js?v=20261013-rest-auth-fix4"></script>
 <script src="admin-shell.js?v=20261019-performance"></script>
 <script src="admin-dashboard.js?v=20261005-batch2"></script>
-<script src="admin-calling-policies.js?v=20261020"></script>
+<script src="admin-calling-policies.js?v=20261020-all-outreach-v2"></script>
 </body>
 </html>
 
