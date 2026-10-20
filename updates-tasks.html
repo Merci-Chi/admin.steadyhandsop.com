@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#102945"><title>Updates / Tasks • Steady Hands Admin</title>
+<link rel="stylesheet" href="styles.css?v=20261020"><link rel="stylesheet" href="updates-tasks.css?v=20261020">
+<script src="https://unpkg.com/lucide@latest"></script><script src="theme.js?v=20261020-unified-dark-surfaces"></script>
+</head><body class="page-admin-updates">
+<div class="app"><header class="topbar"><div class="topbar-row"><div><span class="admin-kicker">TEAM COMMUNICATIONS</span><h1>Updates / Tasks</h1></div></div></header>
+<main class="content">
+<section class="admin-publish-wrap">
+<div class="admin-publish-card">
+<h2>Post an update or assign a task</h2>
+<p>Updates appear in each recipient's Outreach notifications. Tasks appear in My Tasks and notifications.</p>
+<form id="teamBroadcastForm">
+<div class="admin-publish-grid"><label>Type<select id="messageKind"><option value="update">Team update</option><option value="task">Assigned task</option></select></label><label id="taskPriorityWrap" hidden>Priority<select id="messagePriority"><option value="normal">Normal</option><option value="high">High</option><option value="low">Low</option></select></label><label id="taskDueWrap" hidden>Due date & time<input id="messageDue" type="datetime-local"></label></div>
+<label>Title<input id="messageTitle" maxlength="160" required placeholder="What should your team know?"></label>
+<label>Message / instructions<textarea id="messageBody" rows="5" maxlength="4000" placeholder="Write the update or task instructions here"></textarea></label>
+<fieldset><legend>Recipients</legend>
+<label class="admin-radio-line"><input type="radio" name="audience" value="all" checked> All active team members <span id="activeTeamCount"></span></label>
+<label class="admin-radio-line"><input type="radio" name="audience" value="selected"> Specific members (choose multiple)</label>
+<div id="teamRecipientPicker" hidden>
+<div class="admin-publish-picker-head"><input type="search" id="recipientSearch" placeholder="Find a team member…" autocomplete="off"><button type="button" id="selectAllVisible">Select visible</button><button type="button" id="clearRecipients">Clear</button></div>
+<div id="teamRecipientList" class="admin-recipient-list" aria-label="Choose recipients">Loading members…</div>
+<small id="selectedMemberCount">0 selected</small>
+</div></fieldset>
+<div class="admin-publish-footer"><p id="broadcastStatus" role="status" aria-live="polite"></p><button id="sendBroadcast" type="submit">Publish update</button></div>
+</form>
+</div></section></main><nav class="bottom-nav"></nav></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="auth-guard.js?v=20261005-admin-only"></script>
+<script src="admin-shell.js?v=20261020-team-updates"></script>
+<script src="admin-updates-tasks.js?v=20261020-v1"></script>
+</body></html>
