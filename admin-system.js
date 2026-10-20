@@ -61,6 +61,11 @@
   }
 
   async function functionCheck(name){
+    // Signed Twilio webhooks intentionally accept POST only and do not expose
+    // cross-origin browser health probes. An OPTIONS/CORS failure is not an outage.
+    if (name==='twilio-voice-outbound'||name==='twilio-transcription-webhook') {
+      return ['shield',name,'Twilio-signed POST webhook. Browser reachability cannot verify health; review Supabase function logs for delivery errors.','warn','Unverified'];
+    }
     try{
       const response=await fetch(URL+'/functions/v1/'+name,{method:'OPTIONS',cache:'no-store'});
       if(response.status===404) return ['cloud-off',name,'Function endpoint returned 404.','bad','404'];
