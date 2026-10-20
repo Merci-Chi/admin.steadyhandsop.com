@@ -32,3 +32,17 @@
 
 .al-area-code{display:flex;align-items:center;gap:10px;max-width:100%;height:46px;padding:0 14px;border:1px solid #dce4ee;border-radius:14px;background:#fff;color:#163557;font-size:13px;font-weight:650;white-space:nowrap}
 .al-area-code input{width:100px;min-width:0;border:0;outline:none;background:none;color:#112d4d;font:inherit}
+
+
+/* Dark mode for the full All Leads workspace, not just its outer shell. */
+html[data-theme="dark"] .page-admin-leads :is(.al-search,.al-area-code,.al-btn:not(.al-blue),.al-summary>div,.al-list-panel,.al-pagination button:not(.current),.al-modal,.al-assignee-option,.al-search-progress){background:#102438;color:#edf5ff;border-color:#314b65}
+html[data-theme="dark"] .page-admin-leads :is(.al-search input,.al-area-code input,.al-summary strong,.al-company,.al-table td,.al-check,.al-assignee-option strong,.al-modal h2,.al-modal label){color:#edf5ff}
+html[data-theme="dark"] .page-admin-leads :is(.al-summary span,.al-sub,.al-empty,.al-assignee-option small,.al-pagination,.al-list-actions){color:#b4c7db}
+html[data-theme="dark"] .page-admin-leads :is(.al-table th,.al-list-actions){background:#162d44;color:#c5d6ea;border-color:#34516c}
+html[data-theme="dark"] .page-admin-leads .al-table td{border-color:#304963}
+html[data-theme="dark"] .page-admin-leads .al-table tbody tr:hover{background:#19334d}
+html[data-theme="dark"] .page-admin-leads :is(.al-modal input,.al-modal textarea,.al-modal select,.al-toolbar select,.al-list-actions select){background:#0a1c2e;color:#edf5ff;border-color:#38536d}
+html[data-theme="dark"] .page-admin-leads .al-assignee-option:is(:hover,.selected){background:#1a3a59}
+html[data-theme="dark"] .page-admin-leads .al-btn.al-assign{background:#173c60;color:#d8eaff;border-color:#416a90}
+html[data-theme="dark"] .page-admin-leads :is(.al-chip,.al-pill){background:#1a4062;color:#d7ebff}
+html[data-theme="dark"] .page-admin-leads :is(.al-search input,.al-area-code input)::placeholder{color:#a5b9d0}
