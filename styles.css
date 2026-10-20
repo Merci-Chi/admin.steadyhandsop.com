@@ -5789,3 +5789,17 @@ html[data-theme="dark"] body.admin-app-shell :is(
 .admin-phone-route button:disabled{opacity:.6;cursor:wait}
 
 .admin-phone-route textarea{box-sizing:border-box;resize:vertical;min-height:120px;font:inherit;line-height:1.5}
+
+
+/* 2026-10-20: Consistent admin dark-mode surfaces, asynchronous states and overlays. */
+html[data-theme="dark"]{color-scheme:dark;--page:#071421;--card:#102438;--text:#edf5ff;--muted:#a6bdd4;--line:#304963;--shadow:0 10px 28px #0005}
+html[data-theme="dark"] :is(.card,.admin-card,.stat-card,.admin-panel,.admin-section,.admin-modal,.modal-content,.dialog-content,.popup-content,.drawer-content,.empty-state,.loading-state,.skeleton-card,[class*="skeleton"],[class*="empty-state"],[class*="loading-state"]){border-color:#304963;color:#edf5ff}
+html[data-theme="dark"] :is(.admin-modal,.modal-content,.dialog-content,.popup-content,.drawer-content,.empty-state,.loading-state,.skeleton-card,[class*="skeleton-card"]){background:#102438!important;color:#edf5ff!important}
+html[data-theme="dark"] :is(.admin-modal,.modal-content,.dialog-content,.popup-content,.drawer-content) :is(h1,h2,h3,h4,strong,label,p,small,span){color:inherit}
+html[data-theme="dark"] :is(input,textarea,select):not([type=checkbox]):not([type=radio]){color-scheme:dark}
+html[data-theme="dark"] :is(.loading-state,.empty-state,[class*="skeleton"]) :is(p,small,span){color:#b4c8df}
+html[data-theme="dark"] [class*="skeleton"]{--skeleton-base:#172e45;--skeleton-highlight:#29435f}
+html[data-theme="dark"] :is(dialog,[role=dialog]):not(.resume-dialog){background-color:#102438;color:#edf5ff;border-color:#39546f}
+html[data-theme="dark"] :is(dialog,[role=dialog]) :is(input,textarea,select){background-color:#0c1d2e;color:#edf5ff;border-color:#39546f}
+html[data-theme="dark"] :is(dialog,[role=dialog]) :is(p,small,label){color:#c0d1e4}
+html[data-theme="dark"] :is(.admin-content,.content) :is(.loading,.empty,.no-results){color:#c0d1e4}
