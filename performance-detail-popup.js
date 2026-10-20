@@ -7,7 +7,7 @@
   const field=(k,v)=>'<div><span>'+esc(k)+'</span><strong>'+esc(v||'—')+'</strong></div>';
   const lines=t=>{
     const parts=Array.isArray(t?.segments)?t.segments.filter(s=>s&&String(s.text||'').trim()):[];
-    return parts.length?parts.map(s=>'<div class="performance-modal-line"><strong>'+esc(s.speaker==='customer'?'Customer':s.speaker==='agent'?'You':'Speaker')+'</strong><p>'+esc(s.text)+'</p></div>').join(''):'<p class="performance-modal-plain">'+esc(t?.transcript||'No transcript was saved for this call.')+'</p>';
+    return parts.length?parts.map(s=>'<div class="performance-modal-line"><strong>'+esc(s.speaker==='customer'?'Customer':s.speaker==='agent'?'You':'Speaker')+'</strong>'+(window.SteadyHandsTranscriptExport?.time(s,t)?'<small class="performance-message-time">'+esc(window.SteadyHandsTranscriptExport.time(s,t))+'</small>':'')+'<p>'+esc(s.text)+'</p></div>').join(''):'<p class="performance-modal-plain">'+esc(t?.transcript||'No transcript was saved for this call.')+'</p>';
   };
   let active;
   window.steadyHandsOpenAdminCall=({ids,activityId,trigger})=>{
@@ -19,19 +19,22 @@
     if(!client)return;
     const overlay=document.createElement('div');
     overlay.className='performance-detail-overlay';
-    overlay.innerHTML='<section class="performance-detail-shell" role="dialog" aria-modal="true" aria-label="Call details" tabindex="-1"><header class="performance-detail-header"><strong data-detail-title>Call details</strong><span class="performance-detail-count" aria-live="polite"></span><button type="button" data-detail-close aria-label="Close call details">✕</button></header><div class="performance-detail-main"><button type="button" class="performance-detail-arrow" data-detail-prev aria-label="Previous call">‹</button><div class="performance-detail-content" role="status">Loading call details…</div><button type="button" class="performance-detail-arrow" data-detail-next aria-label="Next call">›</button></div><footer>← Previous call &nbsp; · &nbsp; Next call → &nbsp; · &nbsp; Esc to close</footer></section>';
+    overlay.innerHTML='<section class="performance-detail-shell" role="dialog" aria-modal="true" aria-label="Call details" tabindex="-1"><header class="performance-detail-header"><strong data-detail-title>Call details</strong><span class="performance-detail-count" aria-live="polite"></span><button type="button" class="performance-detail-export" data-detail-export disabled>Export Transcript</button><button type="button" data-detail-close aria-label="Close call details">✕</button></header><div class="performance-detail-main"><button type="button" class="performance-detail-arrow" data-detail-prev aria-label="Previous call">‹</button><div class="performance-detail-content" role="status">Loading call details…</div><button type="button" class="performance-detail-arrow" data-detail-next aria-label="Next call">›</button></div><footer>← Previous call &nbsp; · &nbsp; Next call → &nbsp; · &nbsp; Esc to close</footer></section>';
     const dialog=overlay.querySelector('[role="dialog"]');
     const content=overlay.querySelector('.performance-detail-content');
     const prev=overlay.querySelector('[data-detail-prev]');
     const next=overlay.querySelector('[data-detail-next]');
     const title=overlay.querySelector('[data-detail-title]');
+    const exportButton=overlay.querySelector('[data-detail-export]');
+    let exportPayload=null;
+    exportButton.addEventListener('click',()=>{if(exportPayload)window.SteadyHandsTranscriptExport?.single(exportPayload.call,exportPayload.transcript);});
     const count=overlay.querySelector('.performance-detail-count');
     let generation=0;
     const show=async()=>{
       const selected=ids[index],current=++generation;
       count.textContent=(index+1)+' / '+ids.length;
       prev.disabled=index===0;next.disabled=index===ids.length-1;
-      title.textContent='Call details';
+      title.textContent='Call details';exportButton.disabled=true;exportPayload=null;
       content.setAttribute('role','status');
       content.textContent='Loading call details…';
       try{
@@ -48,6 +51,8 @@
         if(l.error)throw l.error;
         const user=u.data||{},lead=l.data||{},transcript=t.data||null;
         title.textContent=lead.company||lead.name||transcript?.company||'Call details';
+        exportPayload={call:{id:call.id,associate:user.display_name||user.email||'Unknown user',lead:lead.company||lead.name||transcript?.company||'Unknown lead',date:call.created_at,outcome:call.outcome,duration:call.duration_seconds},transcript};
+        exportButton.disabled=!(transcript&&(transcript.transcript||transcript.segments?.length));
         content.removeAttribute('role');
         content.innerHTML='<section class="performance-modal-hero"><small>CALL OUTCOME</small><h2>'+esc(call.outcome||'No outcome')+'</h2><p>'+esc(when(call.created_at))+'</p></section>'+
           '<section class="performance-modal-fields">'+field('Associate',user.display_name||user.email||'Unknown user')+field('Lead',lead.company||lead.name||transcript?.company||'Unknown')+field('Phone',lead.phone||transcript?.phone)+field('Duration',duration(call.duration_seconds))+field('Caller ID',call.caller_id_used||'Not captured')+field('Connected',when(call.connected_at||transcript?.started_at))+field('Ended',when(call.ended_at||transcript?.ended_at))+field('Stage',lead.stage)+'</section>'+
