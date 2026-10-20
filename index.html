@@ -53,6 +53,28 @@
       <div class="admin-metric-card admin-loading-card"><span></span><b></b><small></small></div><div class="admin-metric-card admin-loading-card"><span></span><b></b><small></small></div><div class="admin-metric-card admin-loading-card"><span></span><b></b><small></small></div><div class="admin-metric-card admin-loading-card"><span></span><b></b><small></small></div><div class="admin-metric-card admin-loading-card"><span></span><b></b><small></small></div><div class="admin-metric-card admin-loading-card"><span></span><b></b><small></small></div>
     </section>
 
+    <style>
+#adminCallingPolicies form label{display:grid;gap:7px;font-weight:700}
+#adminCallingPolicies form :is(select,input){padding:12px;border-radius:10px;border:1px solid var(--line,#43516b);background:var(--card,#fff);color:var(--text,#15263d);min-width:0}
+#adminCallingPolicies button[type=submit]{padding:12px;border:0;border-radius:10px;background:#1878dc;color:#fff;font-weight:800;cursor:pointer}
+#adminCallingPolicies #policyDelayFields[hidden]{display:none!important}
+</style>
+<section class="admin-dashboard-section" id="adminCallingPolicies">
+      <div class="admin-dashboard-head"><div><span class="admin-kicker">CALLING</span><h2>Calling Controls</h2></div></div>
+      <p>Configure each associate's outbound calling access and preparation time. Delays are disclosed to associates.</p>
+      <form id="adminCallingForm" style="display:grid;gap:12px;max-width:580px">
+        <label>Sales associate<select id="policyAssociate" required><option value="">Loading associates…</option></select></label>
+        <label>Calling mode<select id="policyMode"><option value="normal">Normal calling</option><option value="delayed">Assign Delay</option><option value="restricted">Restrict Calling</option></select></label>
+        <div id="policyDelayFields" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px" hidden>
+          <label>Minimum delay (seconds)<input id="policyMin" type="number" min="7" max="45" value="7" required></label>
+          <label>Maximum delay (seconds)<input id="policyMax" type="number" min="7" max="45" value="45" required></label>
+          <label style="grid-column:1/-1">Distribution<select id="policyBias"><option value="high">Mostly slower</option><option value="medium">Somewhat slower</option><option value="even">Evenly random</option></select></label>
+        </div>
+        <button type="submit">Save Calling Policy</button>
+        <p id="policyResult" role="status"></p>
+      </form>
+    </section>
+
     <section class="admin-dashboard-section">
       <div class="admin-dashboard-head">
         <div><span class="admin-kicker">TEAM</span><h2>Recent users</h2></div>
@@ -83,6 +105,7 @@
 <script src="auth-guard.js?v=20261013-rest-auth-fix4"></script>
 <script src="admin-shell.js?v=20261019-performance"></script>
 <script src="admin-dashboard.js?v=20261005-batch2"></script>
+<script src="admin-calling-policies.js?v=20261020"></script>
 </body>
 </html>
 
