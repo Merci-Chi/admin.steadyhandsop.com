@@ -34,6 +34,19 @@
 .page-admin-phones .admin-phone-rename input{padding:9px;border-radius:8px;min-width:0}
 .page-admin-phones .admin-phone-rename button{padding:10px;border-radius:8px;cursor:pointer}
 @media(max-width:650px){.page-admin-phones .admin-phone-card{grid-template-columns:1fr}.page-admin-phones .admin-phone-compact-actions{justify-content:flex-start}}
+
+/* Phone directory readability: reserve full-width lines for number and assignee. */
+.page-admin-phones .admin-phone-card{grid-template-columns:minmax(0,1fr)!important;align-items:stretch!important;gap:12px!important;padding:16px 18px!important}
+.page-admin-phones .admin-phone-card-head{display:block!important;width:100%;min-width:0!important}
+.page-admin-phones .admin-phone-card-copy{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:5px!important;align-items:start!important;width:100%;min-width:0!important}
+.page-admin-phones .admin-phone-card-copy strong{display:block;font-size:17px!important;font-weight:800;line-height:1.3;white-space:normal;overflow-wrap:normal;word-break:normal}
+.page-admin-phones .admin-phone-card-copy span{display:block;font-size:12px!important;line-height:1.4;overflow-wrap:anywhere}
+.page-admin-phones .admin-phone-card-copy small{display:block;font-size:14px!important;font-weight:700;line-height:1.4;color:#d9e7f7;overflow-wrap:anywhere}
+.page-admin-phones .admin-phone-card-copy small::before{content:'Assigned: ';font-size:12px;font-weight:500;color:#9eb4ce}
+.page-admin-phones .admin-phone-card-copy small:empty::before{content:''}
+.page-admin-phones .admin-phone-compact-actions{justify-content:flex-end!important;gap:8px!important;width:100%}
+.page-admin-phones .admin-phone-compact-actions button{flex:0 0 auto;white-space:nowrap}
+@media(max-width:480px){.page-admin-phones .admin-phone-card{padding:14px!important}.page-admin-phones .admin-phone-compact-actions{justify-content:flex-start!important}}
 </style>
 </head>
 <body class="page-admin-phones">
