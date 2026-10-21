@@ -14,6 +14,7 @@
     'preview-access.html': { title:'Preview Access', active:'preview-access' },
     'leads.html': { title:'All Leads', active:'leads' },
     'requests.html': { title:'Requests', active:'requests' },
+    'develop.html': { title:'DEVELOP', active:'develop' },
     'activity.html': { title:'Performance', active:'salespeople' },
     'call-management.html': { title:'Call Management', active:'salespeople' },
     'skills.html': { title:'Skills', active:'skills' },
@@ -37,6 +38,7 @@
       ['salespeople','admin.html','users','Sales Associates'],
       ['analytics','company-analytics.html','chart-no-axes-combined','Analytics'],
       ['requests','requests.html','inbox','Requests'],
+      ['develop','develop.html','code-2','DEVELOP'],
       ['leads','leads.html','contact-round','All Leads'],
       ['users','users.html','users','Users'],
       ['training','training.html','graduation-cap','Training'],
@@ -57,6 +59,7 @@
     ['index.html','layout-dashboard','Overview'],
     ['company-analytics.html','chart-no-axes-combined','Analytics'],
     ['requests.html','inbox','Requests'],
+    ['develop.html','code-2','DEVELOP'],
     ['leads.html','contact-round','All Leads'],
     ['users.html','users','Users'],
     ['training.html','graduation-cap','Training'],
@@ -94,6 +97,21 @@
     `).join('');
   }
 
+  function developmentAlerts(){
+    const client=window.steadyHandsCRMClient;
+    if(!client||!window.steadyHandsAdminSession)return;
+    client.from('development_requests').select('id',{count:'exact',head:true}).is('viewed_at',null).eq('status','new').then(({count,error})=>{
+      if(error)return;
+      document.querySelectorAll('a[href="develop.html"]').forEach(a=>{
+        let badge=a.querySelector('.develop-alert-count');
+        if(!badge){badge=document.createElement('b');badge.className='develop-alert-count';badge.style.cssText='background:#dc2626;color:white;border-radius:99px;padding:2px 7px;margin-left:6px;font-size:12px';a.appendChild(badge);}
+        badge.textContent=count>0?String(count):'';
+        badge.hidden=!count;
+      });
+    });
+  }
+  window.addEventListener('steadyhands:admin-ready',developmentAlerts);
+  setInterval(()=>{if(!document.hidden)developmentAlerts()},20000);
   function installMobileSideMenu() {
     if (document.querySelector('.admin-mobile-menu')) return;
 
@@ -174,6 +192,7 @@
       document.body.insertBefore(rail, document.body.firstChild);
     }
     installMobileSideMenu();
+    developmentAlerts();
 
     // The separate admin app never originates outbound calls.
     document.querySelectorAll('.call-controls, .call-btn').forEach(el => {
