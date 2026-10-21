@@ -51,7 +51,7 @@ async function downloadPdf(calls,metadata){
  const width=215.9,height=279.4,left=12,right=12,bottom=13,contentWidth=width-left-right;
  let y=12;
  const navy=[24,48,71],muted=[87,102,121],blue=[21,63,121];
- const plain=value=>String(value??'').replace(/[\\u2018\\u2019]/g,"'").replace(/[\\u2013\\u2014]/g,'-').replace(/\\u2026/g,'...');
+ const plain=value=>String(value??'').replace(/[‘’]/g,"'").replace(/[–—]/g,'-').replace(/…/g,'...');
  const line=(value,x,at,size=9,color=navy,style='normal')=>{
   pdf.setFont('helvetica',style);pdf.setFontSize(size);pdf.setTextColor(...color);
   pdf.text(plain(value),x,at);
@@ -92,12 +92,7 @@ async function downloadPdf(calls,metadata){
  }
  pdf.save('steady-hands-transcripts-'+new Date().toISOString().slice(0,10)+'.pdf');
 }
-function printPdf(calls,metadata,opened){
- const win=opened||window.open('','_blank');if(!win)throw Error('Allow popups to export a PDF.');
- const doc='<!doctype html><html><head><meta charset="utf-8"><title>Steady Hands Transcripts</title><style>@page{margin:11mm}body{font:11px/1.35 Arial,sans-serif;color:#183047}header{border-bottom:1px solid #183047;padding-bottom:5px;margin-bottom:9px}header small{letter-spacing:1px;color:#596879}article{margin:0 0 12px;padding:0 0 8px;border-bottom:1px solid #aeb9c5;break-before:auto;page-break-before:auto}h2{font-size:13px;margin:0 0 2px;break-after:avoid}.meta{color:#576679;white-space:pre-wrap;margin-bottom:5px;font-size:10px}.line{padding:3px 0;border-bottom:1px solid #e2e7ed;break-inside:avoid}.line b{color:#153f79}.line small{color:#687789;margin-left:6px}.line p{white-space:pre-wrap;overflow-wrap:anywhere;margin:2px 0}.empty{color:#79818d}@media print{button{display:none}}</style></head><body><header><strong>STEADY HANDS</strong><br><small>CALL TRANSCRIPT REPORT</small></header>'+calls.map(c=>'<article><h2>'+esc(c.lead||'Call')+'</h2>'+(metadata?'<div class="meta">Associate: '+esc(c.associate)+' | '+esc(stamp(c.date))+' | '+esc(c.outcome||'—')+' | '+esc(c.duration??'—')+' seconds</div>':'')+(messages(c.transcript).map(m=>'<section class="line"><b>'+esc(m.speaker)+'</b>'+(m.time?'<small>'+esc(m.time)+'</small>':'')+'<p>'+esc(m.text)+'</p></section>').join('')||'<p class="empty">No saved transcript.</p>')+'</article>').join('')+'<script>window.addEventListener("load",()=>setTimeout(()=>window.print(),300));<\/script></body></html>';
- win.document.open();win.document.write(doc);win.document.close();
-}
-function exportCalls(calls,format,metadata,opened){
+function exportCalls(calls,format,metadata){
  if(!calls.length)throw Error('No matching transcripts to export.');
  if(format==='pdf')return downloadPdf(calls,metadata);
  const basename='steady-hands-transcripts-'+new Date().toISOString().slice(0,10);
