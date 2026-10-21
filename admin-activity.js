@@ -97,6 +97,7 @@
 
   function renderCallRow(row,followup){
       const user=state.users.find(u=>String(u.user_id)===String(row.user_id));
+      const associateLabel=user?.display_name||user?.email||(row.user_id ? `Associate (${String(row.user_id).slice(0,8)})` : followup ? 'Unassigned follow-up' : 'Unknown associate');
       const lead=followup||state.leads.get(String(row.crm_id));
       const transcript=state.transcripts.get(String(row.id));
       const label=lead?.company||lead?.name||lead?.phone||'Unknown lead';
@@ -106,7 +107,7 @@
         <a class="admin-activity-row" style="flex:1;min-width:0;" ${row.id?`href="call.html?id=${encodeURIComponent(row.id)}"`: 'aria-disabled="true"'}>
           <span class="admin-activity-icon"><i data-lucide="${(Number(row.duration_seconds)||0)>0?'phone-call':'phone-off'}"></i></span>
           <span class="admin-activity-main">
-            <strong>${esc(user?.display_name||user?.email||'Unknown user')}</strong>
+            <strong>${esc(associateLabel)}</strong>
             <b>${esc(label)}</b>
             <small>${row.id?esc(fmtDate(row.created_at))+' · '+esc(fmtDuration(row.duration_seconds)):'No linked call'}${lead?.phone?' · '+esc(lead.phone):''}</small>
             ${followup?`<small>Follow-up: ${esc(followup.follow_up_at?fmtDate(followup.follow_up_at):followup.callbackdate||'Date not set')}${!followup.follow_up_at&&followup.callbackat?' · '+esc(followup.callbackat):''}${followup.follow_up_category?' · '+esc(followup.follow_up_category):''}</small>`:''}

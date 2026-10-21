@@ -56,3 +56,17 @@ test('follow-up cards reuse call details, transcript and delete controls and add
  const s=setup();await s.api.load();s.api.state.followups=[{id:'lead',company:'Spiderwash',callback_owner_id:'kiara',call:s.api.state.rows.find(r=>r.id===1)}];s.api.render();
  const html=s.node('performanceFollowups').innerHTML;assert.match(html,/class="admin-activity-row"/);assert.match(html,/href="call.html\?id=1"/);assert.match(html,/Transcript/);assert.match(html,/data-delete-call-id="1"/);assert.match(html,/Add to calendar/);assert.match(html,/Add to tasks/);
 });
+
+test('follow-up cards show assigned associate rather than Unknown user even without a linked call',async()=>{
+ const s=setup();await s.api.load();
+ const html=s.node('performanceFollowups').innerHTML;
+ assert.match(html,/Kiara/);
+ assert.doesNotMatch(html,/Unknown user/);
+ s.api.state.followups=[{id:'orphan',company:'Orphan lead',callback_owner_id:'former-123'}];
+ s.api.render();
+ assert.match(s.node('performanceFollowups').innerHTML,/Associate \\(former-1\\)/);
+ assert.doesNotMatch(s.node('performanceFollowups').innerHTML,/Unknown user/);
+ s.api.state.followups=[{id:'unassigned',company:'Unassigned lead',callback_owner_id:null}];
+ s.api.render();
+ assert.match(s.node('performanceFollowups').innerHTML,/Unassigned follow-up/);
+});
