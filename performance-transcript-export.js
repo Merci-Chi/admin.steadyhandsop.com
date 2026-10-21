@@ -32,14 +32,69 @@ function csv(calls,metadata){
  for(const c of calls){const ms=messages(c.transcript);for(const m of ms.length?ms:[{speaker:'',time:'',text:''}])rows.push([c.id,metadata?c.associate:'',metadata?c.lead:'',metadata?stamp(c.date):'',metadata?c.outcome:'',metadata?c.duration:'',m.speaker,m.time,m.text]);}
  return '\ufeff'+rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
 }
-function printPdf(calls,metadata,opened){
- const win=opened||window.open('','_blank');if(!win)throw Error('Allow popups to export a PDF.');
- const doc='<!doctype html><html><head><meta charset="utf-8"><title>Steady Hands Transcripts</title><style>@page{margin:11mm}body{font:11px/1.35 Arial,sans-serif;color:#183047}header{border-bottom:1px solid #183047;padding-bottom:5px;margin-bottom:9px}header small{letter-spacing:1px;color:#596879}article{margin:0 0 12px;padding:0 0 8px;border-bottom:1px solid #aeb9c5;break-before:auto;page-break-before:auto}h2{font-size:13px;margin:0 0 2px;break-after:avoid}.meta{color:#576679;white-space:pre-wrap;margin-bottom:5px;font-size:10px}.line{padding:3px 0;border-bottom:1px solid #e2e7ed;break-inside:avoid}.line b{color:#153f79}.line small{color:#687789;margin-left:6px}.line p{white-space:pre-wrap;overflow-wrap:anywhere;margin:2px 0}.empty{color:#79818d}@media print{button{display:none}}</style></head><body><header><strong>STEADY HANDS</strong><br><small>CALL TRANSCRIPT REPORT</small></header>'+calls.map(c=>'<article><h2>'+esc(c.lead||'Call')+'</h2>'+(metadata?'<div class="meta">Associate: '+esc(c.associate)+' | '+esc(stamp(c.date))+' | '+esc(c.outcome||'—')+' | '+esc(c.duration??'—')+' seconds</div>':'')+(messages(c.transcript).map(m=>'<section class="line"><b>'+esc(m.speaker)+'</b>'+(m.time?'<small>'+esc(m.time)+'</small>':'')+'<p>'+esc(m.text)+'</p></section>').join('')||'<p class="empty">No saved transcript.</p>')+'</article>').join('')+'<script>window.addEventListener("load",()=>setTimeout(()=>window.print(),300));<\/script></body></html>';
- win.document.open();win.document.write(doc);win.document.close();
+// Generate an actual PDF download, independent of Safari's print CSS and scaling.
+let pdfLibraryPromise;
+function loadPdfLibrary(){
+ if(window.jspdf?.jsPDF)return Promise.resolve(window.jspdf.jsPDF);
+ if(!pdfLibraryPromise)pdfLibraryPromise=new Promise((resolve,reject)=>{
+  const script=document.createElement('script');
+  script.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js';
+  script.onload=()=>window.jspdf?.jsPDF?resolve(window.jspdf.jsPDF):reject(Error('PDF library unavailable.'));
+  script.onerror=()=>reject(Error('Could not load the PDF library. Check your connection and retry.'));
+  document.head.appendChild(script);
+ }).catch(error=>{pdfLibraryPromise=null;throw error;});
+ return pdfLibraryPromise;
 }
-function exportCalls(calls,format,metadata,opened){
+async function downloadPdf(calls,metadata){
+ const JsPDF=await loadPdfLibrary();
+ const pdf=new JsPDF({unit:'mm',format:'letter',orientation:'portrait',compress:true});
+ const width=215.9,height=279.4,left=12,right=12,bottom=13,contentWidth=width-left-right;
+ let y=12;
+ const navy=[24,48,71],muted=[87,102,121],blue=[21,63,121];
+ const plain=value=>String(value??'').replace(/[‘’]/g,"'").replace(/[–—]/g,'-').replace(/…/g,'...');
+ const line=(value,x,at,size=9,color=navy,style='normal')=>{
+  pdf.setFont('helvetica',style);pdf.setFontSize(size);pdf.setTextColor(...color);
+  pdf.text(plain(value),x,at);
+ };
+ function space(required){if(y+required>height-bottom){pdf.addPage();y=12;}}
+ function wrapped(value,x,indent,size=9,color=navy,style='normal',leading=4.4){
+  pdf.setFont('helvetica',style);pdf.setFontSize(size);
+  const lines=pdf.splitTextToSize(plain(value),contentWidth-indent);
+  for(const item of lines){space(leading);line(item,x,y,size,color,style);y+=leading;}
+ }
+ line('STEADY HANDS',left,y,11,navy,'bold');y+=6;
+ line('C A L L   T R A N S C R I P T   R E P O R T',left,y,8,muted);y+=5;
+ pdf.setDrawColor(...navy);pdf.setLineWidth(.35);pdf.line(left,y,width-right,y);y+=9;
+ for(const c of calls){
+  space(metadata?19:12);
+  line(c.lead||'Call',left,y,12,navy,'bold');y+=5.5;
+  if(metadata){
+   const info='Associate: '+(c.associate||'-')+' | '+(stamp(c.date)||'-')+' | '+(c.outcome||'-')+' | '+(c.duration??'-')+' seconds';
+   wrapped(info,left,0,8,muted,'normal',3.8);y+=3;
+  }
+  const items=messages(c.transcript);
+  if(!items.length){space(5);line('No saved transcript.',left,y,8,muted);y+=5;}
+  for(const m of items){
+   // Split long messages across pages while keeping short entries together.
+   pdf.setFont('helvetica','normal');pdf.setFontSize(9);
+   const rows=pdf.splitTextToSize(plain(m.text),contentWidth);
+   const required=5+Math.min(rows.length,3)*4.4;
+   space(required);
+   line(m.speaker,left,y,9,blue,'bold');
+   const speakerWidth=pdf.getTextWidth(plain(m.speaker));
+   if(m.time)line(m.time,left+speakerWidth+3,y,7.5,muted);
+   y+=4.5;
+   for(const txt of rows){space(4.3);line(txt,left,y,9,navy);y+=4.3;}
+   space(2);
+   pdf.setDrawColor(226,231,237);pdf.setLineWidth(.17);pdf.line(left,y,width-right,y);y+=3.5;
+  }
+  y+=5;
+ }
+ pdf.save('steady-hands-transcripts-'+new Date().toISOString().slice(0,10)+'.pdf');
+}
+function exportCalls(calls,format,metadata){
  if(!calls.length)throw Error('No matching transcripts to export.');
- if(format==='pdf'){printPdf(calls,metadata,opened);return;}
+ if(format==='pdf')return downloadPdf(calls,metadata);
  const basename='steady-hands-transcripts-'+new Date().toISOString().slice(0,10);
  if(format==='csv')file(new Blob([csv(calls,metadata)],{type:'text/csv;charset=utf-8'}),basename+'.csv');
  else file(new Blob([calls.map(c=>textCall(c,metadata)).join('\n\n'+ '='.repeat(60)+'\n\n')],{type:'text/plain;charset=utf-8'}),basename+'.txt');
@@ -57,14 +112,14 @@ async function hydrate(rows){
 }
 function showBulk(rows){
  const overlay=document.createElement('div');overlay.className='performance-detail-overlay';
- overlay.innerHTML='<section class="performance-export-dialog" role="dialog" aria-modal="true" aria-label="Export transcripts"><div class="performance-export-header"><h2>Export Transcripts</h2><button type="button" data-close aria-label="Close">✕</button></div><p>Export transcripts for your current Performance filters, or all associates.</p><label>Calls to export<select data-scope><option value="filtered">Current Performance filters</option><option value="all">All associates</option></select></label><label>Date range<select data-range><option value="current">Current date filter</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="all">All time</option></select></label><label>Format<select data-format><option value="pdf">PDF (Print / Save as PDF)</option><option value="csv">CSV spreadsheet</option><option value="txt">Plain text (TXT)</option></select></label><label class="performance-export-check"><input type="checkbox" data-meta checked> Include associate, lead, date, duration and outcome</label><label class="performance-export-check"><input type="checkbox" data-empty> Include calls without transcripts</label><p data-count role="status"></p><button class="performance-export-submit" data-export type="button">Export Transcripts</button></section>';
+ overlay.innerHTML='<section class="performance-export-dialog" role="dialog" aria-modal="true" aria-label="Export transcripts"><div class="performance-export-header"><h2>Export Transcripts</h2><button type="button" data-close aria-label="Close">✕</button></div><p>Export transcripts for your current Performance filters, or all associates.</p><label>Calls to export<select data-scope><option value="filtered">Current Performance filters</option><option value="all">All associates</option></select></label><label>Date range<select data-range><option value="current">Current date filter</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="all">All time</option></select></label><label>Format<select data-format><option value="pdf">PDF (Direct download, compact layout)</option><option value="csv">CSV spreadsheet</option><option value="txt">Plain text (TXT)</option></select></label><label class="performance-export-check"><input type="checkbox" data-meta checked> Include associate, lead, date, duration and outcome</label><label class="performance-export-check"><input type="checkbox" data-empty> Include calls without transcripts</label><p data-count role="status"></p><button class="performance-export-submit" data-export type="button">Export Transcripts</button></section>';
  const dlg=overlay.querySelector('section'),close=()=>overlay.remove();
  const btn=overlay.querySelector('[data-export]'),count=overlay.querySelector('[data-count]');
  const choose=()=>{const scope=overlay.querySelector('[data-scope]').value,range=overlay.querySelector('[data-range]').value, now=Date.now();return (scope==='filtered'?rows.filtered:rows.all).filter(r=>{if(range==='current'||range==='all')return true;return new Date(r.created_at).getTime()>=now-Number(range)*86400000;});};
  const refresh=()=>{count.textContent=choose().length+' calls match the selection; calls without saved transcripts are excluded by default.';};
  overlay.querySelector('[data-close]').onclick=close;overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
  overlay.querySelectorAll('select').forEach(el=>el.addEventListener('change',refresh));
- btn.onclick=async()=>{const format=overlay.querySelector('[data-format]').value;const opened=format==='pdf'?window.open('','_blank'):null;if(format==='pdf'&&!opened){count.textContent='Allow popups to export PDF.';return;}if(opened){opened.document.write('<p>Preparing transcript PDF…</p>');}btn.disabled=true;count.textContent='Preparing transcript export…';try{let calls=await hydrate(choose());if(!overlay.querySelector('[data-empty]').checked)calls=calls.filter(c=>messages(c.transcript).length);exportCalls(calls,format,overlay.querySelector('[data-meta]').checked,opened);count.textContent='Prepared '+calls.length+' call(s).'+(overlay.querySelector('[data-format]').value==='pdf'?' Use Print → Save as PDF in the new window.':'');}catch(e){if(opened&&!opened.closed)opened.close();count.textContent='Export failed: '+(e.message||e);}finally{btn.disabled=false;}};
+ btn.onclick=async()=>{const format=overlay.querySelector('[data-format]').value;btn.disabled=true;count.textContent='Preparing transcript export…';try{let calls=await hydrate(choose());if(!overlay.querySelector('[data-empty]').checked)calls=calls.filter(c=>messages(c.transcript).length);await exportCalls(calls,format,overlay.querySelector('[data-meta]').checked);count.textContent='Downloaded '+calls.length+' call(s)'+(format==='pdf'?' as one compact PDF.':'.');}catch(e){count.textContent='Export failed: '+(e.message||e);}finally{btn.disabled=false;}};
  document.body.append(overlay);refresh();dlg.querySelector('[data-close]').focus();
 }
 window.SteadyHandsTranscriptExport={
