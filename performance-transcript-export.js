@@ -92,9 +92,72 @@ async function downloadPdf(calls,metadata){
  }
  pdf.save('steady-hands-transcripts-'+new Date().toISOString().slice(0,10)+'.pdf');
 }
+
+const pngWidth=1200,pngHeight=1550,pngMargin=66;
+function createPngPages(calls,metadata){
+ const pages=[];let canvas,ctx,y;
+ const colors={navy:'#183047',muted:'#576679',blue:'#153f79',rule:'#e2e7ed'};
+ function page(){canvas=document.createElement('canvas');canvas.width=pngWidth;canvas.height=pngHeight;ctx=canvas.getContext('2d');if(!ctx)throw Error('Canvas unavailable.');ctx.fillStyle='#fff';ctx.fillRect(0,0,pngWidth,pngHeight);pages.push(canvas);y=pngMargin;}
+ function ensure(h){if(y+h>pngHeight-pngMargin)page();}
+ function font(size,bold=false){ctx.font=(bold?'bold ':'')+size+'px Arial, sans-serif';}
+ function line(text,size=21,bold=false,color=colors.navy,indent=0){
+  ensure(size*1.4);font(size,bold);ctx.fillStyle=color;ctx.fillText(String(text??''),pngMargin+indent,y);y+=Math.round(size*1.4);
+ }
+ function wrap(text,size=21,bold=false,color=colors.navy,indent=0){
+  font(size,bold);const maxWidth=pngWidth-pngMargin*2-indent;
+  const tokens=String(text??'').split(/(\\s+)/);let current='';
+  for(const token of tokens){
+   const next=current+token;
+   if(ctx.measureText(next).width>maxWidth&&current.trim()){line(current.trimEnd(),size,bold,color,indent);current=token.trimStart();}
+   else current=next;
+   // Very long unbroken words are split at character boundaries.
+   while(current&&ctx.measureText(current).width>maxWidth){
+    let n=1;while(n<current.length&&ctx.measureText(current.slice(0,n+1)).width<=maxWidth)n++;
+    line(current.slice(0,n),size,bold,color,indent);current=current.slice(n);
+   }
+  }
+  if(current.trim())line(current.trimEnd(),size,bold,color,indent);
+ }
+ function rule(){ensure(12);ctx.strokeStyle=colors.rule;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pngMargin,y);ctx.lineTo(pngWidth-pngMargin,y);ctx.stroke();y+=13;}
+ page();line('STEADY HANDS',27,true);line('C A L L   T R A N S C R I P T   R E P O R T',17,false,colors.muted);rule();y+=15;
+ for(const c of calls){
+  ensure(metadata?95:50);wrap(c.lead||'Call',29,true);y+=2;
+  if(metadata){wrap('Associate: '+(c.associate||'-')+' | '+(stamp(c.date)||'-')+' | '+(c.outcome||'-')+' | '+(c.duration??'-')+' seconds',17,false,colors.muted);y+=13;}
+  const entries=messages(c.transcript);
+  if(!entries.length){line('No saved transcript.',19,false,colors.muted);}
+  for(const m of entries){
+   ensure(90);line(m.speaker+(m.time?'   '+m.time:''),20,true,colors.blue);
+   wrap(m.text,21);y+=4;rule();
+  }
+  y+=22;
+ }
+ return pages;
+}
+let zipLibraryPromise;
+function loadZipLibrary(){
+ if(window.JSZip)return Promise.resolve(window.JSZip);
+ if(!zipLibraryPromise)zipLibraryPromise=new Promise((resolve,reject)=>{
+  const script=document.createElement('script');
+  script.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+  script.onload=()=>window.JSZip?resolve(window.JSZip):reject(Error('ZIP library unavailable.'));
+  script.onerror=()=>reject(Error('Could not load ZIP library.'));
+  document.head.appendChild(script);
+ }).catch(e=>{zipLibraryPromise=null;throw e;});
+ return zipLibraryPromise;
+}
+async function downloadPng(calls,metadata){
+ const pages=createPngPages(calls,metadata);
+ const basename='steady-hands-transcripts-'+new Date().toISOString().slice(0,10);
+ const toBlob=canvas=>new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(Error('PNG encoding failed.')),'image/png'));
+ if(pages.length===1){file(await toBlob(pages[0]),basename+'.png');return;}
+ const JSZip=await loadZipLibrary(),zip=new JSZip();
+ for(let i=0;i<pages.length;i++)zip.file(basename+'-page-'+String(i+1).padStart(3,'0')+'.png',await toBlob(pages[i]));
+ file(await zip.generateAsync({type:'blob',compression:'DEFLATE'}),basename+'-png-pages.zip');
+}
 function exportCalls(calls,format,metadata){
  if(!calls.length)throw Error('No matching transcripts to export.');
  if(format==='pdf')return downloadPdf(calls,metadata);
+ if(format==='png')return downloadPng(calls,metadata);
  const basename='steady-hands-transcripts-'+new Date().toISOString().slice(0,10);
  if(format==='csv')file(new Blob([csv(calls,metadata)],{type:'text/csv;charset=utf-8'}),basename+'.csv');
  else file(new Blob([calls.map(c=>textCall(c,metadata)).join('\n\n'+ '='.repeat(60)+'\n\n')],{type:'text/plain;charset=utf-8'}),basename+'.txt');
@@ -112,19 +175,19 @@ async function hydrate(rows){
 }
 function showBulk(rows){
  const overlay=document.createElement('div');overlay.className='performance-detail-overlay';
- overlay.innerHTML='<section class="performance-export-dialog" role="dialog" aria-modal="true" aria-label="Export transcripts"><div class="performance-export-header"><h2>Export Transcripts</h2><button type="button" data-close aria-label="Close">✕</button></div><p>Export transcripts for your current Performance filters, or all associates.</p><label>Calls to export<select data-scope><option value="filtered">Current Performance filters</option><option value="all">All associates</option></select></label><label>Date range<select data-range><option value="current">Current date filter</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="all">All time</option></select></label><label>Format<select data-format><option value="pdf">PDF (Direct download, compact layout)</option><option value="csv">CSV spreadsheet</option><option value="txt">Plain text (TXT)</option></select></label><label class="performance-export-check"><input type="checkbox" data-meta checked> Include associate, lead, date, duration and outcome</label><label class="performance-export-check"><input type="checkbox" data-empty> Include calls without transcripts</label><p data-count role="status"></p><button class="performance-export-submit" data-export type="button">Export Transcripts</button></section>';
+ overlay.innerHTML='<section class="performance-export-dialog" role="dialog" aria-modal="true" aria-label="Export transcripts"><div class="performance-export-header"><h2>Export Transcripts</h2><button type="button" data-close aria-label="Close">✕</button></div><p>Export transcripts for your current Performance filters, or all associates.</p><label>Calls to export<select data-scope><option value="filtered">Current Performance filters</option><option value="all">All associates</option></select></label><label>Date range<select data-range><option value="current">Current date filter</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="all">All time</option></select></label><label>Format<select data-format><option value="pdf">PDF (Direct download, compact layout)</option><option value="png">PNG images (continuous report)</option><option value="csv">CSV spreadsheet</option><option value="txt">Plain text (TXT)</option></select></label><label class="performance-export-check"><input type="checkbox" data-meta checked> Include associate, lead, date, duration and outcome</label><label class="performance-export-check"><input type="checkbox" data-empty> Include calls without transcripts</label><p data-count role="status"></p><button class="performance-export-submit" data-export type="button">Export Transcripts</button></section>';
  const dlg=overlay.querySelector('section'),close=()=>overlay.remove();
  const btn=overlay.querySelector('[data-export]'),count=overlay.querySelector('[data-count]');
  const choose=()=>{const scope=overlay.querySelector('[data-scope]').value,range=overlay.querySelector('[data-range]').value, now=Date.now();return (scope==='filtered'?rows.filtered:rows.all).filter(r=>{if(range==='current'||range==='all')return true;return new Date(r.created_at).getTime()>=now-Number(range)*86400000;});};
  const refresh=()=>{count.textContent=choose().length+' calls match the selection; calls without saved transcripts are excluded by default.';};
  overlay.querySelector('[data-close]').onclick=close;overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
  overlay.querySelectorAll('select').forEach(el=>el.addEventListener('change',refresh));
- btn.onclick=async()=>{const format=overlay.querySelector('[data-format]').value;btn.disabled=true;count.textContent='Preparing transcript export…';try{let calls=await hydrate(choose());if(!overlay.querySelector('[data-empty]').checked)calls=calls.filter(c=>messages(c.transcript).length);await exportCalls(calls,format,overlay.querySelector('[data-meta]').checked);count.textContent='Downloaded '+calls.length+' call(s)'+(format==='pdf'?' as one compact PDF.':'.');}catch(e){count.textContent='Export failed: '+(e.message||e);}finally{btn.disabled=false;}};
+ btn.onclick=async()=>{const format=overlay.querySelector('[data-format]').value;btn.disabled=true;count.textContent='Preparing transcript export…';try{let calls=await hydrate(choose());if(!overlay.querySelector('[data-empty]').checked)calls=calls.filter(c=>messages(c.transcript).length);await exportCalls(calls,format,overlay.querySelector('[data-meta]').checked);count.textContent='Exported '+calls.length+' call(s)'+(format==='pdf'?' as one compact PDF.':format==='png'?' as PNG (one image or a ZIP of numbered images).':'.');}catch(e){count.textContent='Export failed: '+(e.message||e);}finally{btn.disabled=false;}};
  document.body.append(overlay);refresh();dlg.querySelector('[data-close]').focus();
 }
 window.SteadyHandsTranscriptExport={
  bulk:(all,filtered)=>showBulk({all,filtered}),
- single:(call,transcript)=>{const c={id:call.id,associate:call.associate,lead:call.lead,date:call.date,outcome:call.outcome,duration:call.duration,transcript};if(!messages(transcript).length)return alert('No transcript was saved for this call.');const format=prompt('Export transcript format: PDF, CSV, or TXT','PDF');if(!format)return;const f=format.trim().toLowerCase();if(!['pdf','csv','txt'].includes(f))return alert('Choose PDF, CSV, or TXT.');try{exportCalls([c],f,true);}catch(e){alert(e.message||e);}},
+ single:(call,transcript)=>{const c={id:call.id,associate:call.associate,lead:call.lead,date:call.date,outcome:call.outcome,duration:call.duration,transcript};if(!messages(transcript).length)return alert('No transcript was saved for this call.');const format=prompt('Export transcript format: PDF, PNG, CSV, or TXT','PDF');if(!format)return;const f=format.trim().toLowerCase();if(!['pdf','png','csv','txt'].includes(f))return alert('Choose PDF, CSV, or TXT.');exportCalls([c],f,true)?.catch?.(e=>alert(e.message||e));},
  time:messageTime
 };
 })();
