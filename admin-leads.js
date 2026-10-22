@@ -12,13 +12,13 @@ const normalizeList=v=>Array.isArray(v)?v.map(x=>typeof x==='string'?x:typeof x=
 const fmtDate=x=>x?new Date(x).toLocaleString([],{month:'short',day:'numeric',year:'numeric'}):'—';
 const icon=()=>window.lucide?.createIcons?.();
 const fmtNum=n=>Number(n||0).toLocaleString();
-const stageLabel=value=>({notstarted:'Not started',staging:'Staging',outreach:'Called / outreach',review:'Review',complete:'Complete',notinterested:'Not interested',archived:'Archived',callback:'Follow-up',donotcall:'Do not call'})[String(value||'').toLowerCase()]||value||'Not started';
+const stageLabel=value=>({notstarted:'Not started',staging:'Staging',outreach:'Called',review:'Review',complete:'Complete',notinterested:'Not interested',archived:'Archived',callback:'Follow-up',donotcall:'Do not call'})[String(value||'').toLowerCase()]||value||'Not started';
 const leadStageLabel=row=>{
  const values=[row.stage,row.outcome,...normalizeList(row.tags)].map(v=>String(v||'').toLowerCase().replace(/[^a-z]/g,''));
  if(row.do_not_call||values.some(v=>['donotcall','donotcontact','dnc'].includes(v)))return 'Do not call';
  if(values.some(v=>['wrongnumber','invalidnumber','disconnected','numberdisconnected'].includes(v)))return 'Wrong / invalid number';
  if(values.includes('notinterested'))return 'Not interested';
- if(['','new','notstarted'].includes(values[0])&&(row.lastcalled||values.some(v=>['called','noanswer','leftvoicemail','voicemail','busy','interested'].includes(v))))return 'Called / outreach';
+ if(['','new','notstarted'].includes(values[0])&&(row.lastcalled||values.some(v=>['called','noanswer','leftvoicemail','voicemail','busy','interested'].includes(v))))return 'Called';
  return stageLabel(row.stage);
 };
 const filterStages=['notstarted','staging','outreach','review','complete','notinterested','archived','callback','donotcall'];
