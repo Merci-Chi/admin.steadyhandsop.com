@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
 
 const original=await readFile(new URL('../admin-leads.js',import.meta.url),'utf8');
-const source=original.slice(0,original.indexOf("$('alAreaCode').addEventListener"))+`window.api={state,loadRows,targetIds,openAdvanced,leadStageLabel};})();`;
+const source=original.slice(0,original.indexOf("$('alAreaCode').addEventListener"))+`window.api={state,loadRows,targetIds,openAdvanced,leadStageLabel,renderRows};})();`;
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 const stages=['notstarted','staging','outreach','review','complete','notinterested','archived','callback','donotcall'];
 const data=[...stages.map(stage=>({id:stage,stage,company:'Grandma '+stage,phone:'7025550100'})),{id:'null',stage:null,company:'Grandma null',phone:'7025550100'},{id:'empty',stage:'',company:'Grandma empty',phone:'7025550100'}];
@@ -38,7 +38,7 @@ function setup(){
  return {api:window.api,node,requests};
 }
 
-test('Not started includes null/empty stages and excludes other stages before pagination, counting and bulk selection',async()=>{
+test('Not called includes null/empty stages and excludes other stages before pagination, counting and bulk selection',async()=>{
  const s=setup();Object.assign(s.api.state,{stage:'notstarted',size:2});
  await s.api.loadRows();await tick();
  assert.deepEqual(Array.from(s.api.state.rows,r=>r.id),['notstarted','null']);
@@ -47,7 +47,7 @@ test('Not started includes null/empty stages and excludes other stages before pa
  assert.deepEqual(Array.from(await s.api.targetIds()),['notstarted','null','empty']);
  s.api.state.page=2;await s.api.loadRows();
  assert.deepEqual(Array.from(s.api.state.rows,r=>r.id),['empty']);
- assert.match(s.node('alActiveFilters').innerHTML,/Stage: Not started/);
+ assert.match(s.node('alActiveFilters').innerHTML,/Stage: Not called/);
 });
 
 test('each stage filters rows and exact totals on normal, text and indexed area-code paths',async()=>{
@@ -76,7 +76,7 @@ test('changing the visible filter clears selection, resets pagination, and All s
 
 test('Advanced Filters and visible Stage dropdown stay in sync when applying and clearing',async()=>{
  const s=setup();s.api.openAdvanced();
- assert.match(s.node('alModalBody').innerHTML,/Called/);
+ assert.match(s.node('alModalBody').innerHTML,/Outreach/);
  s.node('advStage').value='outreach';s.node('advAssignee').value='';
  s.node('alApplyModal').onclick();await tick();
  assert.equal(s.node('alStage').value,'outreach');
@@ -85,10 +85,18 @@ test('Advanced Filters and visible Stage dropdown stay in sync when applying and
  assert.equal(s.node('alStage').value,'');
 });
 
- test('called tags cannot display as Not started and terminal results take precedence',()=>{
+ test('called tags cannot display as Not called and terminal results take precedence',()=>{
  const s=setup();
- assert.equal(s.api.leadStageLabel({stage:'notstarted',tags:['Left Voicemail']}),'Called');
+ assert.equal(s.api.leadStageLabel({stage:'notstarted',tags:['Left Voicemail']}),'Outreach');
  assert.equal(s.api.leadStageLabel({stage:'notstarted',tags:['Wrong Number','Left Voicemail']}),'Wrong / invalid number');
  assert.equal(s.api.leadStageLabel({stage:'notstarted',outcome:'Not Interested'}),'Not interested');
- assert.equal(s.api.leadStageLabel({stage:'notstarted'}),'Not started');
+ assert.equal(s.api.leadStageLabel({stage:'notstarted'}),'Not called');
  });
+
+test('Call status and Tags render in separate columns without duplicate status tags',()=>{
+ const s=setup();s.api.state.rows=[{id:'called',call_status:'Called',stage:'outreach',tags:['Called','Not started','Wrong Number']}];
+ s.api.renderRows();const html=s.node('adminLeadList').innerHTML;
+ assert.match(html,/data-call-status="Called"/);
+ assert.match(html,/Wrong Number/);assert.doesNotMatch(html,/Not started/);
+ assert.match(html,/<\/td><td><span class="al-chip">Wrong Number/);
+});

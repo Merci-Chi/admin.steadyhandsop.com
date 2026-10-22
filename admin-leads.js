@@ -4,21 +4,23 @@ const $=id=>document.getElementById(id);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const client=()=>window.steadyHandsCRMClient;
 const state={rows:[],users:[],page:1,size:10,total:0,totalKnown:false,countPending:false,hasMore:false,totalAll:null,filter:'active',query:'',areaCode:'',assignee:'unassigned',timezone:'',stateCode:'',preview:'',stage:'',sort:'created_desc',tags:[],sources:[],tagMode:'OR',sourceMode:'OR',selected:new Set(),allMatching:false,availableTags:[],availableSources:[],loaded:false,seq:0};
-const fields='id,company,name,phone,altphone,email,website,domain,notes,issue,concerns,origin,assigned,assigned_user_id,tags,sources,stage,outcome,do_not_call,callbackdate,callbackat,lastcalled,timezone,state_code,leadpotential,tier,previewurl,sitekey,has_site_preview,admin_archived,admin_archived_at,created';
+const fields='id,company,name,phone,altphone,email,website,domain,notes,issue,concerns,origin,assigned,assigned_user_id,tags,sources,stage,outcome,do_not_call,callbackdate,callbackat,lastcalled,call_status,timezone,state_code,leadpotential,tier,previewurl,sitekey,has_site_preview,admin_archived,admin_archived_at,created';
 const isArchived=x=>x.admin_archived===true;
 const label=id=>{const u=state.users.find(x=>String(x.user_id)===String(id));return u?(u.display_name||u.email||'Salesperson'):'Unassigned'};
 const text=x=>typeof x==='string'?x:'';
 const normalizeList=v=>Array.isArray(v)?v.map(x=>typeof x==='string'?x:typeof x==='object'&&x?(x.label||x.name||x.value||''):'').filter(Boolean):[];
+const callStatus=row=>row.call_status==='Called'||row.call_status==='Not called'?row.call_status:(row.lastcalled||normalizeList(row.tags).some(v=>String(v).toLowerCase()==='called')?'Called':'Not called');
+const businessTags=row=>normalizeList(row.tags).filter(v=>!['called','notcalled','notstarted','notattempted','uncalled'].includes(String(v).toLowerCase().replace(/[^a-z]/g,'')));
 const fmtDate=x=>x?new Date(x).toLocaleString([],{month:'short',day:'numeric',year:'numeric'}):'—';
 const icon=()=>window.lucide?.createIcons?.();
 const fmtNum=n=>Number(n||0).toLocaleString();
-const stageLabel=value=>({notstarted:'Not started',staging:'Staging',outreach:'Called',review:'Review',complete:'Complete',notinterested:'Not interested',archived:'Archived',callback:'Follow-up',donotcall:'Do not call'})[String(value||'').toLowerCase()]||value||'Not started';
+const stageLabel=value=>({notstarted:'Not called',staging:'Staging',outreach:'Outreach',review:'Review',complete:'Complete',notinterested:'Not interested',archived:'Archived',callback:'Follow-up',donotcall:'Do not call'})[String(value||'').toLowerCase()]||value||'Not called';
 const leadStageLabel=row=>{
  const values=[row.stage,row.outcome,...normalizeList(row.tags)].map(v=>String(v||'').toLowerCase().replace(/[^a-z]/g,''));
  if(row.do_not_call||values.some(v=>['donotcall','donotcontact','dnc'].includes(v)))return 'Do not call';
  if(values.some(v=>['wrongnumber','invalidnumber','disconnected','numberdisconnected'].includes(v)))return 'Wrong / invalid number';
  if(values.includes('notinterested'))return 'Not interested';
- if(['','new','notstarted'].includes(values[0])&&(row.lastcalled||values.some(v=>['called','noanswer','leftvoicemail','voicemail','busy','interested'].includes(v))))return 'Called';
+ if(['','new','notstarted'].includes(values[0])&&(row.lastcalled||values.some(v=>['called','noanswer','leftvoicemail','voicemail','busy','interested'].includes(v))))return 'Outreach';
  return stageLabel(row.stage);
 };
 const filterStages=['notstarted','staging','outreach','review','complete','notinterested','archived','callback','donotcall'];
@@ -52,7 +54,7 @@ function query(base=client().from('crm').select(fields),opts={}){
  else if(state.assignee)q=q.eq('assigned_user_id',state.assignee);
  if(state.timezone)q=q.eq('timezone',state.timezone);
  if(state.stateCode)q=q.ilike('state_code',state.stateCode);
- // Empty stages render as Not started, so include them in that filter.
+ // Empty stages render as Not called, so include them in that filter.
  if(state.stage==='notstarted')q=q.or('stage.eq.notstarted,stage.is.null,stage.eq.""');
  else if(state.stage)q=q.eq('stage',state.stage);
  if(state.preview==='yes')q=q.eq('has_site_preview',true);
@@ -76,8 +78,8 @@ function clearSelection(){state.selected.clear();state.allMatching=false;renderS
 function renderSelection(){const assignButton=$('alAssignSelected');if(assignButton)assignButton.disabled=!(state.allMatching||state.selected.size);const exportButton=$('alExportSelected');if(exportButton)exportButton.disabled=!(state.allMatching||state.selected.size);const checked=state.rows.length>0&&state.rows.every(r=>state.selected.has(r.id));$('alSelectPage').checked=checked;$('alSelectPage').indeterminate=!checked&&state.rows.some(r=>state.selected.has(r.id));const n=state.allMatching?state.total:state.selected.size;$('alSelectionText').textContent=`${fmtNum(n)} selected`;$('alSelectAllMatching').hidden=!state.totalKnown||!(state.total>state.rows.length&&!state.allMatching&&checked);$('alSelectAllMatching').textContent=`Select all ${fmtNum(state.total)} matching leads`}
 function renderSummary(){const activeCount=state.filter==='active'?state.total:'—';$('adminLeadSummary').innerHTML=[['users',state.totalAll??'—','Total leads'],['filter',state.totalKnown?state.total:'—','Matching filters'],['file-text',state.rows.length,'On this page'],['user-check',state.rows.filter(x=>x.assigned_user_id).length,'Assigned on page'],['archive',state.rows.filter(isArchived).length,'Archived on page']].map(([symbol,n,label])=>`<div><i data-lucide="${symbol}"></i><section><strong>${typeof n==='number'?fmtNum(n):n}</strong><span>${label}</span></section></div>`).join('');icon()}
 function renderPills(){const stageSelect=$('alStage');if(stageSelect){stageSelect.innerHTML=stageOptions(state.stage);stageSelect.value=state.stage;}const assignedLabel=$('alAssignedLabel');if(assignedLabel)assignedLabel.textContent=`Assigned: ${state.assignee==='unassigned'?'None':state.assignee?label(state.assignee):'All'}`;let p=[];if(state.tags.length)p.push(`Tags: ${state.tags.join(', ')} (${state.tagMode})`);if(state.sources.length)p.push(`Sources: ${state.sources.join(', ')} (${state.sourceMode})`);for(const [k,v] of [['Area code',state.areaCode],['Time zone',state.timezone],['State',state.stateCode],['Stage',state.stage],['Preview',state.preview]])if(v)p.push(`${k}: ${k==='Stage'?stageLabel(v):v}`);$('alActiveFilters').innerHTML=p.map(s=>`<span class="al-pill">${esc(s)}</span>`).join('')}
-function renderRows(){const el=$('adminLeadList');if(!state.rows.length){el.innerHTML='<tr><td colspan="10" class="al-empty">No matching leads.</td></tr>';renderSelection();return}
- el.innerHTML=state.rows.map(r=>`<tr><td><input class="al-rowcheck" type="checkbox" data-check="${esc(r.id)}" aria-label="Select ${esc(r.company||r.name||'lead')}" ${state.selected.has(r.id)||state.allMatching?'checked':''}></td><td><button class="al-company-btn" data-open="${esc(r.id)}"><span class="al-company">${esc(r.company||r.name||'Unnamed lead')}</span><span class="al-sub">${esc(r.website||r.domain||'')}</span></button></td><td>${esc(r.name||'—')}</td><td>${esc(r.phone||'—')}<span class="al-sub">${esc(r.email||'')}</span></td><td>${esc(r.state_code||'—')}<span class="al-sub">${esc(r.timezone||'Time zone unknown')}</span></td><td>${normalizeList(r.tags).slice(0,4).map(x=>`<span class="al-chip">${esc(x)}</span>`).join('')||'—'}</td><td>${normalizeList(r.sources).slice(0,4).map(x=>`<span class="al-chip">${esc(x)}</span>`).join('')||'—'}</td><td><span class="al-chip stage">${esc(leadStageLabel(r))}</span></td><td>${esc(label(r.assigned_user_id))}</td><td><button class="al-row-actions" data-open="${esc(r.id)}" aria-label="Open lead">⋯</button></td></tr>`).join('');
+function renderRows(){const el=$('adminLeadList');if(!state.rows.length){el.innerHTML='<tr><td colspan="11" class="al-empty">No matching leads.</td></tr>';renderSelection();return}
+ el.innerHTML=state.rows.map(r=>`<tr><td><input class="al-rowcheck" type="checkbox" data-check="${esc(r.id)}" aria-label="Select ${esc(r.company||r.name||'lead')}" ${state.selected.has(r.id)||state.allMatching?'checked':''}></td><td><button class="al-company-btn" data-open="${esc(r.id)}"><span class="al-company">${esc(r.company||r.name||'Unnamed lead')}</span><span class="al-sub">${esc(r.website||r.domain||'')}</span></button></td><td>${esc(r.name||'—')}</td><td>${esc(r.phone||'—')}<span class="al-sub">${esc(r.email||'')}</span></td><td>${esc(r.state_code||'—')}<span class="al-sub">${esc(r.timezone||'Time zone unknown')}</span></td><td data-call-status="${esc(callStatus(r))}"><span class="al-chip">${esc(callStatus(r))}</span></td><td>${businessTags(r).slice(0,4).map(x=>`<span class="al-chip">${esc(x)}</span>`).join('')||'—'}</td><td>${normalizeList(r.sources).slice(0,4).map(x=>`<span class="al-chip">${esc(x)}</span>`).join('')||'—'}</td><td><span class="al-chip stage">${esc(leadStageLabel(r))}</span></td><td>${esc(label(r.assigned_user_id))}</td><td><button class="al-row-actions" data-open="${esc(r.id)}" aria-label="Open lead">⋯</button></td></tr>`).join('');
  el.querySelectorAll('[data-check]').forEach(x=>x.addEventListener('change',e=>{if(state.allMatching){state.selected=new Set(state.rows.map(row=>row.id));state.allMatching=false}if(e.target.checked)state.selected.add(x.dataset.check);else state.selected.delete(x.dataset.check);renderSelection()}));el.querySelectorAll('[data-open]').forEach(x=>x.addEventListener('click',()=>openLead(x.dataset.open)));renderSelection();}
 function renderPage(){
  const buttons=[];
@@ -241,12 +243,12 @@ async function loadRows(reuseSearch=false){
  const seq=++state.seq;
  rowsController?.abort();countController?.abort();rowsController=new AbortController();countController=new AbortController();
  state.totalKnown=false;state.countPending=true;state.hasMore=false;state.rows=[];state.allMatching=false;renderSelection();renderPills();
- const el=$('adminLeadList');el.innerHTML='<tr><td colspan="10" class="al-empty">Loading leads…</td></tr>';
+ const el=$('adminLeadList');el.innerHTML='<tr><td colspan="11" class="al-empty">Loading leads…</td></tr>';
  $('alPageStatus').textContent='Loading leads…';$('alPageButtons').innerHTML='';
  try{
   if(state.areaCode&&!/^[2-9]\d{2}$/.test(state.areaCode)){
    state.total=0;state.countPending=false;$('alSearchProgress').hidden=true;
-   el.innerHTML='<tr><td colspan="10" class="al-empty">Enter a 3-digit area code (e.g. 970), or clear the area code field.</td></tr>';
+   el.innerHTML='<tr><td colspan="11" class="al-empty">Enter a 3-digit area code (e.g. 970), or clear the area code field.</td></tr>';
    $('alPageStatus').textContent='Enter a valid area code to search.';renderSummary();return;
   }
   if(state.areaCode){await loadIndexedAreaRows(seq,rowsController.signal);return;}
@@ -264,7 +266,7 @@ async function loadRows(reuseSearch=false){
   state.countPending=false;
   const timedOut=error?.code==='57014'||/statement timeout/i.test(error?.message||'');
   $('alSearchProgress').hidden=true;
-  el.innerHTML=`<tr><td colspan="10" class="al-empty">${timedOut?'Search took too long. Try a more specific name or phone number.':`Could not load leads: ${esc(errorMessage(error))}`} <button type="button" id="alRetryLoad">Retry</button></td></tr>`;
+  el.innerHTML=`<tr><td colspan="11" class="al-empty">${timedOut?'Search took too long. Try a more specific name or phone number.':`Could not load leads: ${esc(errorMessage(error))}`} <button type="button" id="alRetryLoad">Retry</button></td></tr>`;
   $('alRetryLoad').onclick=loadRows;$('alPageStatus').textContent='Could not load this page.';console.error(error);
  }
 }
@@ -416,7 +418,7 @@ async function initialize(){
   const users=await c.from('callcenter_profiles').select('user_id,display_name,email').order('display_name');
   if(users.error)throw users.error;state.users=users.data||[];
   await loadRows();void loadTotalCount();
- }catch(error){state.loaded=false;$('adminLeadList').innerHTML=`<tr><td colspan="10" class="al-empty">${esc(errorMessage(error))}</td></tr>`;}
+ }catch(error){state.loaded=false;$('adminLeadList').innerHTML=`<tr><td colspan="11" class="al-empty">${esc(errorMessage(error))}</td></tr>`;}
 }
 $('alStage').onchange=e=>{state.stage=e.target.value;refresh()};
 $('alAreaCode').addEventListener('input',pause(e=>{state.areaCode=e.target.value.trim();refresh()},300));
