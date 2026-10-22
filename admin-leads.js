@@ -206,6 +206,24 @@ async function searchRows(seq,signal){
  finally{fast.abort();scan.abort();signal.removeEventListener('abort',cancel);}
  void lookup;
 }
+async function loadIndexedAreaRows(seq,signal){
+ const base=client().rpc('admin_crm_by_area_code',{p_area_code:state.areaCode}).select(fields,{count:'exact'});
+ const start=(state.page-1)*state.size,rows=[];
+ let count=null;
+ for(let offset=start;offset<start+state.size;offset+=500){
+  const last=Math.min(offset+499,start+state.size-1);
+  const result=await query(base,{noSort:false}).range(offset,last).abortSignal(signal);
+  if(result.error)throw result.error;
+  if(seq!==state.seq||signal.aborted)return;
+  if(count===null)count=result.count;
+  rows.push(...(result.data||[]));
+  if((result.data||[]).length<last-offset+1)break;
+ }
+ state.rows=rows;state.total=Number.isFinite(count)?count:rows.length;
+ state.totalKnown=Number.isFinite(count);state.countPending=false;state.hasMore=state.totalKnown?start+rows.length<state.total:rows.length===state.size;
+ $('alSearchProgress').hidden=true;
+ renderSummary();renderRows();renderPage();renderPills();
+}
 async function loadRows(reuseSearch=false){
  if(reuseSearch!==true)searchCache=null;
  const seq=++state.seq;
@@ -219,7 +237,8 @@ async function loadRows(reuseSearch=false){
    el.innerHTML='<tr><td colspan="10" class="al-empty">Enter a 3-digit area code (e.g. 970), or clear the area code field.</td></tr>';
    $('alPageStatus').textContent='Enter a valid area code to search.';renderSummary();return;
   }
-  if(searchTerm()||state.areaCode){await searchRows(seq,rowsController.signal);return;}
+  if(state.areaCode){await loadIndexedAreaRows(seq,rowsController.signal);return;}
+  if(searchTerm()){await searchRows(seq,rowsController.signal);return;}
   $('alSearchProgress').hidden=true;
   // One extra row gives reliable Next-page navigation without waiting for COUNT(*).
   const result=await loadPageRows(rowsController.signal);
