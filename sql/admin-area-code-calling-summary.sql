@@ -55,9 +55,9 @@ BEGIN
     CROSS JOIN LATERAL (VALUES(e.phone),(e.altphone)) p(phone)
     CROSS JOIN LATERAL (
       SELECT regexp_replace(
-        regexp_replace(coalesce(p.phone,''),'(?i)(extension|ext[.]?|x|#).*,
+        regexp_replace(coalesce(p.phone,''),'(?i)(extension|ext[.]?|x|#).*$', ''),
         '[^0-9]','','g') AS digits
-    ) d
+    ) dd
   ),
   valid AS (
     SELECT DISTINCT id, state_code, timezone, lastcalled,
