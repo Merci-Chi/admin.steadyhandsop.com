@@ -1,0 +1,19 @@
+/* Area-code picker: intentionally overlays the existing toolbar without reflowing it. */
+.al-area-code{position:relative}
+.al-area-picker{position:absolute;z-index:80;top:calc(100% + 8px);left:0;width:min(440px,calc(100vw - 32px));max-height:460px;overflow:auto;background:#fff;color:#17385c;border:1px solid #cfdaeb;border-radius:14px;box-shadow:0 14px 38px #0d294533;padding:12px;white-space:normal}
+.al-area-picker[hidden]{display:none}
+.al-area-picker-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.al-area-picker-head button{font:inherit;border:0;background:none;color:#1776db;cursor:pointer}
+.al-area-picker-search{box-sizing:border-box;width:100%;padding:10px;border:1px solid #d5e1ef;border-radius:9px;font:inherit;background:transparent;color:inherit}
+.al-area-picker-list{margin-top:8px;max-height:310px;overflow:auto}
+.al-area-picker-option{display:flex;width:100%;justify-content:space-between;align-items:center;gap:9px;text-align:left;padding:10px;border:0;border-radius:9px;background:transparent;color:inherit;cursor:pointer;font:inherit}
+.al-area-picker-option:hover,.al-area-picker-option:focus-visible{background:#eaf2ff}
+.al-area-picker-option small{display:block;color:#70849d;font-size:11px;margin-top:2px}
+.al-area-picker-clock{text-align:right;font-variant-numeric:tabular-nums;min-width:108px}
+.al-area-picker-clock strong{display:block}
+.al-area-picker-open{color:#14794d!important}
+.al-area-picker-divider{padding:9px 6px 4px;color:#70849d;font-size:11px;font-weight:700;text-transform:uppercase}
+.al-area-picker-empty{padding:12px;color:#70849d;font-size:12px}
+html[data-theme="dark"] .al-area-picker{background:#102438;color:#edf5ff;border-color:#314b65}
+html[data-theme="dark"] .al-area-picker-search{border-color:#314b65;color:#edf5ff}
+html[data-theme="dark"] .al-area-picker-option:hover{background:#1b385a}
