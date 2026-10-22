@@ -90,7 +90,7 @@
     document.getElementById('performanceFollowupCount').textContent=shown.length+' of '+rows.length;
     document.getElementById('performanceFollowups').innerHTML=state.followupError?`<p role="alert">Unable to load follow-ups: ${esc(state.followupError)}. Refresh to retry.</p>`:shown.map(lead=>{
       const call=state.rows.find(r=>String(r.id)===String(lead.call?.id))||lead.call;
-      return `<article class="performance-followup-card">${renderCallRow(call||{user_id:lead.callback_owner_id,crm_id:lead.id,outcome:'Follow-up'},lead)}</article>`;
+      return `<article class="performance-followup-card">${renderCallRow(call||{user_id:lead.callback_owner_id,crm_id:lead.id,outcome:'Follow-up'},lead)}${window.PerformanceFollowupActions.buttons(lead)}</article>`;
     }).join('')||'<p class="performance-empty">'+(state.fq?'No follow-ups match your search.':'No follow-ups scheduled.')+'</p>';
     document.getElementById('performanceMoreFollowups').hidden=shown.length>=rows.length||Boolean(state.followupError);
   }
@@ -104,7 +104,7 @@
       const oc=outcomeClass(row);
       return `
         <div class="admin-activity-entry" style="display:flex;align-items:stretch;gap:8px;">
-        <a class="admin-activity-row" style="flex:1;min-width:0;" ${row.id?`href="https://outreach.steadyhandsop.com/index.html?crm_id=${encodeURIComponent(lead?.id||row.crm_id||'')}"`: 'aria-disabled="true"'}>
+        <a class="admin-activity-row" style="flex:1;min-width:0;" ${row.id?`href="call.html?id=${encodeURIComponent(row.id)}"`: 'aria-disabled="true"'}>
           <span class="admin-activity-icon"><i data-lucide="${(Number(row.duration_seconds)||0)>0?'phone-call':'phone-off'}"></i></span>
           <span class="admin-activity-main">
             <strong>${esc(associateLabel)}</strong>
@@ -116,12 +116,8 @@
             <span class="admin-activity-outcome ${oc}">${esc(row.outcome||'No outcome')}</span>
             ${transcript?'<span class="admin-transcript-available"><i data-lucide="file-text"></i>Transcript</span>':''}
           </span>
-          ${lead?.id||row.crm_id?'<i data-lucide="external-link"></i>':''}
+          ${row.id?'<i data-lucide="chevron-right"></i>':''}
         </a>
-        <div class="performance-card-quick-actions">
-          ${row.id?`<button type="button" data-open-transcript="${esc(row.id)}" aria-label="View transcript and call details"><i data-lucide="file-text"></i> Transcript</button>`:''}
-          ${lead?.id?`<button type="button" data-card-followup="task" data-card-lead="${esc(lead.id)}" data-card-owner="${esc(followup?.callback_owner_id||row.user_id||'')}"><i data-lucide="list-todo"></i> Add to Task</button><button type="button" data-card-followup="calendar" data-card-lead="${esc(lead.id)}" data-card-owner="${esc(followup?.callback_owner_id||row.user_id||'')}"><i data-lucide="calendar-plus"></i> Add to Calendar</button>`:''}
-        </div>
         ${row.id?`<button type="button" class="admin-activity-delete" data-delete-call-id="${esc(row.id)}" aria-label="Delete activity for ${esc(label)}" title="Delete call activity" style="align-self:center;flex:none;padding:10px;border:1px solid var(--border-color, #dbe3ed);border-radius:11px;background:transparent;color:#b33b48;cursor:pointer;"><i data-lucide="trash-2"></i></button>`:''}
         </div>`;
 
@@ -166,18 +162,14 @@
   function render(){renderSummary();renderFollowups();renderList();}
 
   for(const id of ['adminActivityList','performanceFollowups'])document.getElementById(id)?.addEventListener('click',event=>{
-    const transcriptButton=event.target.closest('[data-open-transcript]');
-    if(transcriptButton){
-      event.preventDefault();
-      const callId=transcriptButton.dataset.openTranscript;
-      window.steadyHandsOpenAdminCall?.({ids:state.rows.map(r=>r.id).filter(Boolean),activityId:callId,trigger:transcriptButton});
-      return;
-    }
-    const action=event.target.closest('[data-card-followup]');
-    if(action){
-      event.preventDefault();
-      const lead=state.followups.find(x=>String(x.id)===action.dataset.cardLead)||state.leads.get(action.dataset.cardLead);
-      if(lead&&action.dataset.cardOwner)window.PerformanceFollowupActions?.open({client:window.steadyHandsCRMClient,lead:{...lead,callback_owner_id:action.dataset.cardOwner},userId:action.dataset.cardOwner,mode:action.dataset.cardFollowup,admin:true,trigger:action});
+    const callLink=event.target.closest('a.admin-activity-row[href]');
+    if(callLink){
+      const callId=new URL(callLink.href,location.href).searchParams.get('id');
+      if(callId){
+        event.preventDefault();
+        const ids=id==='adminActivityList' ? filtered().slice(0,state.callsShown).map(r=>r.id).filter(Boolean) : state.followups.filter(r=>(!state.user||String(r.callback_owner_id)===state.user)&&[r.company,r.name,r.phone,personLabel(r.callback_owner_id)].join(' ').toLowerCase().includes(state.fq)).slice(0,state.followupsShown).map(lead=>lead.call?.id).filter(Boolean);
+        window.steadyHandsOpenAdminCall?.({ids,activityId:callId,trigger:callLink});
+      }
       return;
     }
     const button=event.target.closest('[data-delete-call-id]');
