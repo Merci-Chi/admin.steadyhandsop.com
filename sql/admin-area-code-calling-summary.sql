@@ -55,7 +55,56 @@ BEGIN
     CROSS JOIN LATERAL (VALUES(e.phone),(e.altphone)) p(phone)
     CROSS JOIN LATERAL (
       SELECT regexp_replace(
-        regexp_replace(coalesce(p.phone,''),'(?i)(ext\\.?|extension|x|#).*$', ''),
+        regexp_replace(coalesce(p.phone,''),'(?i)(extension|ext[.]?|x|#).*,
+        '[^0-9]','','g') AS digits
+    ) d
+  ),
+  valid AS (
+    SELECT DISTINCT id, state_code, timezone, lastcalled,
+                    normalized_outcome, lead_tags,
+                    substr(national,1,3) AS code
+    FROM per_number
+    WHERE national ~ '^[2-9][0-9]{9}$'
+  ),
+  annotated AS (
+    SELECT v.*,
+      (v.lastcalled IS NULL AND NOT EXISTS (
+        SELECT 1 FROM public.callcenter_call_activity a
+        WHERE a.crm_id=v.id
+          AND lower(coalesce(a.outcome,'')) <> 'did_not_call'
+      ) AND v.normalized_outcome NOT IN ('noanswer','leftvoicemail','voicemail','busy')
+        AND NOT (v.lead_tags @> '["No Answer"]'::jsonb
+                 OR v.lead_tags @> '["Left Voicemail"]'::jsonb)
+      ) AS never_called
+    FROM valid v
+  ),
+  counts AS (
+    SELECT a.code,
+           count(DISTINCT a.id) FILTER (WHERE a.never_called) AS uncalled,
+           count(DISTINCT a.id) AS total
+    FROM annotated a
+    GROUP BY a.code
+    HAVING count(DISTINCT a.id) FILTER (WHERE a.never_called) > 0
+  ),
+  locations AS (
+    SELECT a.code, a.state_code, a.timezone,
+           row_number() OVER (
+             PARTITION BY a.code
+             ORDER BY count(*) DESC, a.state_code NULLS LAST, a.timezone NULLS LAST
+           ) AS location_rank
+    FROM annotated a
+    GROUP BY a.code, a.state_code, a.timezone
+  )
+  SELECT counts.code, locations.state_code, locations.timezone,
+         counts.uncalled, counts.total
+  FROM counts
+  JOIN locations ON locations.code=counts.code AND locations.location_rank=1;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.admin_area_code_calling_summary() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_area_code_calling_summary() TO authenticated;
+, ''),
         '[^0-9]','','g') AS digits
     ) d
   ),
