@@ -90,7 +90,7 @@
     document.getElementById('performanceFollowupCount').textContent=shown.length+' of '+rows.length;
     document.getElementById('performanceFollowups').innerHTML=state.followupError?`<p role="alert">Unable to load follow-ups: ${esc(state.followupError)}. Refresh to retry.</p>`:shown.map(lead=>{
       const call=state.rows.find(r=>String(r.id)===String(lead.call?.id))||lead.call;
-      return `<article class="performance-followup-card">${renderCallRow(call||{user_id:lead.callback_owner_id,crm_id:lead.id,outcome:'Follow-up'},lead)}${window.PerformanceFollowupActions.buttons(lead)}</article>`;
+      return `<article class="performance-followup-card">${renderCallRow(call||{user_id:lead.callback_owner_id,crm_id:lead.id,outcome:'Follow-up'},lead)}</article>`;
     }).join('')||'<p class="performance-empty">'+(state.fq?'No follow-ups match your search.':'No follow-ups scheduled.')+'</p>';
     document.getElementById('performanceMoreFollowups').hidden=shown.length>=rows.length||Boolean(state.followupError);
   }
