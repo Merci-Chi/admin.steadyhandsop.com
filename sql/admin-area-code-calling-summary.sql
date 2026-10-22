@@ -6,7 +6,8 @@
 create or replace function public.admin_area_code_calling_summary()
 returns table(area_code text, state_code text, timezone text, uncalled_count bigint, total_count bigint)
 language plpgsql stable security definer set search_path = ''
-as $$
+as $
+#variable_conflict use_column
 begin
  if auth.uid() is null or not public.is_steadyhands_admin() then
   raise exception 'Administrator access required' using errcode = '42501';
