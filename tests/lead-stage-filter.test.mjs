@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
 
 const original=await readFile(new URL('../admin-leads.js',import.meta.url),'utf8');
-const source=original.slice(0,original.indexOf("$('alAreaCode').addEventListener"))+`window.api={state,loadRows,targetIds,openAdvanced};})();`;
+const source=original.slice(0,original.indexOf("$('alAreaCode').addEventListener"))+`window.api={state,loadRows,targetIds,openAdvanced,leadStageLabel};})();`;
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 const stages=['notstarted','staging','outreach','review','complete','notinterested','archived','callback','donotcall'];
 const data=[...stages.map(stage=>({id:stage,stage,company:'Grandma '+stage,phone:'7025550100'})),{id:'null',stage:null,company:'Grandma null',phone:'7025550100'},{id:'empty',stage:'',company:'Grandma empty',phone:'7025550100'}];
@@ -84,3 +84,11 @@ test('Advanced Filters and visible Stage dropdown stay in sync when applying and
  s.node('alClearModal').onclick();await tick();
  assert.equal(s.node('alStage').value,'');
 });
+
+ test('called tags cannot display as Not started and terminal results take precedence',()=>{
+ const s=setup();
+ assert.equal(s.api.leadStageLabel({stage:'notstarted',tags:['Left Voicemail']}),'Called / outreach');
+ assert.equal(s.api.leadStageLabel({stage:'notstarted',tags:['Wrong Number','Left Voicemail']}),'Wrong / invalid number');
+ assert.equal(s.api.leadStageLabel({stage:'notstarted',outcome:'Not Interested'}),'Not interested');
+ assert.equal(s.api.leadStageLabel({stage:'notstarted'}),'Not started');
+ });
