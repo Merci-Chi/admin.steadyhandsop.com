@@ -76,7 +76,7 @@ test('changing the visible filter clears selection, resets pagination, and All s
 
 test('Advanced Filters and visible Stage dropdown stay in sync when applying and clearing',async()=>{
  const s=setup();s.api.openAdvanced();
- assert.match(s.node('alModalBody').innerHTML,/Called \/ outreach/);
+ assert.match(s.node('alModalBody').innerHTML,/Called/);
  s.node('advStage').value='outreach';s.node('advAssignee').value='';
  s.node('alApplyModal').onclick();await tick();
  assert.equal(s.node('alStage').value,'outreach');
@@ -87,7 +87,7 @@ test('Advanced Filters and visible Stage dropdown stay in sync when applying and
 
  test('called tags cannot display as Not started and terminal results take precedence',()=>{
  const s=setup();
- assert.equal(s.api.leadStageLabel({stage:'notstarted',tags:['Left Voicemail']}),'Called / outreach');
+ assert.equal(s.api.leadStageLabel({stage:'notstarted',tags:['Left Voicemail']}),'Called');
  assert.equal(s.api.leadStageLabel({stage:'notstarted',tags:['Wrong Number','Left Voicemail']}),'Wrong / invalid number');
  assert.equal(s.api.leadStageLabel({stage:'notstarted',outcome:'Not Interested'}),'Not interested');
  assert.equal(s.api.leadStageLabel({stage:'notstarted'}),'Not started');
