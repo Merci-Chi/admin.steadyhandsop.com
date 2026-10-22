@@ -57,7 +57,7 @@ BEGIN
       SELECT regexp_replace(
         regexp_replace(coalesce(p.phone,''),'(?i)(extension|ext[.]?|x|#).*$', ''),
         '[^0-9]','','g') AS digits
-    ) dd
+    ) d
   ),
   valid AS (
     SELECT DISTINCT id, state_code, timezone, lastcalled,
