@@ -10,6 +10,7 @@
  const search=panel.querySelector('.al-area-picker-search'),list=panel.querySelector('.al-area-picker-list'),message=panel.querySelector('[data-area-message]');
  const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
  const stateZones={AL:'America/Chicago',AK:'America/Anchorage',AZ:'America/Phoenix',AR:'America/Chicago',CA:'America/Los_Angeles',CO:'America/Denver',CT:'America/New_York',DE:'America/New_York',FL:'America/New_York',GA:'America/New_York',HI:'Pacific/Honolulu',IA:'America/Chicago',ID:'America/Boise',IL:'America/Chicago',IN:'America/Indiana/Indianapolis',KS:'America/Chicago',KY:'America/New_York',LA:'America/Chicago',MA:'America/New_York',MD:'America/New_York',ME:'America/New_York',MI:'America/Detroit',MN:'America/Chicago',MO:'America/Chicago',MS:'America/Chicago',MT:'America/Denver',NC:'America/New_York',ND:'America/Chicago',NE:'America/Chicago',NH:'America/New_York',NJ:'America/New_York',NM:'America/Denver',NV:'America/Los_Angeles',NY:'America/New_York',OH:'America/New_York',OK:'America/Chicago',OR:'America/Los_Angeles',PA:'America/New_York',RI:'America/New_York',SC:'America/New_York',SD:'America/Chicago',TN:'America/Chicago',TX:'America/Chicago',UT:'America/Denver',VA:'America/New_York',VT:'America/New_York',WA:'America/Los_Angeles',WI:'America/Chicago',WV:'America/New_York',WY:'America/Denver',DC:'America/New_York',PR:'America/Puerto_Rico'};
+ const nationwideCodes=new Set(['800','833','844','855','866','877','888','822','880','881','882','883','884','885','886','887','889']);
  const aliases={EST:'America/New_York',EDT:'America/New_York',ET:'America/New_York',CST:'America/Chicago',CDT:'America/Chicago',CT:'America/Chicago',MST:'America/Denver',MDT:'America/Denver',MT:'America/Denver',PST:'America/Los_Angeles',PDT:'America/Los_Angeles',PT:'America/Los_Angeles',HST:'Pacific/Honolulu',AKST:'America/Anchorage',AKDT:'America/Anchorage'};
  let areaZones={};
  const zoneCache=new Map();
@@ -20,7 +21,7 @@
   try{new Intl.DateTimeFormat('en-US',{timeZone:candidate});return candidate}catch{return stateZones[String(row.state_code||'').toUpperCase()]||null}
  }
  function local(zone,now){
-  if(!zone)return {label:'Time unknown',open:false};
+  if(!zone)return {label:'No single time zone',open:false};
   const parts=new Intl.DateTimeFormat('en-US',{timeZone:zone,weekday:'short',hour:'numeric',minute:'2-digit',hour12:false}).formatToParts(now);
   const get=t=>parts.find(p=>p.type===t)?.value;
   const hour=Number(get('hour'))%24,weekday=get('weekday'),minute=get('minute');
@@ -31,14 +32,14 @@
  function render(){
   if(panel.hidden)return;
   const now=new Date(),term=search.value.trim().toLowerCase();
-  const visible=rows.map(row=>({...row,displayState:areaZones[String(row.area_code)]?.state||zoneCache.get(String(row.area_code))?.state||row.state_code,clock:local(zone(row),now)}))
+  const visible=rows.map(row=>({...row,displayState:nationwideCodes.has(String(row.area_code))?'Toll-free / nationwide':areaZones[String(row.area_code)]?.state||zoneCache.get(String(row.area_code))?.state||row.state_code,clock:local(nationwideCodes.has(String(row.area_code))?null:zone(row),now)}))
    .filter(row=>[row.area_code,row.displayState,row.timezone].some(v=>String(v||'').toLowerCase().includes(term)))
    .sort((a,b)=>Number(b.clock.open)-Number(a.clock.open)||Number(b.uncalled_count)-Number(a.uncalled_count)||a.area_code.localeCompare(b.area_code));
   list.innerHTML=visible.map((row,i)=>`
    ${i===0||visible[i-1].clock.open!==row.clock.open?'<div class="al-area-picker-divider">'+(row.clock.open?'Monday–Friday · 9 AM–5 PM':'Outside calling hours / unknown')+'</div>':''}
    <button type="button" class="al-area-picker-option" role="option" data-code="${escapeHtml(row.area_code)}">
     <span><strong>${escapeHtml(row.area_code)} · ${escapeHtml(row.displayState||'Region unavailable')}</strong><small>${Number(row.uncalled_count).toLocaleString()} uncalled leads</small></span>
-    <span class="al-area-picker-clock"><strong class="${row.clock.open?'al-area-picker-open':''}">${escapeHtml(row.clock.label)}</strong><small>${row.clock.open?'Within calling hours':'Outside calling hours'}</small></span>
+    <span class="al-area-picker-clock"><strong class="${row.clock.open?'al-area-picker-open':''}">${escapeHtml(row.clock.label)}</strong><small>${row.clock.open?'Within calling hours':nationwideCodes.has(String(row.area_code))?'Use prospect location':'Outside calling hours'}</small></span>
    </button>`).join('');
   message.hidden=visible.length>0;
   if(!visible.length)message.textContent=loading?'Loading area codes…':loaded?'No uncalled area codes match.':'Area-code data unavailable. The database function may need to be installed.';
@@ -53,7 +54,7 @@
  async function resolveMissingZones(){
   // The bundled map covers known historic geographic NPAs. Query a regularly
   // maintained NANPA-based directory only for newer or missing area codes.
-  const missing=rows.filter(r=>!areaZones[String(r.area_code)]?.timezone&&!zone(r));
+  const missing=rows.filter(r=>!nationwideCodes.has(String(r.area_code))&&!areaZones[String(r.area_code)]?.timezone&&!zone(r));
   let cursor=0;
   async function worker(){
    while(cursor<missing.length){
