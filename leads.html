@@ -6,7 +6,7 @@
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png">
 <title>All Leads • Steady Hands Admin</title>
 <link rel="stylesheet" href="styles.css?v=20261009-dark-text-popup-v8">
-<link rel="stylesheet" href="admin-leads-v2.css?v=20261019-area-code"><link rel="stylesheet" href="admin-area-code-picker.css?v=20261021">
+<link rel="stylesheet" href="admin-leads-v2.css?v=20261022-stage-filter"><link rel="stylesheet" href="admin-area-code-picker.css?v=20261021">
 <script src="https://unpkg.com/lucide@latest"></script><script src="theme.js?v=20261005-account-theme"></script>
 </head>
 <body class="page-admin-leads"><div class="app">
@@ -20,7 +20,7 @@
 <button id="alAssigned" class="al-btn al-white" type="button" aria-label="Filter leads by assigned salesperson"><i data-lucide="user-round"></i> <span id="alAssignedLabel">Assigned: None</span></button>
 <select id="alPageSize" aria-label="Leads per page"><option value="10">10 per page</option><option value="100">100 per page</option><option value="1000">1,000 per page</option><option value="custom">Custom…</option></select>
 <div class="al-primary-actions"><button id="adminAddLead" class="al-btn al-blue" type="button"><i data-lucide="plus"></i> Add Lead</button><button id="alAssignSelected" class="al-btn al-assign" type="button" disabled><i data-lucide="user-round-check"></i> Assign</button><button id="alExportSelected" class="al-btn al-white" type="button" disabled><i data-lucide="download"></i> Export</button></div></section>
-<section class="admin-lead-filters al-status"><button class="active" data-lead-filter="active">Active</button><button data-lead-filter="archived">Archived</button><button data-lead-filter="all">All</button><span id="alActiveFilters"></span></section>
+<section class="admin-lead-filters al-status"><button class="active" data-lead-filter="active">Active</button><button data-lead-filter="archived">Archived</button><button data-lead-filter="all">All</button><label class="al-stage-filter" for="alStage">Stage <select id="alStage" aria-label="Filter leads by stage"><option value="">All stages</option></select></label><span id="alActiveFilters"></span></section>
 <section class="admin-lead-summary al-summary" id="adminLeadSummary"></section>
 <section id="alSearchProgress" class="al-search-progress" hidden aria-label="Lead search progress"><p id="alSearchProgressText" role="status" aria-live="polite">Preparing search…</p><progress id="alSearchProgressBar" max="100" aria-labelledby="alSearchProgressText"></progress></section>
 <section class="al-list-panel"><div class="al-list-actions"><label class="al-check"><input type="checkbox" id="alSelectPage" aria-label="Select leads on this page"><span>Select page</span></label><span id="alSelectionText">0 selected</span><button id="alSelectAllMatching" type="button" class="al-link" hidden>Select all matching leads</button><div class="al-list-spacer"></div><select id="alBulkAction" aria-label="Bulk action"><option value="">Bulk actions…</option><option value="assign">Assign selected</option><option value="unassign">Unassign</option><option value="archive">Archive</option><option value="restore">Restore</option><option value="export_csv">Export selected (CSV)</option><option value="export_json">Export selected (JSON)</option></select><select id="alSort" aria-label="Sort leads"><option value="created_desc">Newest</option><option value="created_asc">Oldest</option><option value="company_asc">Company A–Z</option><option value="company_desc">Company Z–A</option><option value="lastcalled_desc">Recently called</option></select></div>
@@ -31,4 +31,4 @@
 <div class="admin-lead-drawer-overlay" id="adminLeadDrawerOverlay" hidden><aside class="admin-lead-drawer" id="adminLeadDrawer"></aside></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="auth-guard.js?v=20261005-admin-only"></script><script src="admin-shell.js?v=20261019-performance"></script>
-<script src="admin-leads.js?v=20261021-indexed-area-v3"></script><script src="admin-area-code-picker.js?v=20261021-clock-fix-2"></script></body></html>
+<script src="admin-leads.js?v=20261022-stage-filter"></script><script src="admin-area-code-picker.js?v=20261021-clock-fix-2"></script></body></html>
