@@ -3,7 +3,7 @@
  const client=()=>window.steadyHandsCRMClient;
  const list=document.getElementById('developmentList');
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- let rows=[],filter='all';
+ let rows=[],handoffs=[],filter='all';
  const select=document.getElementById('developmentRecipientSelect');
  const recipientList=document.getElementById('developmentRecipientList');
  const recipientMessage=document.getElementById('developmentRecipientMessage');
@@ -44,9 +44,18 @@
   if(!client()||!window.steadyHandsAdminSession)return;
   const {data,error}=await client().from('development_requests').select('*').order('created_at',{ascending:false}).limit(300);
   if(error){list.textContent='Unable to load development requests: '+error.message;return;}
-  rows=data||[];render();
+  rows=data||[];
+  const handoffResult=await client().rpc('admin_development_handoffs');
+  if(handoffResult.error){document.getElementById('developmentHandoffs').textContent='Handoff inbox unavailable: '+handoffResult.error.message;}
+  else {handoffs=handoffResult.data||[];renderHandoffs();}
+  render();
  }
- function render(){
+ function renderHandoffs(){
+  const host=document.getElementById('developmentHandoffs');if(!host)return;
+  const shown=handoffs.filter(h=>filter==='all'||(filter==='new'&&h.status==='pending')||(filter==='in_progress'&&h.status==='accepted'));
+  host.innerHTML=shown.map(h=>`<article class="development-card"><div class="development-card-top"><strong>${esc(h.company||h.contact||'Prospect')}</strong><span>${esc(h.status==='pending'?'Pending recipient':'Acknowledged')}</span></div><p><b>Recipient:</b> ${esc(h.recipient_name||'Developer')}</p><p><b>Phone:</b> ${esc(h.phone||'')}</p><p><b>Notes:</b> ${esc(h.handoff_notes||'No notes')}</p><small>CRM ID: ${esc(h.crm_id)} · Shared ${esc(new Date(h.created_at).toLocaleString())}</small></article>`).join('')||'<p>No shared development leads in this filter.</p>';
+ }
+ function render(){renderHandoffs();
   const count=rows.filter(r=>!r.viewed_at&&r.status==='new').length;
   document.getElementById('developmentCount').textContent=count+' new alert'+(count===1?'':'s');
   const shown=rows.filter(r=>filter==='all'||r.status===filter);
