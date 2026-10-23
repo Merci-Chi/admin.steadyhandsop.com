@@ -49,6 +49,12 @@
         if(!overlay.isConnected||current!==generation)return;
         if(u.error)throw u.error;
         if(l.error)throw l.error;
+        const historyResult = call.crm_id ? await client.from('callcenter_transcripts')
+          .select('id,call_activity_id,transcript,segments,started_at,created_at')
+          .eq('crm_id',call.crm_id).order('created_at',{ascending:false}).limit(200) : {data:[],error:null};
+        const history = (historyResult.data||[]).filter(t=>t.call_activity_id!==selected && (t.transcript||Array.isArray(t.segments)&&t.segments.length));
+        const previousHTML = historyResult.error ? '<p role="alert">Previous conversations unavailable: '+esc(historyResult.error.message)+'</p>' :
+          history.map(t=>'<details class="performance-previous-call"><summary>'+esc(when(t.started_at||t.created_at))+' · Previous call</summary>'+lines(t)+'</details>').join('') || '<p class="performance-modal-plain">No earlier saved conversations for this company.</p>';
         const user=u.data||{},lead=l.data||{},transcript=t.data||null;
         title.textContent=lead.company||lead.name||transcript?.company||'Call details';
         exportPayload={call:{id:call.id,associate:user.display_name||user.email||'Unknown user',lead:lead.company||lead.name||transcript?.company||'Unknown lead',date:call.created_at,outcome:call.outcome,duration:call.duration_seconds},transcript};
@@ -57,6 +63,7 @@
         content.innerHTML='<section class="performance-modal-hero"><small>CALL OUTCOME</small><h2>'+esc(call.outcome||'No outcome')+'</h2><p>'+esc(when(call.created_at))+'</p></section>'+
           '<section class="performance-modal-fields">'+field('Associate',user.display_name||user.email||'Unknown user')+field('Lead',lead.company||lead.name||transcript?.company||'Unknown')+field('Phone',lead.phone||transcript?.phone)+field('Duration',duration(call.duration_seconds))+field('Caller ID',call.caller_id_used||'Not captured')+field('Connected',when(call.connected_at||transcript?.started_at))+field('Ended',when(call.ended_at||transcript?.ended_at))+field('Stage',lead.stage)+'</section>'+
           '<section class="performance-modal-section"><h3>Conversation</h3>'+(t.error?'<p role="alert">Transcript unavailable: '+esc(t.error.message)+'</p>':lines(transcript))+'</section>'+
+          '<section class="performance-modal-section"><h3>Previous conversations (same company)</h3>'+previousHTML+'</section>'+
           '<section class="performance-modal-section"><h3>Notes</h3><p class="performance-modal-plain">'+esc(lead.notes||'No lead notes.')+'</p></section>'+
           '<section class="performance-modal-section"><h3>Call identifiers</h3><div class="performance-modal-fields">'+field('Activity ID',call.id)+field('Transcript ID',transcript?.id||'Not available')+field('Twilio CallSid',call.call_sid||'Not captured')+'</div></section>';
       }catch(error){if(overlay.isConnected&&current===generation)content.innerHTML='<p role="alert">Unable to load call details: '+esc(error.message||'Please try again.')+'</p>';}
