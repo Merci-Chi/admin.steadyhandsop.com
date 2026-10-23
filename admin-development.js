@@ -47,7 +47,7 @@
   rows=data||[];
   const handoffResult=await client().rpc('admin_development_handoffs');
   if(handoffResult.error){document.getElementById('developmentHandoffs').textContent='Handoff inbox unavailable: '+handoffResult.error.message;}
-  else {handoffs=handoffResult.data||[];renderHandoffs();}
+  else {handoffs=handoffResult.data||[];const statuses=await client().rpc('admin_development_handoff_statuses');if(statuses.error){document.getElementById('developmentHandoffs').textContent='Unable to load development work statuses: '+statuses.error.message;return;}const byId=new Map((statuses.data||[]).map(x=>[x.handoff_id,x.work_status]));handoffs=handoffs.map(h=>({...h,work_status:byId.get(h.handoff_id)||'new'}));renderHandoffs();}
   render();
  }
  function renderHandoffs(){
