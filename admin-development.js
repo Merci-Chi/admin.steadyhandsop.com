@@ -4,6 +4,42 @@
  const list=document.getElementById('developmentList');
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  let rows=[],filter='all';
+ const select=document.getElementById('developmentRecipientSelect');
+ const recipientList=document.getElementById('developmentRecipientList');
+ const recipientMessage=document.getElementById('developmentRecipientMessage');
+ let availableRecipients=[];
+ async function refreshRecipients(){
+  if(!client()||!window.steadyHandsAdminSession)return;
+  const {data,error}=await client().rpc('admin_developer_handoff_recipients');
+  if(error){recipientMessage.textContent='Unable to load recipient settings: '+error.message;return;}
+  availableRecipients=data||[];
+  const selected=availableRecipients.filter(r=>r.is_recipient);
+  recipientList.replaceChildren();
+  for(const row of selected){
+   const entry=document.createElement('div');entry.className='development-recipient-row';
+   const name=document.createElement('span');name.textContent=(row.display_name||row.email||'Developer')+' · '+(row.email||'');
+   const remove=document.createElement('button');remove.type='button';remove.textContent='Remove';
+   remove.addEventListener('click',()=>setRecipient(row.user_id,false));
+   entry.append(name,remove);recipientList.append(entry);
+  }
+  if(!selected.length)recipientList.textContent='No developer recipients designated yet.';
+  select.replaceChildren(new Option('Select a team member',''));
+  for(const row of availableRecipients.filter(r=>!r.is_recipient)){
+   select.add(new Option((row.display_name||row.email||'Developer')+' · '+(row.email||''),row.user_id));
+  }
+  document.getElementById('developmentRecipientAdd').disabled=!select.options.length||select.options.length===1;
+ }
+ async function setRecipient(userId,enabled){
+  if(!userId)return;
+  const add=document.getElementById('developmentRecipientAdd');
+  add.disabled=true;recipientMessage.textContent='Saving recipient…';
+  const {error}=await client().rpc('admin_set_developer_handoff_recipient',{p_user_id:userId,p_enabled:enabled});
+  if(error){recipientMessage.textContent='Could not save: '+error.message;add.disabled=false;return;}
+  recipientMessage.textContent=enabled?'Developer recipient added.':'Developer recipient removed.';
+  await refreshRecipients();
+ }
+ document.getElementById('developmentRecipientAdd')?.addEventListener('click',()=>setRecipient(select.value,true));
+
  async function refresh(){
   if(!client()||!window.steadyHandsAdminSession)return;
   const {data,error}=await client().from('development_requests').select('*').order('created_at',{ascending:false}).limit(300);
@@ -35,7 +71,7 @@
  }));
  list.addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b)update(Number(b.dataset.view),{viewed_at:new Date().toISOString()})});
  list.addEventListener('change',e=>{const s=e.target.closest('[data-status]');if(s)update(Number(s.dataset.status),{status:s.value})});
- window.addEventListener('steadyhands:admin-ready',refresh);
- if(window.steadyHandsAdminSession)refresh();
+ window.addEventListener('steadyhands:admin-ready',()=>{refresh();refreshRecipients();});
+ if(window.steadyHandsAdminSession){refresh();refreshRecipients();}
  setInterval(()=>{if(!document.hidden)refresh()},20000);
 })();
