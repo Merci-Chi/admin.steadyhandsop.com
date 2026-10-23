@@ -47,13 +47,13 @@
   rows=data||[];
   const handoffResult=await client().rpc('admin_development_handoffs');
   if(handoffResult.error){document.getElementById('developmentHandoffs').textContent='Handoff inbox unavailable: '+handoffResult.error.message;}
-  else {handoffs=handoffResult.data||[];renderHandoffs();}
+  else {handoffs=handoffResult.data||[];const statuses=await client().rpc('admin_development_handoff_statuses');if(statuses.error){document.getElementById('developmentHandoffs').textContent='Unable to load development work statuses: '+statuses.error.message;return;}const byId=new Map((statuses.data||[]).map(x=>[x.handoff_id,x.work_status]));handoffs=handoffs.map(h=>({...h,work_status:byId.get(h.handoff_id)||'new'}));renderHandoffs();}
   render();
  }
  function renderHandoffs(){
   const host=document.getElementById('developmentHandoffs');if(!host)return;
   const shown=handoffs.filter(h=>filter==='all'||(filter==='new'&&h.status==='pending')||(filter==='in_progress'&&h.status==='accepted'));
-  host.innerHTML=shown.map(h=>`<article class="development-card"><div class="development-card-top"><strong>${esc(h.company||h.contact||'Prospect')}</strong><span>${esc(h.status==='pending'?'Pending recipient':'Acknowledged')}</span></div><p><b>Recipient:</b> ${esc(h.recipient_name||'Developer')}</p><p><b>Phone:</b> ${esc(h.phone||'')}</p><p><b>Notes:</b> ${esc(h.handoff_notes||'No notes')}</p><small>CRM ID: ${esc(h.crm_id)} · Shared ${esc(new Date(h.created_at).toLocaleString())}</small></article>`).join('')||'<p>No shared development leads in this filter.</p>';
+  host.innerHTML=shown.map(h=>`<article class="development-card"><div class="development-card-top"><strong>${esc(h.company||h.contact||'Prospect')}</strong><span>${esc(h.status==='pending'?'Pending recipient':'Acknowledged')}</span></div><p><b>Recipient:</b> ${esc(h.recipient_name||'Developer')}</p><p><b>Phone:</b> ${esc(h.phone||'')}</p><p><b>Notes:</b> ${esc(h.handoff_notes||'No notes')}</p><small>CRM ID: ${esc(h.crm_id)} · Shared ${esc(new Date(h.created_at).toLocaleString())}</small><div class="development-controls"><label>Work status <select data-handoff-status="${esc(h.handoff_id)}">${['new','in_progress','completed'].map(v=>`<option value="${v}" ${h.work_status===v?'selected':''}>${({new:'New',in_progress:'In Progress',completed:'Completed'})[v]}</option>`).join('')}</select></label></div></article>`).join('')||'<p>No shared development leads in this filter.</p>';
  }
  function render(){renderHandoffs();
   const count=rows.filter(r=>!r.viewed_at&&r.status==='new').length;
@@ -73,6 +73,13 @@
   if(error){alert('Could not update request: '+error.message);return;}
   await refresh();
  }
+ document.getElementById('developmentHandoffs')?.addEventListener('change',async e=>{
+  const input=e.target.closest('[data-handoff-status]');if(!input)return;
+  input.disabled=true;
+  const {error}=await client().rpc('admin_set_development_handoff_status',{p_handoff_id:input.dataset.handoffStatus,p_status:input.value});
+  if(error)alert('Could not update developer handoff: '+error.message);
+  await refresh();
+ });
  document.querySelectorAll('[data-development-filter]').forEach(b=>b.addEventListener('click',()=>{
   filter=b.dataset.developmentFilter;
   document.querySelectorAll('[data-development-filter]').forEach(x=>x.classList.toggle('active',x===b));
