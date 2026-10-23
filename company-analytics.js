@@ -7,7 +7,7 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const weekStart=()=>{const now=new Date(),d=new Date(now.getFullYear(),now.getMonth(),now.getDate());d.setDate(d.getDate()-(d.getDay()+6)%7);return d};
 const sameWeek=d=>d&&new Date(d)>=weekStart()&&new Date(d)<=new Date();
 const distinct=(rows,key)=>new Set(rows.map(key).filter(Boolean)).size;
-let mrr=0,costs=0;
+let mrr=0,costs=0,loading=false;
 function set(id,value){if($(id))$(id).textContent=value}
 async function allRows(c,table,fields){
  const result=[];let from=0;
@@ -28,6 +28,8 @@ function renderBenchmarks(){
  $('aBenchmarks').innerHTML=benchmarks.map(([rate,label])=>'<tr><td class="analytics-benchmark">'+rate+'%</td><td>'+label+'</td><td>'+Number((300*rate/100).toFixed(1))+'</td></tr>').join('');
 }
 async function load(){
+ if(loading)return;
+ loading=true;
  $('analyticsState').textContent='Loading live company totals…';$('analyticsData').hidden=true;
  try{
   if(!window.supabase)throw Error('Supabase client unavailable');
@@ -39,11 +41,21 @@ async function load(){
   const [calls,commissions,subs,profiles]=await Promise.all([
    allRows(c,'callcenter_call_activity','id,user_id,crm_id,created_at'),
    allRows(c,'callcenter_commissions','id,user_id,crm_id,source_payment_id,status,created_at,pending_at,completed_at'),
-   allRows(c,'square','id,crmid,userid,subscriptionid,customerid,name,company,email,status,cadence,amount,plan,startdate,canceled'),
+   allRows(c,'square','id,crmid,userid,subscriptionid,customerid,name,company,email,status,cadence,amount,plan,startdate,canceled,updated,created'),
    allRows(c,'callcenter_profiles','user_id,display_name,email')
   ]);
-  const active=subs.filter(s=>String(s.status).toUpperCase()==='ACTIVE'&&String(s.cadence).toUpperCase()==='MONTHLY'&&!s.canceled&&s.subscriptionid);
-  const subscriptions=[...new Map(active.map(s=>[s.subscriptionid,s])).values()];
+  // Resolve each subscription's latest synced state before filtering. Otherwise
+  // an older ACTIVE row can be counted after a newer cancellation was recorded.
+  const latest=new Map();
+  for(const row of subs){
+    if(!row.subscriptionid)continue;
+    const old=latest.get(row.subscriptionid);
+    const stamp=r=>Date.parse(r.updated||r.created||'')||0;
+    if(!old||stamp(row)>stamp(old)||(stamp(row)===stamp(old)&&Boolean(row.canceled)&&!old.canceled))latest.set(row.subscriptionid,row);
+  }
+  const subscriptions=[...latest.values()].filter(s=>String(s.status).toUpperCase()==='ACTIVE'&&String(s.cadence).toUpperCase()==='MONTHLY'&&!s.canceled);
+  const scheduled=[...latest.values()].filter(s=>String(s.cadence).toUpperCase()==='MONTHLY'&&Boolean(s.canceled));
+  set('aScheduledCancellations',scheduled.length.toLocaleString());
   mrr=subscriptions.reduce((n,s)=>n+(Number(s.amount)||0),0);
   const hosting=subscriptions.filter(s=>/web|host|backend|standard/i.test(s.plan||'')).reduce((n,s)=>n+(Number(s.amount)||0),0);
   const paidCommissions=commissions.filter(paid);
@@ -79,10 +91,13 @@ async function load(){
   }).sort((a,b)=>b.weeklySales-a.weeklySales||b.weeklyCalls-a.weeklyCalls);
   $('aTeam').innerHTML=rows.length?rows.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+r.weeklyCalls+'</td><td>'+r.weeklySales+'</td><td>'+(r.weeklyCalls?r.rate.toFixed(2)+'%':'—')+'</td></tr>').join(''):'<tr><td colspan="4">No calls or paid sales recorded yet.</td></tr>';
   renderBenchmarks();$('analyticsState').textContent='Updated '+new Date().toLocaleString();$('analyticsData').hidden=false;
- }catch(e){$('analyticsState').innerHTML='<span class="analytics-error">'+esc(e.message)+'</span><p>Reporting needs administrator SELECT access to the source tables; no figures are estimated when access fails.</p>';console.error(e)}
+ }catch(e){$('analyticsState').innerHTML='<span class="analytics-error">'+esc(e.message)+'</span><p>Reporting needs administrator SELECT access to the source tables; no figures are estimated when access fails.</p>';console.error(e)}finally{loading=false;}
 }
 function updateProfit(){set('aProfit',money(mrr-costs))}
 $('aSaveCosts').addEventListener('click',()=>{costs=Math.max(0,Math.round((Number($('aCosts').value)||0)*100));localStorage.setItem('cc_analytics_costs',String(costs));updateProfit()});
 $('analyticsRefresh').addEventListener('click',load);
+window.addEventListener('focus',()=>{if(!document.hidden)void load();});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)void load();});
+setInterval(()=>{if(!document.hidden)void load();},60000);
 if(window.steadyHandsAdminSession)load();else window.addEventListener('steadyhands:admin-ready',load,{once:true});
 })();
