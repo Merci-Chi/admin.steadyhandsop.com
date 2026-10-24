@@ -38,9 +38,10 @@ function loadPdfLibrary(){
  if(window.jspdf?.jsPDF)return Promise.resolve(window.jspdf.jsPDF);
  if(!pdfLibraryPromise)pdfLibraryPromise=new Promise((resolve,reject)=>{
   const script=document.createElement('script');
-  script.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js';
-  script.onload=()=>window.jspdf?.jsPDF?resolve(window.jspdf.jsPDF):reject(Error('PDF library unavailable.'));
-  script.onerror=()=>reject(Error('Could not load the PDF library. Check your connection and retry.'));
+  script.src='vendor/jspdf-2.5.2.umd.min.js';
+  const timer=setTimeout(()=>{script.remove();reject(Error('PDF library timed out. Please retry.'));},15000);
+  script.onload=()=>{clearTimeout(timer);window.jspdf?.jsPDF?resolve(window.jspdf.jsPDF):reject(Error('PDF library unavailable.'));};
+  script.onerror=()=>{clearTimeout(timer);script.remove();reject(Error('Could not load the PDF library. Refresh the page and retry.'));};
   document.head.appendChild(script);
  }).catch(error=>{pdfLibraryPromise=null;throw error;});
  return pdfLibraryPromise;
@@ -186,8 +187,25 @@ function showBulk(rows){
  document.body.append(overlay);refresh();dlg.querySelector('[data-close]').focus();
 }
 window.SteadyHandsTranscriptExport={
+ history:async(client,crmId,userId)=>{
+  if(!crmId)return {data:[],error:null};
+  const rows=[];
+  for(let offset=0;;offset+=200){
+   let query=client.from('callcenter_transcripts').select('id,call_activity_id,company,transcript,segments,started_at,ended_at,created_at').eq('crm_id',crmId);
+   if(userId)query=query.eq('user_id',userId);
+   const {data,error}=await query.order('created_at',{ascending:false}).order('id',{ascending:false}).range(offset,offset+199);
+   if(error)return {data:[],error};
+   rows.push(...(data||[]));
+   if(!data||data.length<200)return {data:rows,error:null};
+  }
+ },
+ previous:(transcript,lead)=>{
+  const start=new Date(transcript.started_at),end=new Date(transcript.ended_at);
+  const duration=transcript.started_at&&transcript.ended_at&&end>=start?(end-start)/1000:undefined;
+  return window.SteadyHandsTranscriptExport.single({id:transcript.call_activity_id||transcript.id,lead:transcript.company||lead,date:transcript.started_at||transcript.created_at,duration},transcript);
+ },
  bulk:(all,filtered)=>showBulk({all,filtered}),
- single:(call,transcript)=>{const c={id:call.id,associate:call.associate,lead:call.lead,date:call.date,outcome:call.outcome,duration:call.duration,transcript};if(!messages(transcript).length)return alert('No transcript was saved for this call.');const format=prompt('Export transcript format: PDF, PNG, CSV, or TXT','PDF');if(!format)return;const f=format.trim().toLowerCase();if(!['pdf','png','csv','txt'].includes(f))return alert('Choose PDF, CSV, or TXT.');exportCalls([c],f,true)?.catch?.(e=>alert(e.message||e));},
+ single:(call,transcript)=>{const c={id:call.id,associate:call.associate,lead:call.lead,date:call.date,outcome:call.outcome,duration:call.duration,transcript};if(!messages(transcript).length)return alert('No transcript was saved for this call.');const format=prompt('Export transcript format: PDF, PNG, CSV, or TXT','PDF');if(!format)return;const f=format.trim().toLowerCase();if(!['pdf','png','csv','txt'].includes(f))return alert('Choose PDF, PNG, CSV, or TXT.');return exportCalls([c],f,true)?.catch?.(e=>alert(e.message||e));},
  time:messageTime
 };
 })();
