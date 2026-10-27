@@ -83,3 +83,16 @@
 .performance-bars-month .performance-bar-track{height:115px;width:85%;min-width:12px}
 .performance-bars-month .performance-bar-cell{gap:5px;font-size:11px}
 @media(max-width:650px){#performancePeriodLabel{min-width:165px;font-size:13px}.performance-period-toolbar{gap:6px}.performance-period-toolbar button,.performance-period-toolbar select{padding:8px}}
+
+/* Single-row responsive reporting controls */
+.page-admin-activity .performance-header-compact{display:flex;align-items:center;gap:16px;justify-content:space-between;flex-wrap:wrap;margin-bottom:15px}
+.page-admin-activity .performance-title-group{flex:1 1 190px;min-width:175px}
+.page-admin-activity .performance-title-group h2{font-size:25px;line-height:1.12;letter-spacing:-.04em;margin:0}
+.page-admin-activity .performance-title-group p{font-size:12px;line-height:1.45;color:var(--muted);margin:6px 0 0}
+.page-admin-activity .performance-header-compact .performance-period-toolbar{display:flex;flex:0 1 auto;align-items:center;justify-content:center;flex-wrap:nowrap;gap:5px;margin:0}
+.page-admin-activity .performance-header-compact #performancePeriodLabel{min-width:0;white-space:nowrap;font-size:14px;font-weight:800}
+.page-admin-activity .performance-header-compact .performance-period-toolbar button,.page-admin-activity .performance-header-compact .performance-period-toolbar select{min-height:36px;padding:7px 9px;font-size:12px;border-radius:9px}
+.page-admin-activity .performance-header-compact .performance-period-toolbar button svg{width:16px;height:16px}
+.page-admin-activity .performance-analytics-link{white-space:nowrap;font-size:13px;font-weight:800;color:var(--blue);text-decoration:none;margin-left:auto}
+@media(max-width:1250px){.page-admin-activity .performance-header-compact .performance-period-toolbar{order:3;flex:1 1 100%;justify-content:flex-start}.page-admin-activity .performance-analytics-link{order:2}}
+@media(max-width:620px){.page-admin-activity .performance-header-compact{gap:10px}.page-admin-activity .performance-header-compact .performance-period-toolbar{flex-wrap:wrap;justify-content:flex-start}.page-admin-activity .performance-header-compact #performancePeriodLabel{font-size:12px}.page-admin-activity .performance-title-group h2{font-size:22px}}
