@@ -66,9 +66,9 @@
       return {start,end,days:new Date(start.getFullYear(),start.getMonth()+1,0).getDate(),
         caption:start.toLocaleDateString([],{month:'long',year:'numeric'}),current:state.periodOffset===0};
     }
-    const start=new Date(today);start.setDate(today.getDate()-(today.getDay()+6)%7+state.periodOffset*7);
+    const start=new Date(today);start.setDate(today.getDate()-today.getDay()+state.periodOffset*7);
     const end=new Date(start);end.setDate(start.getDate()+7);
-    return {start,end,days:7,caption:'Week of '+start.toLocaleDateString([],{month:'long',day:'numeric',year:'numeric'}),current:state.periodOffset===0};
+    return {start,end,days:7,caption:'Week Ending '+new Date(end.getFullYear(),end.getMonth(),end.getDate()-1).toLocaleDateString([],{month:'long',day:'numeric',year:'numeric'}),current:state.periodOffset===0};
   }
 
   function renderSummary() {
@@ -81,7 +81,7 @@
     const {start:since,end:until,days,caption,current}=reportPeriod();
     document.getElementById('performancePeriodLabel').textContent=caption;
     document.getElementById('performancePeriodSubtitle').textContent=since.toLocaleDateString([],{month:'short',day:'numeric'})+' – '+new Date(until.getTime()-1).toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'})+' · Recorded call activity';
-    document.getElementById('performanceChartRange').textContent=state.periodMode==='week'?'Monday – Sunday':'Daily activity · '+caption;
+    document.getElementById('performanceChartRange').textContent=state.periodMode==='week'?'Sunday – Saturday':'Daily activity · '+caption;
     const next=document.getElementById('performancePeriodNext');
     next.disabled=current;
     const rows=state.rows.filter(r=>(!state.user||String(r.user_id)===state.user)&&new Date(r.created_at)>=since&&new Date(r.created_at)<until&&!/didn.t call|did not call/i.test(r.outcome||''));
