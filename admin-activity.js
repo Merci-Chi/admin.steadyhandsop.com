@@ -184,7 +184,17 @@
     }
   }
 
-  function render(){renderSummary();renderFollowups();renderList();}
+  function render(){renderSummary();renderFollowups();renderList();renderDataStatus();}
+
+  function renderDataStatus(){
+    const status=document.getElementById('performanceDataStatus');
+    if(!status)return;
+    const total=state.rows.filter(r=>!state.user||String(r.user_id)===state.user).length;
+    const {start,end}=reportPeriod();
+    const period=state.rows.filter(r=>(!state.user||String(r.user_id)===state.user)&&new Date(r.created_at)>=start&&new Date(r.created_at)<end).length;
+    status.textContent=total===0?'No logged call records were returned for this selection. Check that calls have been saved and that your admin account can read call activity.':period===0?'No logged calls in this reporting period. '+total+' historical call record'+(total===1?' is':'s are')+' available; use the previous-period arrow to view earlier activity.':'';
+    status.hidden=!status.textContent;
+  }
 
   for(const id of ['adminActivityList','performanceFollowups'])document.getElementById(id)?.addEventListener('click',event=>{
     const callLink=event.target.closest('a.admin-activity-row[href]');
@@ -203,7 +213,11 @@
 
   async function load() {
     const c=window.steadyHandsCRMClient;
-    if(!c) return;
+    if(!c){
+      const status=document.getElementById('performanceDataStatus');
+      if(status){status.hidden=false;status.textContent='Unable to connect to call activity. Refresh or sign in again.';}
+      return;
+    }
     try {
       // Read every page; Supabase may cap each response even when limit(10000) is requested.
       const readAll=async(table,columns,order='id',configure=q=>q)=>{
@@ -255,6 +269,8 @@
       render();
     } catch(error) {
       document.getElementById('adminActivitySummary').innerHTML='<p role="alert">Performance metrics are unavailable. Refresh to retry.</p>';
+      const status=document.getElementById('performanceDataStatus');
+      if(status){status.hidden=false;status.textContent='Call activity could not be loaded: '+(error?.message||'Unknown error')+'.';}
       document.getElementById('performanceFollowups').innerHTML='<p>Follow-ups unavailable. Refresh to retry.</p>';
       document.getElementById('adminActivityList').innerHTML=`<section class="admin-dashboard-error"><strong>Unable to load performance.</strong><p>${esc(error?.message||'Please refresh and try again.')}</p></section>`;
     }
