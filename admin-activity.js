@@ -101,8 +101,8 @@
     const max=Math.max(1,...buckets.map(d=>d.count));
     const today=new Date();today.setHours(0,0,0,0);
     const chart=document.getElementById('performanceChart');
-    chart.classList.toggle('performance-bars-month',state.periodMode==='month');
-    chart.style.setProperty('--month-columns',String(days));
+    chart.classList?.toggle?.('performance-bars-month',state.periodMode==='month');
+    chart.style?.setProperty?.('--month-columns',String(days));
     chart.setAttribute('role','img');chart.setAttribute('aria-label','Calls logged by day: '+buckets.map(d=>d.date.toLocaleDateString()+' '+d.count).join(', '));
     chart.innerHTML=buckets.map(d=>`<div class="performance-bar-cell${d.date.getTime()===today.getTime()?' is-today':''}${d.date>today?' is-future':''}" title="${esc(d.date.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric',year:'numeric'}))}: ${d.date>today?'Upcoming':d.count+' calls'}"><span>${d.date>today?'—':d.count}</span><div class="performance-bar-track"><div style="height:${d.date>today?0:100*d.count/max}%"></div></div><small>${esc(d.label)}</small></div>`).join('');
 
