@@ -13,7 +13,7 @@
     return m ? m+'m '+String(s).padStart(2,'0')+'s' : s+'s';
   };
 
-  let state = { rows:[], users:[], leads:new Map(), transcripts:new Map(), q:'', user:'', outcome:'', date:'all', followups:[], followupError:'', fq:'', callsShown:100, followupsShown:100 };
+  let state = { rows:[], users:[], leads:new Map(), transcripts:new Map(), q:'', user:'', outcome:'', date:'all', followups:[], followupError:'', fq:'', callsShown:100, followupsShown:100, periodMode:'week', periodOffset:0 };
 
   function outcomeClass(row) {
     const text=String(row.outcome||'').toLowerCase().replace(/[_-]+/g,' ');
@@ -55,15 +55,39 @@
     return user?.display_name||user?.email||String(id||'Unknown associate');
   }
 
+  function selectedPeriod() {
+    const now=new Date();
+    const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    if(state.periodMode==='month'){
+      const start=new Date(today.getFullYear(),today.getMonth()+state.periodOffset,1);
+      const end=new Date(start.getFullYear(),start.getMonth()+1,1);
+      return {start,end,days:new Date(start.getFullYear(),start.getMonth()+1,0).getDate(),title:start.toLocaleDateString('en-US',{month:'long',year:'numeric'})};
+    }
+    const start=new Date(today);
+    start.setDate(today.getDate()-today.getDay()+state.periodOffset*7);
+    const end=new Date(start);
+    end.setDate(start.getDate()+7);
+    const saturday=new Date(end);
+    saturday.setDate(end.getDate()-1);
+    return {start,end,days:7,title:'Week Ending '+saturday.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})};
+  }
+
   function renderSummary() {
     const title=state.user ? personLabel(state.user)+"'s Performance" : 'Team Performance';
     document.getElementById('performanceTitle').textContent=title;
     const heading=document.querySelector('.topbar h1');
     if(heading) heading.textContent=title;
     document.title=title+' • Steady Hands Admin';
-    const since=new Date();since.setDate(since.getDate()-6);since.setHours(0,0,0,0);
-    const tomorrow=new Date();tomorrow.setHours(24,0,0,0);
-    const rows=state.rows.filter(r=>(!state.user||String(r.user_id)===state.user)&&new Date(r.created_at)>=since&&new Date(r.created_at)<tomorrow&&!/didn.t call|did not call/i.test(r.outcome||''));
+    const {start:since,end:until,days:dayCount,title:periodTitle}=selectedPeriod();
+    const label=document.getElementById('performancePeriodLabel');
+    if(label)label.textContent=periodTitle;
+    const subtitle=document.getElementById('performancePeriodSubtitle');
+    if(subtitle)subtitle.textContent=since.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+new Date(until.getFullYear(),until.getMonth(),until.getDate()-1).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' · Recorded call activity';
+    const range=document.getElementById('performanceChartRange');
+    if(range)range.textContent=state.periodMode==='week'?'Sunday – Saturday':'Daily activity';
+    const nextButton=document.getElementById('performancePeriodNext');
+    if(nextButton)nextButton.disabled=state.periodOffset>=0;
+    const rows=state.rows.filter(r=>(!state.user||String(r.user_id)===state.user)&&new Date(r.created_at)>=since&&new Date(r.created_at)<until&&!/didn.t call|did not call/i.test(r.outcome||''));
     const positive=rows.filter(r=>/interested|follow.?up|call.?back|requested (text|email)|sale|sold|closed/i.test(r.outcome||'')&&!/not interested/i.test(r.outcome||'')).length;
     const average=rows.length?Math.round(rows.reduce((n,r)=>n+Math.max(0,Number(r.duration_seconds)||0),0)/rows.length):0;
     document.getElementById('adminActivitySummary').innerHTML=[
@@ -72,15 +96,19 @@
       ['Positive Outcome Rate',(rows.length?Math.round(100*positive/rows.length):0)+'%','Not a verified close rate'],
       ['Avg. Logged Duration',Math.floor(average/60)+'m '+String(average%60).padStart(2,'0')+'s','Based on recorded durations']
     ].map(([label,value,note])=>`<div><span>${label}</span><strong>${value}</strong><small>${note}</small></div>`).join('');
-    const days=Array.from({length:7},(_,i)=>{
-      const day=new Date(since);day.setDate(day.getDate()+i);
-      const next=new Date(day);next.setDate(next.getDate()+1);
-      return {label:day.toLocaleDateString([],{weekday:'short'}),count:rows.filter(r=>new Date(r.created_at)>=day&&new Date(r.created_at)<next).length};
+    const days=Array.from({length:dayCount},(_,i)=>{
+      const day=new Date(since);day.setDate(since.getDate()+i);
+      const next=new Date(day);next.setDate(day.getDate()+1);
+      return {date:day,label:state.periodMode==='week'?day.toLocaleDateString('en-US',{weekday:'short'}):String(day.getDate()),count:rows.filter(r=>new Date(r.created_at)>=day&&new Date(r.created_at)<next).length};
     });
     const max=Math.max(1,...days.map(d=>d.count));
+    const today=new Date();today.setHours(0,0,0,0);
     const chart=document.getElementById('performanceChart');
+    chart.classList?.toggle?.('performance-bars-month',state.periodMode==='month');
+    chart.style?.setProperty?.('--month-columns',String(dayCount));
     chart.setAttribute('role','img');chart.setAttribute('aria-label','Calls logged by day: '+days.map(d=>d.label+' '+d.count).join(', '));
-    chart.innerHTML=days.map(d=>`<div class="performance-bar-cell"><span>${d.count}</span><div class="performance-bar-track"><div style="height:${100*d.count/max}%"></div></div><small>${esc(d.label)}</small></div>`).join('');
+    chart.innerHTML=days.map(d=>`<div class="performance-bar-cell${d.date.getTime()===today.getTime()?' is-today':''}${d.date>today?' is-future':''}" title="${esc(d.date.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}))}: ${d.count} calls"><span>${d.date>today?'—':d.count}</span><div class="performance-bar-track"><div style="height:${d.date>today?0:100*d.count/max}%"></div></div><small>${esc(d.label)}</small></div>`).join('');
+
   }
 
   function renderFollowups() {
@@ -261,6 +289,10 @@
     }
   }
 
+  document.getElementById('performancePeriodPrev')?.addEventListener('click',()=>{state.periodOffset--;renderSummary();});
+  document.getElementById('performancePeriodNext')?.addEventListener('click',()=>{if(state.periodOffset<0){state.periodOffset++;renderSummary();}});
+  document.getElementById('performancePeriodToday')?.addEventListener('click',()=>{state.periodOffset=0;renderSummary();});
+  document.getElementById('performancePeriodMode')?.addEventListener('change',e=>{state.periodMode=e.target.value==='month'?'month':'week';state.periodOffset=0;renderSummary();});
   document.getElementById('adminActivitySearch')?.addEventListener('input',e=>{state.q=String(e.target.value||'').toLowerCase().trim();state.callsShown=100;render();});
   document.getElementById('adminActivityUserFilter')?.addEventListener('change',e=>{state.user=e.target.value||'';state.callsShown=100;state.followupsShown=100;const url=new URL(location.href);if(state.user)url.searchParams.set('user',state.user);else url.searchParams.delete('user');history.replaceState(null,'',url);render();});
   document.getElementById('adminActivityOutcomeFilter')?.addEventListener('change',e=>{state.outcome=e.target.value||'';state.callsShown=100;render();});
