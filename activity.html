@@ -12,7 +12,7 @@
   <link rel="apple-touch-icon" sizes="192x192" href="images/icon-192.png" />
   <title>Performance • Steady Hands Admin</title>
   <link rel="stylesheet" href="styles.css?v=20261009-dark-text-popup-v8" />
-  <link rel="stylesheet" href="admin-performance.css?v=20261026-week-nav-final" />
+  <link rel="stylesheet" href="admin-performance.css?v=20261026-compact-header-v2" />
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="theme.js?v=20261005-account-theme"></script>
 <link rel="stylesheet" href="performance-detail-popup.css?v=20261019-native-v2">
@@ -37,8 +37,20 @@
       <button type="button" id="adminActivityRefresh" aria-label="Refresh performance"><i data-lucide="refresh-cw"></i></button>
     </section>
     <section class="performance-panel" aria-labelledby="performanceTitle">
-      <div class="performance-heading"><div><h2 id="performanceTitle">Team Performance</h2><p id="performancePeriodSubtitle">Current reporting period · Recorded call activity</p></div><a href="company-analytics.html">Sales Analytics ↗</a></div>
-      <div class="performance-period-toolbar"><button type="button" id="performancePeriodPrev" aria-label="Previous period" title="Previous period"><i data-lucide="chevron-left"></i></button><span id="performancePeriodLabel" aria-live="polite">Current week</span><button type="button" id="performancePeriodNext" aria-label="Next period" title="Next period"><i data-lucide="chevron-right"></i></button><select id="performancePeriodMode" aria-label="Reporting period"><option value="week">Week</option><option value="month">Month</option></select><button type="button" id="performancePeriodToday">Today</button></div>
+      <div class="performance-header-compact">
+        <div class="performance-title-group">
+          <h2 id="performanceTitle">Team Performance</h2>
+          <p id="performancePeriodSubtitle">Current reporting period · Recorded call activity</p>
+        </div>
+        <div class="performance-period-toolbar">
+          <button type="button" id="performancePeriodPrev" aria-label="Previous period" title="Previous period"><i data-lucide="chevron-left"></i></button>
+          <span id="performancePeriodLabel" aria-live="polite">Current week</span>
+          <button type="button" id="performancePeriodNext" aria-label="Next period" title="Next period"><i data-lucide="chevron-right"></i></button>
+          <select id="performancePeriodMode" aria-label="Reporting period"><option value="week">Week</option><option value="month">Month</option></select>
+          <button type="button" id="performancePeriodToday">Today</button>
+        </div>
+        <a class="performance-analytics-link" href="company-analytics.html">Sales Analytics ↗</a>
+      </div>
       <p id="performanceLoadStatus" class="performance-note" role="status" hidden></p>
       <div id="adminActivitySummary" class="performance-metrics" aria-live="polite"></div>
       <div class="performance-chart"><div class="performance-chart-heading"><strong>Call Activity</strong><span id="performanceChartRange">Sunday – Saturday</span></div><div id="performanceChart" class="performance-bars"></div></div>
