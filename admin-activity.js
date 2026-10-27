@@ -191,13 +191,18 @@
         }
       };
       const callsPromise=readAll('callcenter_call_activity','id,user_id,crm_id,duration_seconds,outcome,created_at');
-      const [calls,users,transcripts,followups]=await Promise.all([
-        callsPromise,
+      // Call activity is required; secondary lookups must never hide its data.
+      const secondary=await Promise.allSettled([
         readAll('callcenter_profiles','user_id,display_name,email','user_id'),
         readAll('callcenter_transcripts','id,call_activity_id'),
         window.steadyHandsLoadPerformanceFollowups({client:c,activities:callsPromise})
-          .then(data=>({data})).catch(error=>({error}))
       ]);
+      const calls=await callsPromise;
+      const users=secondary[0].status==='fulfilled'?secondary[0].value:[];
+      const transcripts=secondary[1].status==='fulfilled'?secondary[1].value:[];
+      const followups=secondary[2].status==='fulfilled'?{data:secondary[2].value}:{error:secondary[2].reason};
+      const warnings=secondary.map((result,i)=>result.status==='rejected'
+        ? ['Associate profiles','Transcripts','Follow-ups'][i]+': '+(result.reason?.message||'unavailable'):null).filter(Boolean);
       state.rows=calls.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
       state.users=users;
       // Keep historical associates selectable even if their profile has been removed.
@@ -215,7 +220,7 @@
         const {data,error}=await c.from('crm')
           .select('id,company,name,phone,timezone,stage,outcome')
           .in('id',crmIds.slice(i,i+100));
-        if(error) throw error;
+        if(error){warnings.push('CRM lead details: '+error.message);break;}
         for(const lead of data||[]) state.leads.set(String(lead.id),lead);
       }
 
@@ -228,7 +233,16 @@
       }
 
       render();
+      const status=document.getElementById('performanceLoadStatus');
+      if(status){
+        status.hidden=false;
+        status.textContent=state.rows.length
+          ? 'Loaded '+state.rows.length+' call records'+(warnings.length?'. Some details could not load: '+warnings.join('; '):'.')
+          : 'No call records were returned. Check call activity permissions or whether this Supabase project contains call logs.';
+      }
     } catch(error) {
+      const status=document.getElementById('performanceLoadStatus');
+      if(status){status.hidden=false;status.textContent='Unable to read call data: '+(error?.message||'Unknown database error');}
       document.getElementById('adminActivitySummary').innerHTML='<p role="alert">Performance metrics are unavailable. Refresh to retry.</p>';
       document.getElementById('performanceFollowups').innerHTML='<p>Follow-ups unavailable. Refresh to retry.</p>';
       document.getElementById('adminActivityList').innerHTML=`<section class="admin-dashboard-error"><strong>Unable to load performance.</strong><p>${esc(error?.message||'Please refresh and try again.')}</p></section>`;
