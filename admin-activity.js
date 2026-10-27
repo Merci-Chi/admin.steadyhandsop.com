@@ -128,7 +128,7 @@
       const associateLabel=user?.display_name||user?.email||(row.user_id ? `Associate (${String(row.user_id).slice(0,8)})` : followup ? 'Unassigned follow-up' : 'Unknown associate');
       const lead=followup||state.leads.get(String(row.crm_id));
       const transcript=state.transcripts.get(String(row.id));
-      const label=lead?.company||lead?.name||lead?.phone||'Unknown lead';
+      const label=lead?.company||lead?.name||lead?.phone||(row.crm_id?'Lead '+String(row.crm_id).slice(0,8):'Unlinked call');
       const oc=outcomeClass(row);
       return `
         <div class="admin-activity-entry" style="display:flex;align-items:stretch;gap:8px;">
@@ -257,11 +257,23 @@
 
       const crmIds=[...new Set(state.rows.map(r=>r.crm_id).filter(Boolean))];
       for(let i=0;i<crmIds.length;i+=100){
+        const ids=crmIds.slice(i,i+100);
+        // Only request the fields needed to label calls. Optional CRM columns
+        // can vary by schema and must not cause all lead labels to disappear.
         const {data,error}=await c.from('crm')
-          .select('id,company,name,phone,timezone,stage,outcome')
-          .in('id',crmIds.slice(i,i+100));
-        if(error){warnings.push('CRM lead details: '+error.message);break;}
+          .select('id,company,name,phone')
+          .in('id',ids);
+        if(error){
+          warnings.push('CRM lead lookup failed: '+error.message);
+          break;
+        }
         for(const lead of data||[]) state.leads.set(String(lead.id),lead);
+      }
+      if(crmIds.length && state.leads.size===0){
+        warnings.push('No matching CRM leads were returned for '+crmIds.length+' linked call IDs. Check CRM SELECT permissions or missing lead records.');
+      }
+      if(!crmIds.length && state.rows.length){
+        warnings.push('Call records have no CRM lead IDs, so business names cannot be resolved.');
       }
 
       const userFilter=document.getElementById('adminActivityUserFilter');
