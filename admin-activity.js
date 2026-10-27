@@ -191,13 +191,25 @@
         }
       };
       const callsPromise=readAll('callcenter_call_activity','id,user_id,crm_id,duration_seconds,outcome,created_at');
-      // Call activity is required; secondary lookups must never hide its data.
+      // Render primary activity immediately, without waiting for optional requests.
+      const calls=await callsPromise;
+      state.rows=calls.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+      const requestedUser=new URLSearchParams(location.search).get('user')||'';
+      state.user=requestedUser;
+      render();
+      const earlyStatus=document.getElementById('performanceLoadStatus');
+      if(earlyStatus){
+        earlyStatus.hidden=false;
+        earlyStatus.textContent=state.rows.length
+          ? 'Loaded '+state.rows.length+' call records. Loading associate details…'
+          : 'Supabase returned no call activity records. Check database read access for this administrator.';
+      }
+      // Secondary lookups cannot block the initial call history.
       const secondary=await Promise.allSettled([
         readAll('callcenter_profiles','user_id,display_name,email','user_id'),
         readAll('callcenter_transcripts','id,call_activity_id'),
-        window.steadyHandsLoadPerformanceFollowups({client:c,activities:callsPromise})
+        window.steadyHandsLoadPerformanceFollowups({client:c,activities:Promise.resolve(calls)})
       ]);
-      const calls=await callsPromise;
       const users=secondary[0].status==='fulfilled'?secondary[0].value:[];
       const transcripts=secondary[1].status==='fulfilled'?secondary[1].value:[];
       const followups=secondary[2].status==='fulfilled'?{data:secondary[2].value}:{error:secondary[2].reason};
