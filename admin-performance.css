@@ -70,3 +70,16 @@
 
 
 .performance-export-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.performance-export-button,.performance-detail-export{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:10px;background:var(--blue,#147fe0);color:#fff;padding:10px 13px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}.performance-export-button svg{width:16px;height:16px}.performance-detail-export:disabled{opacity:.45;cursor:not-allowed}.performance-message-time{color:var(--muted);margin-left:12px;font-size:12px}.performance-export-dialog{background:var(--card,#fff);color:var(--text,#14243b);width:min(100%,470px);max-height:90dvh;overflow:auto;border-radius:18px;padding:22px;display:grid;gap:14px;box-shadow:0 25px 90px #0006}.performance-export-header{display:flex;justify-content:space-between;align-items:center;gap:8px}.performance-export-header h2{margin:0;font-size:23px}.performance-export-header button{border:0;background:transparent;color:inherit;font-size:23px;cursor:pointer}.performance-export-dialog>p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}.performance-export-dialog>label:not(.performance-export-check){display:grid;gap:6px;font-size:13px;font-weight:700}.performance-export-dialog select{padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--page);color:var(--text);font:inherit}.performance-export-check{display:flex;align-items:start;gap:9px;font-size:13px}.performance-export-check input{margin-top:3px}.performance-export-submit{background:var(--blue,#147fe0);color:#fff;border:0;border-radius:11px;padding:13px;font:inherit;font-weight:700;cursor:pointer}.performance-export-submit:disabled{opacity:.5}@media(max-width:600px){.performance-export-dialog{padding:17px}.performance-detail-export{font-size:11px;padding:8px}}
+
+.performance-period-toolbar{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;margin:0 0 20px}
+.performance-period-toolbar button,.performance-period-toolbar select{border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--text);min-height:42px;padding:9px 12px;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.performance-period-toolbar button:disabled{opacity:.35;cursor:not-allowed}
+.performance-period-toolbar button svg{height:18px;width:18px;vertical-align:middle}
+#performancePeriodLabel{text-align:center;font-weight:800;min-width:220px}
+.performance-bar-cell.is-today .performance-bar-track{outline:2px solid var(--blue);outline-offset:2px}
+.performance-bar-cell.is-today small{font-weight:800;color:var(--blue)}
+.performance-bar-cell.is-future{opacity:.4}
+.performance-bars.performance-bars-month{grid-template-columns:repeat(var(--month-columns,31),minmax(20px,1fr));gap:5px;overflow-x:auto;padding:3px 0 9px}
+.performance-bars-month .performance-bar-track{height:115px;width:85%;min-width:12px}
+.performance-bars-month .performance-bar-cell{gap:5px;font-size:11px}
+@media(max-width:650px){#performancePeriodLabel{min-width:165px;font-size:13px}.performance-period-toolbar{gap:6px}.performance-period-toolbar button,.performance-period-toolbar select{padding:8px}}
