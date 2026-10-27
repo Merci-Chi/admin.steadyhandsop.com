@@ -13,7 +13,7 @@
     return m ? m+'m '+String(s).padStart(2,'0')+'s' : s+'s';
   };
 
-  let state = { rows:[], users:[], leads:new Map(), transcripts:new Map(), q:'', user:'', outcome:'', date:'all', followups:[], followupError:'', fq:'', callsShown:100, followupsShown:100, periodMode:'week', periodOffset:0 };
+  let state = { rows:[], users:[], leads:new Map(), transcripts:new Map(), q:'', user:'', outcome:'', date:'all', followups:[], followupError:'', fq:'', callsShown:100, followupsShown:100 };
 
   function outcomeClass(row) {
     const text=String(row.outcome||'').toLowerCase().replace(/[_-]+/g,' ');
@@ -55,36 +55,15 @@
     return user?.display_name||user?.email||String(id||'Unknown associate');
   }
 
-
-  // Calendar periods use local midnight boundaries; subtracting calendar days
-  // rather than milliseconds avoids DST-related drift.
-  function reportPeriod() {
-    const today=new Date();today.setHours(0,0,0,0);
-    if(state.periodMode==='month'){
-      const start=new Date(today.getFullYear(),today.getMonth()+state.periodOffset,1);
-      const end=new Date(start.getFullYear(),start.getMonth()+1,1);
-      return {start,end,days:new Date(start.getFullYear(),start.getMonth()+1,0).getDate(),
-        caption:start.toLocaleDateString([],{month:'long',year:'numeric'}),current:state.periodOffset===0};
-    }
-    const start=new Date(today);start.setDate(today.getDate()-today.getDay()+state.periodOffset*7);
-    const end=new Date(start);end.setDate(start.getDate()+7);
-    return {start,end,days:7,caption:'Week Ending '+new Date(end.getFullYear(),end.getMonth(),end.getDate()-1).toLocaleDateString([],{month:'long',day:'numeric',year:'numeric'}),current:state.periodOffset===0};
-  }
-
   function renderSummary() {
     const title=state.user ? personLabel(state.user)+"'s Performance" : 'Team Performance';
     document.getElementById('performanceTitle').textContent=title;
     const heading=document.querySelector('.topbar h1');
     if(heading) heading.textContent=title;
     document.title=title+' • Steady Hands Admin';
-
-    const {start:since,end:until,days,caption,current}=reportPeriod();
-    document.getElementById('performancePeriodLabel').textContent=caption;
-    document.getElementById('performancePeriodSubtitle').textContent=since.toLocaleDateString([],{month:'short',day:'numeric'})+' – '+new Date(until.getTime()-1).toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'})+' · Recorded call activity';
-    document.getElementById('performanceChartRange').textContent=state.periodMode==='week'?'Sunday – Saturday':'Daily activity · '+caption;
-    const next=document.getElementById('performancePeriodNext');
-    next.disabled=current;
-    const rows=state.rows.filter(r=>(!state.user||String(r.user_id)===state.user)&&new Date(r.created_at)>=since&&new Date(r.created_at)<until&&!/didn.t call|did not call/i.test(r.outcome||''));
+    const since=new Date();since.setDate(since.getDate()-6);since.setHours(0,0,0,0);
+    const tomorrow=new Date();tomorrow.setHours(24,0,0,0);
+    const rows=state.rows.filter(r=>(!state.user||String(r.user_id)===state.user)&&new Date(r.created_at)>=since&&new Date(r.created_at)<tomorrow&&!/didn.t call|did not call/i.test(r.outcome||''));
     const positive=rows.filter(r=>/interested|follow.?up|call.?back|requested (text|email)|sale|sold|closed/i.test(r.outcome||'')&&!/not interested/i.test(r.outcome||'')).length;
     const average=rows.length?Math.round(rows.reduce((n,r)=>n+Math.max(0,Number(r.duration_seconds)||0),0)/rows.length):0;
     document.getElementById('adminActivitySummary').innerHTML=[
@@ -93,19 +72,15 @@
       ['Positive Outcome Rate',(rows.length?Math.round(100*positive/rows.length):0)+'%','Not a verified close rate'],
       ['Avg. Logged Duration',Math.floor(average/60)+'m '+String(average%60).padStart(2,'0')+'s','Based on recorded durations']
     ].map(([label,value,note])=>`<div><span>${label}</span><strong>${value}</strong><small>${note}</small></div>`).join('');
-    const buckets=Array.from({length:days},(_,i)=>{
+    const days=Array.from({length:7},(_,i)=>{
       const day=new Date(since);day.setDate(day.getDate()+i);
       const next=new Date(day);next.setDate(next.getDate()+1);
-      return {date:day,label:state.periodMode==='week'?day.toLocaleDateString([],{weekday:'short'}):String(day.getDate()),count:rows.filter(r=>new Date(r.created_at)>=day&&new Date(r.created_at)<next).length};
+      return {label:day.toLocaleDateString([],{weekday:'short'}),count:rows.filter(r=>new Date(r.created_at)>=day&&new Date(r.created_at)<next).length};
     });
-    const max=Math.max(1,...buckets.map(d=>d.count));
-    const today=new Date();today.setHours(0,0,0,0);
+    const max=Math.max(1,...days.map(d=>d.count));
     const chart=document.getElementById('performanceChart');
-    chart.classList?.toggle?.('performance-bars-month',state.periodMode==='month');
-    chart.style?.setProperty?.('--month-columns',String(days));
-    chart.setAttribute('role','img');chart.setAttribute('aria-label','Calls logged by day: '+buckets.map(d=>d.date.toLocaleDateString()+' '+d.count).join(', '));
-    chart.innerHTML=buckets.map(d=>`<div class="performance-bar-cell${d.date.getTime()===today.getTime()?' is-today':''}${d.date>today?' is-future':''}" title="${esc(d.date.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric',year:'numeric'}))}: ${d.date>today?'Upcoming':d.count+' calls'}"><span>${d.date>today?'—':d.count}</span><div class="performance-bar-track"><div style="height:${d.date>today?0:100*d.count/max}%"></div></div><small>${esc(d.label)}</small></div>`).join('');
-
+    chart.setAttribute('role','img');chart.setAttribute('aria-label','Calls logged by day: '+days.map(d=>d.label+' '+d.count).join(', '));
+    chart.innerHTML=days.map(d=>`<div class="performance-bar-cell"><span>${d.count}</span><div class="performance-bar-track"><div style="height:${100*d.count/max}%"></div></div><small>${esc(d.label)}</small></div>`).join('');
   }
 
   function renderFollowups() {
@@ -184,17 +159,7 @@
     }
   }
 
-  function render(){renderSummary();renderFollowups();renderList();renderDataStatus();}
-
-  function renderDataStatus(){
-    const status=document.getElementById('performanceDataStatus');
-    if(!status)return;
-    const total=state.rows.filter(r=>!state.user||String(r.user_id)===state.user).length;
-    const {start,end}=reportPeriod();
-    const period=state.rows.filter(r=>(!state.user||String(r.user_id)===state.user)&&new Date(r.created_at)>=start&&new Date(r.created_at)<end).length;
-    status.textContent=total===0?'No logged call records were returned for this selection. Check that calls have been saved and that your admin account can read call activity.':period===0?'No logged calls in this reporting period. '+total+' historical call record'+(total===1?' is':'s are')+' available; use the previous-period arrow to view earlier activity.':'';
-    status.hidden=!status.textContent;
-  }
+  function render(){renderSummary();renderFollowups();renderList();}
 
   for(const id of ['adminActivityList','performanceFollowups'])document.getElementById(id)?.addEventListener('click',event=>{
     const callLink=event.target.closest('a.admin-activity-row[href]');
@@ -213,11 +178,7 @@
 
   async function load() {
     const c=window.steadyHandsCRMClient;
-    if(!c){
-      const status=document.getElementById('performanceDataStatus');
-      if(status){status.hidden=false;status.textContent='Unable to connect to call activity. Refresh or sign in again.';}
-      return;
-    }
+    if(!c) return;
     try {
       // Read every page; Supabase may cap each response even when limit(10000) is requested.
       const readAll=async(table,columns,order='id',configure=q=>q)=>{
@@ -269,18 +230,11 @@
       render();
     } catch(error) {
       document.getElementById('adminActivitySummary').innerHTML='<p role="alert">Performance metrics are unavailable. Refresh to retry.</p>';
-      const status=document.getElementById('performanceDataStatus');
-      if(status){status.hidden=false;status.textContent='Call activity could not be loaded: '+(error?.message||'Unknown error')+'.';}
       document.getElementById('performanceFollowups').innerHTML='<p>Follow-ups unavailable. Refresh to retry.</p>';
       document.getElementById('adminActivityList').innerHTML=`<section class="admin-dashboard-error"><strong>Unable to load performance.</strong><p>${esc(error?.message||'Please refresh and try again.')}</p></section>`;
     }
   }
 
-
-  document.getElementById('performancePeriodPrev')?.addEventListener('click',()=>{state.periodOffset--;renderSummary();});
-  document.getElementById('performancePeriodNext')?.addEventListener('click',()=>{if(state.periodOffset<0){state.periodOffset++;renderSummary();}});
-  document.getElementById('performancePeriodToday')?.addEventListener('click',()=>{state.periodOffset=0;renderSummary();});
-  document.getElementById('performancePeriodMode')?.addEventListener('change',e=>{state.periodMode=e.target.value==='month'?'month':'week';state.periodOffset=0;renderSummary();});
   document.getElementById('adminActivitySearch')?.addEventListener('input',e=>{state.q=String(e.target.value||'').toLowerCase().trim();state.callsShown=100;render();});
   document.getElementById('adminActivityUserFilter')?.addEventListener('change',e=>{state.user=e.target.value||'';state.callsShown=100;state.followupsShown=100;const url=new URL(location.href);if(state.user)url.searchParams.set('user',state.user);else url.searchParams.delete('user');history.replaceState(null,'',url);render();});
   document.getElementById('adminActivityOutcomeFilter')?.addEventListener('change',e=>{state.outcome=e.target.value||'';state.callsShown=100;render();});
