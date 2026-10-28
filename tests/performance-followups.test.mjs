@@ -49,3 +49,22 @@ test('team view preserves unassigned legacy callbacks without exposing them in a
  const p=setup({crm:[lead('unassigned',{stage:'callback',callback_owner_id:null})]});
  assert.equal((await p.load()).length,1);assert.equal((await p.load('a')).length,0);
 });
+
+test('legacy callback with one known caller displays that associate even without a linked follow-up call',async()=>{
+ const p=setup({crm:[lead('legacy',{stage:'callback',callback_owner_id:null})],calls:[call('legacy','a','called')]});
+ const rows=await p.load();
+ assert.equal(rows.length,1);
+ assert.equal(rows[0].callback_owner_id,'a');
+});
+test('legacy callback with competing historical callers remains unassigned rather than guessing',async()=>{
+ const p=setup({crm:[lead('ambiguous',{stage:'callback',callback_owner_id:null})],calls:[call('ambiguous','a','called','2026-10-18'),call('ambiguous','b','called','2026-10-19')]});
+ const rows=await p.load();
+ assert.equal(rows.length,1);
+ assert.equal(rows[0].callback_owner_id,null);
+});
+test('explicit callback owner takes priority over old caller',async()=>{
+ const p=setup({crm:[lead('assigned',{stage:'callback',callback_owner_id:'b'})],calls:[call('assigned','a','called')]});
+ const rows=await p.load();
+ assert.equal(rows.length,1);
+ assert.equal(rows[0].callback_owner_id,'b');
+});

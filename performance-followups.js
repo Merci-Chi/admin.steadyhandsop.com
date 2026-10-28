@@ -36,6 +36,16 @@
       const k=key(row.crm_id,row.user_id),prior=latest.get(k);
       if(!prior||String(row.created_at||'')>String(prior.created_at||'')||(row.created_at===prior.created_at&&String(row.id)>String(prior.id)))latest.set(k,row);
     }
+    // Recover an owner for legacy callback rows missing callback_owner_id only
+    // when all recorded calls for the lead belong to exactly one associate.
+    // Never overwrite a current pipeline assignment or invent an owner.
+    const callerOwners=new Map();
+    if(!userId)for(const call of ownCalls){
+      if(!call.crm_id||!call.user_id)continue;
+      const id=String(call.crm_id);
+      if(!callerOwners.has(id))callerOwners.set(id,new Set());
+      callerOwners.get(id).add(String(call.user_id));
+    }
     const pipelineLeadIds=new Set([...stages.values()].map(r=>String(r.crm_id)));
     const candidates=[...stages.values()].filter(r=>isFollowup(r.stage));
     const inferred=[...latest.values()].filter(r=>{
@@ -62,7 +72,11 @@
     };
     for(const row of owned(callbacks,'callback_owner_id')){
       const current=stages.get(key(row.id,row.callback_owner_id));
-      if(current?isFollowup(current.stage):!pipelineLeadIds.has(String(row.id)))add(row,row.callback_owner_id);
+      if(current?isFollowup(current.stage):!pipelineLeadIds.has(String(row.id))){
+        const owners=callerOwners.get(String(row.id));
+        const recoveredOwner=!row.callback_owner_id&&owners?.size===1?[...owners][0]:null;
+        add(row,row.callback_owner_id||recoveredOwner||null);
+      }
     }
     for(const row of candidates)add(leads.get(String(row.crm_id)),row.salesperson_user_id,{
       follow_up_at:row.follow_up_at||null,follow_up_category:row.follow_up_category||'',notes:row.notes||'',source:'pipeline'
