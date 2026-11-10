@@ -1,25 +1,25 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#102945">
+<meta name="theme-color" content="#102945"><meta name="mobile-web-app-capable" content="yes"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="images/icon-192.png">
 <title>Bookings • Steady Hands Admin</title>
 <link rel="stylesheet" href="styles.css?v=20261009-dark-text-popup-v8">
-<link rel="stylesheet" href="bookings.css?v=1">
+<link rel="stylesheet" href="bookings.css?v=2">
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="theme.js?v=20261005-account-theme"></script>
 </head><body class="page-admin-bookings">
 <div class="app">
 <header class="topbar"><div class="topbar-row"><div><span class="admin-kicker">STEADY HANDS ADMIN</span><h1>Bookings</h1></div></div></header>
 <main class="content bookings-content">
-<section class="bookings-topline"><div><h2>Consultation Bookings</h2><p>Appointments requested through steadyhandsop.com • Times shown in Pacific Time</p></div><button class="bk-refresh" id="bkRefresh" type="button"><i data-lucide="refresh-cw"></i> Refresh</button></section>
+<section class="bookings-topline"><div><h2>Consultation Bookings</h2><p>Appointments requested through steadyhandsop.com • Times shown in Pacific Time</p></div><span class="bk-auto-status">● Auto-updates every 20s</span><button type="button" class="bk-notify" id="bkNotify">Enable notifications</button><button class="bk-refresh" id="bkRefresh" type="button"><i data-lucide="refresh-cw"></i> Refresh</button></section>
 <div class="bk-stats" id="bkStats" aria-live="polite"><div class="bk-stat"><small>Upcoming</small><strong>—</strong></div><div class="bk-stat"><small>Submitted</small><strong>—</strong></div><div class="bk-stat"><small>Confirmed</small><strong>—</strong></div></div>
 <div class="bk-controls"><div class="bk-month-controls"><button type="button" id="bkPrev" aria-label="Previous month"><i data-lucide="chevron-left"></i></button><h2 id="bkMonthTitle">Calendar</h2><button type="button" id="bkNext" aria-label="Next month"><i data-lucide="chevron-right"></i></button><button type="button" id="bkToday">Today</button></div><label class="bk-search-label"><i data-lucide="search"></i><input type="search" id="bkSearch" placeholder="Search customer, company, email, or service" autocomplete="off"></label><label class="bk-filter-label">Status<select id="bkStatus"><option value="all">All statuses</option><option value="submitted">Submitted</option><option value="confirmed">Confirmed</option><option value="cancelled">Cancelled</option><option value="declined">Declined</option></select></label></div>
 <div class="bk-body"><section class="bk-calendar-panel" aria-label="Bookings calendar"><div class="bk-weekdays"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div><div class="bk-calendar" id="bkCalendar"></div></section><section class="bk-list-panel"><div class="bk-list-heading"><div><h3 id="bkListTitle">Bookings</h3><p id="bkListSubtitle">Select a day to filter, or show the whole month</p></div><button id="bkClearDay" type="button" hidden>Show month</button></div><div id="bkList" class="bk-list" role="region" aria-live="polite"><p class="bk-empty">Checking administrator access…</p></div></section></div>
 <p id="bkMessage" class="bk-message" role="status" aria-live="polite"></p>
-</main><nav class="bottom-nav"></nav></div>
+</main><nav class="bottom-nav"></nav></div><div class="bk-toast" id="bkToast" role="status" aria-live="polite" hidden></div>
 <div id="bkOverlay" class="bk-overlay" hidden><div class="bk-scrim" data-bk-close></div><aside class="bk-drawer" role="dialog" aria-modal="true" aria-labelledby="bkDrawerTitle"><div class="bk-drawer-header"><h2 id="bkDrawerTitle">Booking details</h2><button type="button" data-bk-close aria-label="Close details"><i data-lucide="x"></i></button></div><div id="bkDrawerBody"></div></aside></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="auth-guard.js?v=20261005-admin-only"></script>
 <script src="admin-shell.js?v=20261110-bookings"></script>
-<script src="admin-bookings.js?v=1"></script>
+<script src="admin-bookings.js?v=2"></script>
 </body></html>
