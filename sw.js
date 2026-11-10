@@ -27,3 +27,15 @@ self.addEventListener('fetch', event => {
     fetch(request, { cache: 'no-store' }).catch(() => fetch(request))
   );
 });
+
+/* Clicking a displayed booking notification opens the existing PWA. */
+self.addEventListener('notificationclick',event=>{
+  event.notification.close();
+  const target=new URL('bookings.html',self.registration.scope).href;
+  event.waitUntil((async()=>{
+    const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+    const match=windows.find(w=>w.url.startsWith(self.registration.scope));
+    if(match){await match.focus();if(match.navigate)await match.navigate(target);return;}
+    await self.clients.openWindow(target);
+  })());
+});
