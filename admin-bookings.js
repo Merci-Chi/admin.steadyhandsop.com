@@ -5,7 +5,7 @@ const $=q=>document.querySelector(q);
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad=n=>String(n).padStart(2,'0');
 const today=new Date(), view={year:today.getFullYear(),month:today.getMonth(),selected:'',status:'all',search:''};
-let entries=[],busy=false,opened=null,loaded=false;
+let entries=[],busy=false,opened=null,loaded=false,initialized=false,seenBookingIds=null,checkingNotices=false;
 const fmtParts=(value,zone=ZONE)=>{
  const p=new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(value));
  return Object.fromEntries(p.filter(x=>x.type!=='literal').map(x=>[x.type,Number(x.value)]));
@@ -60,9 +60,9 @@ function renderList(){
  $('#bkList').querySelectorAll('[data-booking-id]').forEach(btn=>btn.addEventListener('click',()=>openBooking(btn.dataset.bookingId)));
 }
 function render(){renderCalendar();renderList();updateStats();window.lucide?.createIcons();}
-async function load(){
+async function load(silent=false){
  if(!window.steadyHandsAdminSession||busy)return;
- busy=true;$('#bkRefresh').disabled=true;setMessage('Loading bookings…');
+ busy=true;$('#bkRefresh').disabled=true;if(!silent)setMessage('Loading bookings…');
  const start=new Date(Date.UTC(view.year,view.month,1)-2*86400000).toISOString();
  const end=new Date(Date.UTC(view.year,view.month+1,1)+2*86400000).toISOString();
  const requested=monthKey();
@@ -71,7 +71,7 @@ async function load(){
   if(error)throw error;
   if(requested!==monthKey())return;
   entries=(data||[]).filter(r=>dateKey(r.start_at).startsWith(requested));loaded=true;render();
-  setMessage(entries.length?'Showing stored consultation requests. Refresh to check for new bookings.':'No bookings recorded for this month.');
+  if(!silent)setMessage(entries.length?'Bookings are up to date. Auto-refresh is on.':'No bookings recorded for this month. Auto-refresh is on.');
  }catch(error){
   console.error('Bookings failed to load',error);
   $('#bkCalendar').innerHTML='';
@@ -112,11 +112,17 @@ async function saveStatus(){
   const {data,error}=await window.steadyHandsCRMClient.from(TABLE).update({status:next,updated_at:new Date().toISOString()}).eq('id',r.id).eq('status',r.status).select('id,status').maybeSingle();
   if(error)throw error;
   if(!data)throw new Error('This booking was changed by someone else. Refresh the page.');
-  r.status=data.status;render();$('#bkDetailMessage').textContent='Saved. This updates the booking status only; no customer email was sent.';
+  r.status=data.status;render();showBookingToast('Booking status saved.');$('#bkDetailMessage').textContent='Saved. This updates the booking status only; no customer email was sent.';
  }catch(error){console.error('Unable to update booking',error);$('#bkDetailMessage').textContent=error.message||'Could not save the booking status.';}finally{btn.disabled=false;}
 }
 function init(){
- if(!window.steadyHandsAdminSession||loaded)return;
+ if(!window.steadyHandsAdminSession||initialized)return;
+ initialized=true;
+ if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{scope:'./',updateViaCache:'none'}).catch(console.warn);
+ $('#bkNotify').addEventListener('click',enableBookingNotifications);
+ updateBookingNotificationControl();
+ setInterval(()=>{if(!document.hidden){load(true);checkNewBookings();}},20000);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden){load(true);checkNewBookings();}});
  $('#bkPrev').addEventListener('click',()=>move(-1));
  $('#bkNext').addEventListener('click',()=>move(1));
  $('#bkToday').addEventListener('click',()=>{const d=new Date();view.year=d.getFullYear();view.month=d.getMonth();view.selected='';load();});
@@ -126,7 +132,7 @@ function init(){
  $('#bkStatus').addEventListener('change',event=>{view.status=event.target.value;render();});
  document.querySelectorAll('[data-bk-close]').forEach(el=>el.addEventListener('click',closeBooking));
  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('#bkOverlay').hidden)closeBooking();});
- load();
+ load();checkNewBookings();
 }
 function move(amount){const d=new Date(view.year,view.month+amount,1);view.year=d.getFullYear();view.month=d.getMonth();view.selected='';entries=[];render();load();}
 window.addEventListener('steadyhands:admin-ready',init);
