@@ -116,7 +116,7 @@ function renderList(){
  $('#bkListTitle').textContent=view.selected?new Date(view.selected+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}):'All bookings — '+monthName();
  $('#bkListSubtitle').textContent=rows.length+` booking${rows.length===1?'':'s'}`+(view.selected?' on this day':' this month');
  $('#bkClearDay').hidden=!view.selected;
- $('#bkList').innerHTML=rows.map(bookingCard).join('')||'<p class="bk-empty">No bookings match this view.</p>';
+ $('#bkList').innerHTML=rows.map(bookingCard).join('')||(view.selected?'<p class="bk-empty">No bookings on this date. Select <strong>Show month</strong> to see other dates.</p>':'<p class="bk-empty">No consultation bookings recorded for this month. Only requests successfully submitted on the public website appear here.</p>');
  $('#bkList').querySelectorAll('[data-booking-id]').forEach(btn=>btn.addEventListener('click',()=>openBooking(btn.dataset.bookingId)));
 }
 function render(){renderCalendar();renderList();updateStats();window.lucide?.createIcons();}
@@ -131,7 +131,7 @@ async function load(silent=false){
   if(error)throw error;
   if(requested!==monthKey())return;
   entries=(data||[]).filter(r=>dateKey(r.start_at).startsWith(requested));loaded=true;render();
-  if(!silent)setMessage(entries.length?'Bookings are up to date. Auto-refresh is on.':'No bookings recorded for this month. Auto-refresh is on.');
+  if(!silent)setMessage(entries.length?'Bookings loaded from Supabase. Auto-refresh is on.':'Supabase is connected, but returned no bookings for this month. Check that a test appointment was submitted successfully.');
  }catch(error){
   console.error('Bookings failed to load',error);
   $('#bkCalendar').innerHTML='';
@@ -172,7 +172,7 @@ async function saveStatus(){
   const {data,error}=await window.steadyHandsCRMClient.from(TABLE).update({status:next,updated_at:new Date().toISOString()}).eq('id',r.id).eq('status',r.status).select('id,status').maybeSingle();
   if(error)throw error;
   if(!data)throw new Error('This booking was changed by someone else. Refresh the page.');
-  r.status=data.status;render();showBookingToast('Booking status saved.');$('#bkDetailMessage').textContent='Saved. This updates the booking status only; no customer email was sent.';
+  r.status=data.status;render();showBookingToast('Booking status saved.');window.dispatchEvent(new CustomEvent('steadyhands:booking-status-saved'));$('#bkDetailMessage').textContent='Saved. This updates the booking status only; no customer email was sent.';
  }catch(error){console.error('Unable to update booking',error);$('#bkDetailMessage').textContent=error.message||'Could not save the booking status.';}finally{btn.disabled=false;}
 }
 function init(){
@@ -181,8 +181,9 @@ function init(){
  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{scope:'./',updateViaCache:'none'}).catch(console.warn);
  $('#bkNotify').addEventListener('click',enableBookingNotifications);
  updateBookingNotificationControl();
- setInterval(()=>{if(!document.hidden){load(true);checkNewBookings();}},20000);
- document.addEventListener('visibilitychange',()=>{if(!document.hidden){load(true);checkNewBookings();}});
+ setInterval(()=>{if(!document.hidden)load(true);},20000);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)load(true);});
+ window.addEventListener('steadyhands:bookings-changed',()=>load(true));
  $('#bkPrev').addEventListener('click',()=>move(-1));
  $('#bkNext').addEventListener('click',()=>move(1));
  $('#bkToday').addEventListener('click',()=>{const d=new Date();view.year=d.getFullYear();view.month=d.getMonth();view.selected='';load();});
@@ -192,7 +193,7 @@ function init(){
  $('#bkStatus').addEventListener('change',event=>{view.status=event.target.value;render();});
  document.querySelectorAll('[data-bk-close]').forEach(el=>el.addEventListener('click',closeBooking));
  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('#bkOverlay').hidden)closeBooking();});
- load();checkNewBookings();
+ load();
 }
 function move(amount){const d=new Date(view.year,view.month+amount,1);view.year=d.getFullYear();view.month=d.getMonth();view.selected='';entries=[];render();load();}
 window.addEventListener('steadyhands:admin-ready',init);
