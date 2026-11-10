@@ -20,6 +20,66 @@ const activeRows=()=>entries.filter(r=>view.status==='all'||r.status===view.stat
  const q=view.search;return [r.business_name,r.customer_name,r.customer_email,r.customer_phone,JSON.stringify(r.services||[])].some(s=>String(s??'').toLowerCase().includes(q));
 });
 function setMessage(message=''){$('#bkMessage').textContent=message;}
+
+function showBookingToast(message){
+ const box=$('#bkToast');
+ if(!box)return;
+ box.textContent=message;
+ box.hidden=false;
+ clearTimeout(showBookingToast.timeout);
+ showBookingToast.timeout=setTimeout(()=>{box.hidden=true;},5000);
+}
+function updateBookingNotificationControl(){
+ const btn=$('#bkNotify');
+ if(!btn)return;
+ const enabled='Notification' in window&&Notification.permission==='granted'&&localStorage.getItem('sh-bookings-alerts')==='yes';
+ btn.textContent=enabled?'Notifications on':'Enable notifications';
+ btn.setAttribute('aria-pressed',String(enabled));
+}
+async function enableBookingNotifications(){
+ if(!('Notification' in window)){showBookingToast('This browser does not support notifications. In-app alerts still work.');return;}
+ if(Notification.permission==='granted'&&localStorage.getItem('sh-bookings-alerts')==='yes'){
+  localStorage.setItem('sh-bookings-alerts','no');updateBookingNotificationControl();showBookingToast('Browser notifications disabled.');return;
+ }
+ if(Notification.permission==='denied'){showBookingToast('Notifications are blocked. Enable them in your browser settings.');return;}
+ try{
+  const permission=await Notification.requestPermission();
+  localStorage.setItem('sh-bookings-alerts',permission==='granted'?'yes':'no');
+  updateBookingNotificationControl();
+  showBookingToast(permission==='granted'?'Browser notifications enabled while Admin is open.':'Notifications not enabled.');
+ }catch(error){console.warn(error);showBookingToast('Unable to enable notifications.');}
+}
+async function sendBookingNotification(count){
+ if(!('Notification' in window)||Notification.permission!=='granted'||localStorage.getItem('sh-bookings-alerts')!=='yes')return;
+ const title=count===1?'New booking received':count+' new bookings received';
+ const options={body:'Open Steady Hands Admin to review.',tag:'steadyhands-new-booking',icon:'images/icon-192.png',data:{url:'bookings.html'}};
+ try{
+  const registration='serviceWorker' in navigator?await navigator.serviceWorker.getRegistration():null;
+  if(registration&&registration.showNotification)await registration.showNotification(title,options);
+  else new Notification(title,options);
+ }catch(error){console.warn('Booking browser notification failed',error);}
+}
+async function checkNewBookings(){
+ if(checkingNotices||document.hidden||!window.steadyHandsAdminSession)return;
+ checkingNotices=true;
+ try{
+  const result=await window.steadyHandsCRMClient.from(TABLE).select('id,created_at').order('created_at',{ascending:false}).limit(100);
+  if(result.error)throw result.error;
+  const list=result.data||[];
+  const latest=new Set(list.map(item=>String(item.id)));
+  if(seenBookingIds!==null){
+   const added=list.filter(item=>!seenBookingIds.has(String(item.id))).length;
+   if(added){
+    showBookingToast(added===1?'New booking request received!':added+' new booking requests received!');
+    sendBookingNotification(added);
+    if(!busy)load(true);
+   }
+  }
+  seenBookingIds=latest;
+ }catch(error){console.warn('Could not check booking notifications',error);}
+ finally{checkingNotices=false;}
+}
+
 function updateStats(){
  const now=Date.now(),valid=entries.filter(r=>!['cancelled','declined'].includes(r.status));
  const stats=[valid.filter(r=>Date.parse(r.start_at)>=now).length,entries.filter(r=>r.status==='submitted').length,entries.filter(r=>r.status==='confirmed').length];
