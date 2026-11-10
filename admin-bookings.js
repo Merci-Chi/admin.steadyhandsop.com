@@ -116,7 +116,7 @@ function renderList(){
  $('#bkListTitle').textContent=view.selected?new Date(view.selected+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}):'All bookings — '+monthName();
  $('#bkListSubtitle').textContent=rows.length+` booking${rows.length===1?'':'s'}`+(view.selected?' on this day':' this month');
  $('#bkClearDay').hidden=!view.selected;
- $('#bkList').innerHTML=rows.map(bookingCard).join('')||(view.selected?'<p class="bk-empty">No bookings on this date. Select <strong>Show month</strong> to see other dates.</p>':'<p class="bk-empty">No consultation bookings recorded for this month. Only requests successfully submitted on the public website appear here.</p>');
+ $('#bkList').innerHTML=rows.map(bookingCard).join('')||(view.selected?'<p class="bk-empty">No bookings on this date. Select <strong>Show month</strong> to see other dates.</p>':'<p class="bk-empty">No bookings visible for this month. If Supabase SQL Editor shows bookings, verify this admin account has permission to read the booking table.</p>');
  $('#bkList').querySelectorAll('[data-booking-id]').forEach(btn=>btn.addEventListener('click',()=>openBooking(btn.dataset.bookingId)));
 }
 function render(){renderCalendar();renderList();updateStats();window.lucide?.createIcons();}
