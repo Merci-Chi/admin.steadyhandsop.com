@@ -5,7 +5,7 @@ const $=q=>document.querySelector(q);
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad=n=>String(n).padStart(2,'0');
 const today=new Date(), view={year:today.getFullYear(),month:today.getMonth(),selected:'',status:'all',search:''};
-let entries=[],busy=false,opened=null,loaded=false,initialized=false,seenBookingIds=null,checkingNotices=false;
+let entries=[],busy=false,opened=null,loaded=false,initialized=false,seenBookingIds=null,checkingNotices=false,initialMonthLocated=false;
 const fmtParts=(value,zone=ZONE)=>{
  const p=new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(value));
  return Object.fromEntries(p.filter(x=>x.type!=='literal').map(x=>[x.type,Number(x.value)]));
@@ -122,21 +122,38 @@ function renderList(){
 function render(){renderCalendar();renderList();updateStats();window.lucide?.createIcons();}
 async function load(silent=false){
  if(!window.steadyHandsAdminSession||busy)return;
- busy=true;$('#bkRefresh').disabled=true;if(!silent)setMessage('Loading bookings…');
- const start=new Date(Date.UTC(view.year,view.month,1)-2*86400000).toISOString();
- const end=new Date(Date.UTC(view.year,view.month+1,1)+2*86400000).toISOString();
- const requested=monthKey();
+ busy=true;$('#bkRefresh').disabled=true;
+ if(!silent)setMessage('Loading bookings…');
  try{
-  const {data,error}=await window.steadyHandsCRMClient.from(TABLE).select('id,created_at,start_at,end_at,timezone,services,business_name,customer_name,customer_email,customer_phone,customer_notes,status').gte('start_at',start).lt('start_at',end).order('start_at',{ascending:true}).limit(1000);
+  // Query all stored bookings rather than only the displayed calendar month.
+  // This lets new admins find appointments even if they fall in a future month.
+  const {data,error}=await window.steadyHandsCRMClient.from(TABLE)
+    .select('id,created_at,start_at,end_at,timezone,services,business_name,customer_name,customer_email,customer_phone,customer_notes,status')
+    .order('start_at',{ascending:true}).limit(1000);
   if(error)throw error;
-  if(requested!==monthKey())return;
-  entries=(data||[]).filter(r=>dateKey(r.start_at).startsWith(requested));loaded=true;render();
-  if(!silent)setMessage(entries.length?'Bookings loaded from Supabase. Auto-refresh is on.':'Supabase is connected, but returned no bookings for this month. Check that a test appointment was submitted successfully.');
+  const all=(data||[]).filter(r=>r.start_at && !Number.isNaN(Date.parse(r.start_at)));
+  if(!initialMonthLocated && all.length){
+   const currentlyVisible=all.some(r=>dateKey(r.start_at).startsWith(monthKey()));
+   if(!currentlyVisible){
+    const upcoming=all.find(r=>Date.parse(r.start_at)>=Date.now())||all[all.length-1];
+    const p=fmtParts(upcoming.start_at);
+    view.year=p.year;view.month=p.month-1;view.selected='';
+   }
+  }
+  initialMonthLocated=true;
+  entries=all.filter(r=>dateKey(r.start_at).startsWith(monthKey()));
+  loaded=true;render();
+  if(!all.length){
+   setMessage('No bookings are visible to this admin login. If SQL Editor shows bookings, the authenticated ADMIN SELECT policy or GRANT is missing. See the booking permissions setup.');
+  }else if(!entries.length){
+   setMessage(all.length+' saved booking(s) found, but none in '+monthName()+'. Use the month arrows to navigate.');
+  }else if(!silent){
+   setMessage(entries.length+' booking(s) displayed for '+monthName()+'; '+all.length+' total visible to this admin account. Auto-refresh is on.');
+  }
  }catch(error){
   console.error('Bookings failed to load',error);
-  $('#bkCalendar').innerHTML='';
-  $('#bkList').innerHTML='<p class="bk-empty">Unable to load bookings. Check database permissions and try Refresh.</p>';
-  setMessage('Bookings are not available. The admin SELECT policy for sh_consultation_bookings may still need to be installed.');
+  $('#bkList').innerHTML='<p class="bk-empty">Unable to load bookings. Check the admin account permissions.</p>';
+  setMessage('Database request failed ('+(error.code||'unknown')+'). Check authenticated SELECT grants, RLS policies and the bookings table.');
  }finally{busy=false;$('#bkRefresh').disabled=false;}
 }
 function row(label,value,html=false){return `<div class="bk-detail-row"><span>${escape(label)}</span><strong>${html?value:escape(value||'—')}</strong></div>`;}
@@ -186,8 +203,8 @@ function init(){
  window.addEventListener('steadyhands:bookings-changed',()=>load(true));
  $('#bkPrev').addEventListener('click',()=>move(-1));
  $('#bkNext').addEventListener('click',()=>move(1));
- $('#bkToday').addEventListener('click',()=>{const d=new Date();view.year=d.getFullYear();view.month=d.getMonth();view.selected='';load();});
- $('#bkRefresh').addEventListener('click',load);
+ $('#bkToday').addEventListener('click',()=>{const d=new Date();view.year=d.getFullYear();view.month=d.getMonth();view.selected='';initialMonthLocated=true;load();});
+ $('#bkRefresh').addEventListener('click',()=>load());
  $('#bkClearDay').addEventListener('click',()=>{view.selected='';render();});
  $('#bkSearch').addEventListener('input',event=>{view.search=event.target.value.trim().toLowerCase();render();});
  $('#bkStatus').addEventListener('change',event=>{view.status=event.target.value;render();});
@@ -195,7 +212,7 @@ function init(){
  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('#bkOverlay').hidden)closeBooking();});
  load();
 }
-function move(amount){const d=new Date(view.year,view.month+amount,1);view.year=d.getFullYear();view.month=d.getMonth();view.selected='';entries=[];render();load();}
+function move(amount){const d=new Date(view.year,view.month+amount,1);view.year=d.getFullYear();view.month=d.getMonth();view.selected='';initialMonthLocated=true;entries=[];render();load();}
 window.addEventListener('steadyhands:admin-ready',init);
 if(window.steadyHandsAdminSession)init();
 })();
