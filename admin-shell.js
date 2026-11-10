@@ -199,6 +199,16 @@
     installMobileSideMenu();
     developmentAlerts();
 
+    if(!document.getElementById('bookingAlertStyles')){
+      const style=document.createElement('style');style.id='bookingAlertStyles';
+      style.textContent='.sh-booking-alert-badge{display:inline-flex;align-items:center;justify-content:center;margin-left:7px;min-width:19px;height:19px;padding:0 5px;border-radius:99px;background:#df253b;color:#fff;font-size:11px;line-height:19px;font-weight:850;box-shadow:0 0 0 2px #e0203033}.sh-booking-alert-badge[hidden]{display:none!important}.sh-booking-global-toast[hidden]{display:none!important}.sh-booking-global-toast{position:fixed;right:20px;bottom:calc(90px + env(safe-area-inset-bottom));z-index:7000;max-width:min(360px,calc(100vw - 35px));padding:15px 18px;background:#123b61;border:1px solid #67bf99;border-radius:14px;color:white;box-shadow:0 12px 35px #06182b66;font-size:13px;font-weight:750}';
+      document.head.appendChild(style);
+    }
+    if(!document.getElementById('bookingAlertScript')){
+      const script=document.createElement('script');script.id='bookingAlertScript';script.src='admin-booking-alerts.js?v=20261110';
+      document.body.appendChild(script);
+    }
+
     // The separate admin app never originates outbound calls.
     document.querySelectorAll('.call-controls, .call-btn').forEach(el => {
       if (page === 'call.html') el.hidden = true;
