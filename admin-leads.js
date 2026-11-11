@@ -3,7 +3,7 @@
 const $=id=>document.getElementById(id);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const client=()=>window.steadyHandsCRMClient;
-const state={rows:[],users:[],page:1,size:10,total:0,totalKnown:false,countPending:false,hasMore:false,totalAll:null,filter:'active',query:'',areaCode:'',assignee:'unassigned',timezone:'',stateCode:'',preview:'',stage:'',sort:'created_desc',tags:[],sources:[],tagMode:'OR',sourceMode:'OR',selected:new Set(),allMatching:false,availableTags:[],availableSources:[],loaded:false,seq:0};
+const state={rows:[],users:[],page:1,size:10,total:0,totalKnown:false,countPending:false,hasMore:false,totalAll:null,filter:'active',query:'',areaCode:'',assignee:'unassigned',timezone:'',stateCode:'',preview:'',stage:'',callFilter:'',sort:'created_desc',tags:[],sources:[],tagMode:'OR',sourceMode:'OR',selected:new Set(),allMatching:false,availableTags:[],availableSources:[],loaded:false,seq:0};
 const fields='id,company,name,phone,altphone,email,website,domain,notes,issue,concerns,origin,assigned,assigned_user_id,tags,sources,stage,outcome,do_not_call,callbackdate,callbackat,lastcalled,call_status,timezone,state_code,leadpotential,tier,previewurl,sitekey,has_site_preview,admin_archived,admin_archived_at,created';
 const isArchived=x=>x.admin_archived===true;
 const label=id=>{const u=state.users.find(x=>String(x.user_id)===String(id));return u?(u.display_name||u.email||'Salesperson'):'Unassigned'};
@@ -57,6 +57,11 @@ function query(base=client().from('crm').select(fields),opts={}){
  // Empty stages render as Not called, so include them in that filter.
  if(state.stage==='notstarted')q=q.or('stage.eq.notstarted,stage.is.null,stage.eq.""');
  else if(state.stage)q=q.eq('stage',state.stage);
+ // Call outcomes are distinct from the binary Called / Not called tracking column.
+ if(state.callFilter==='not_called')q=q.eq('call_status','Not called');
+ else if(state.callFilter==='called')q=q.eq('call_status','Called');
+ else if(state.callFilter==='follow_up')q=q.or('stage.eq.callback,outcome.ilike.*follow*up*,tags.cs.["Follow Up"],tags.cs.["Follow-up"]');
+ else if(state.callFilter==='gatekeeper')q=q.or('outcome.ilike.*gatekeeper*,tags.cs.["Gatekeeper"]');
  if(state.preview==='yes')q=q.eq('has_site_preview',true);
  if(state.preview==='no')q=q.eq('has_site_preview',false);
  // CRM tags and sources are JSONB arrays, not PostgreSQL text[] columns.
@@ -137,7 +142,7 @@ function renderSearchProgress(scan){
  else if(denominator>0)bar.value=Math.min(99,scan.scanned/denominator*100);
  else bar.removeAttribute('value');
 }
-function searchKey(){return JSON.stringify([searchTerm(),state.areaCode,state.filter,state.assignee,state.timezone,state.stateCode,state.stage,state.preview,state.tags,state.sources,state.tagMode,state.sourceMode])}
+function searchKey(){return JSON.stringify([searchTerm(),state.areaCode,state.filter,state.assignee,state.timezone,state.stateCode,state.stage,state.callFilter,state.preview,state.tags,state.sources,state.tagMode,state.sourceMode])}
 function showSearchPage(matches,complete){
  const [key,dir]=state.sort.split('_'),sign=dir==='asc'?1:-1;
  // Keep NULLS LAST and a deterministic id tie-breaker.
@@ -421,6 +426,7 @@ async function initialize(){
  }catch(error){state.loaded=false;$('adminLeadList').innerHTML=`<tr><td colspan="11" class="al-empty">${esc(errorMessage(error))}</td></tr>`;}
 }
 $('alStage').onchange=e=>{state.stage=e.target.value;refresh()};
+$('alCallStatus').onchange=e=>{state.callFilter=e.target.value;refresh()};
 $('alAreaCode').addEventListener('input',pause(e=>{state.areaCode=e.target.value.trim();refresh()},300));
 $('adminLeadSearch').addEventListener('input',pause(e=>{state.query=e.target.value;refresh()},300));$('adminAddLead').onclick=openNewLead;$('alAssignSelected').onclick=openAssignment;$('alExportSelected').onclick=openExport;$('alTags').onclick=()=>openFacet('tags');$('alSources').onclick=()=>openFacet('sources');$('alAdvanced').onclick=openAdvanced;$('alAssigned').onclick=openAssignedFilter;
 $('alPageSize').onchange=e=>{const v=e.target.value;if(v==='custom'){const requested=prompt('Number of leads per page (1–5000):','250');const n=Number(requested);if(!Number.isInteger(n)||n<1||n>5000){e.target.value=String(state.size);return}state.size=n;const custom=document.createElement('option');custom.value=String(n);custom.textContent=`${n} per page`;e.target.append(custom);e.target.value=String(n)}else state.size=Number(v);refresh()};
